@@ -752,6 +752,29 @@ select.form-input {
   .mobile-only { display: initial !important; }
   .section-title { font-size: 18px; }
 }
+/* Autocomplete */
+.autocomplete-wrap { position: relative; }
+.autocomplete-wrap input { width: 100%; }
+.autocomplete-list {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 999;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 0 0 var(--radius) var(--radius);
+  max-height: 200px; overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: none;
+}
+.autocomplete-list.show { display: block; }
+.autocomplete-item {
+  padding: 8px 12px; cursor: pointer; font-size: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover, .autocomplete-item.active {
+  background: var(--primary); color: #fff;
+}
+.autocomplete-item .team-hint {
+  font-size: 11px; opacity: 0.6; margin-left: 6px;
+}
 </style>
 </head>
 <body>
@@ -969,6 +992,176 @@ let currentView = 'landing';
 let tippaTab = 'grupper';
 let adminTab = 'results-group';
 let adminResults = {};
+
+// ══════════════════════════════════════════════════════════════════════
+// PLAYER DATABASE (broad pre-tournament list, updated when squads are final)
+// ══════════════════════════════════════════════════════════════════════
+const VM_PLAYERS = [
+  // Grupp A — Mexiko
+  {name:'Lozano',team:'Mexiko'},{name:'Jiménez',team:'Mexiko'},{name:'Vega',team:'Mexiko'},{name:'Álvarez',team:'Mexiko'},{name:'Antuna',team:'Mexiko'},{name:'Sánchez',team:'Mexiko'},{name:'Arteaga',team:'Mexiko'},{name:'Gutiérrez',team:'Mexiko'},{name:'Ochoa',team:'Mexiko'},{name:'Giménez',team:'Mexiko'},{name:'Pineda',team:'Mexiko'},{name:'Romo',team:'Mexiko'},
+  // Grupp A — Sydafrika
+  {name:'Tau',team:'Sydafrika'},{name:'Zwane',team:'Sydafrika'},{name:'Mokwena',team:'Sydafrika'},{name:'Foster',team:'Sydafrika'},{name:'Mokoena',team:'Sydafrika'},{name:'Shalulile',team:'Sydafrika'},{name:'Kutumela',team:'Sydafrika'},{name:'Mkhize',team:'Sydafrika'},{name:'Williams',team:'Sydafrika'},{name:'Appollis',team:'Sydafrika'},
+  // Grupp A — Sydkorea
+  {name:'Son',team:'Sydkorea'},{name:'Hwang',team:'Sydkorea'},{name:'Kim',team:'Sydkorea'},{name:'Lee',team:'Sydkorea'},{name:'Cho',team:'Sydkorea'},{name:'Jung',team:'Sydkorea'},{name:'Jeong',team:'Sydkorea'},{name:'Oh',team:'Sydkorea'},{name:'Jang',team:'Sydkorea'},{name:'Bae',team:'Sydkorea'},
+  // Grupp A — Tjeckien
+  {name:'Schick',team:'Tjeckien'},{name:'Souček',team:'Tjeckien'},{name:'Barák',team:'Tjeckien'},{name:'Hložek',team:'Tjeckien'},{name:'Čermák',team:'Tjeckien'},{name:'Coufal',team:'Tjeckien'},{name:'Provod',team:'Tjeckien'},{name:'Černý',team:'Tjeckien'},{name:'Krejčí',team:'Tjeckien'},{name:'Jurásek',team:'Tjeckien'},
+  // Grupp B — Kanada
+  {name:'David',team:'Kanada'},{name:'Davies',team:'Kanada'},{name:'Buchanan',team:'Kanada'},{name:'Larin',team:'Kanada'},{name:'Eustáquio',team:'Kanada'},{name:'Osorio',team:'Kanada'},{name:'Hoilett',team:'Kanada'},{name:'Millar',team:'Kanada'},{name:'Johnston',team:'Kanada'},{name:'Borjan',team:'Kanada'},
+  // Grupp B — Bosnien
+  {name:'Džeko',team:'Bosnien'},{name:'Pjanić',team:'Bosnien'},{name:'Demirović',team:'Bosnien'},{name:'Kolarov',team:'Bosnien'},{name:'Hadžikadunić',team:'Bosnien'},{name:'Prevljak',team:'Bosnien'},{name:'Gazibegović',team:'Bosnien'},{name:'Tahirović',team:'Bosnien'},{name:'Hajradinović',team:'Bosnien'},{name:'Gigović',team:'Bosnien'},
+  // Grupp B — Qatar
+  {name:'Afif',team:'Qatar'},{name:'Ali',team:'Qatar'},{name:'Almoez',team:'Qatar'},{name:'Hatem',team:'Qatar'},{name:'Boudiaf',team:'Qatar'},{name:'Hassan',team:'Qatar'},{name:'Khoukhi',team:'Qatar'},{name:'Madibo',team:'Qatar'},{name:'Pedro',team:'Qatar'},{name:'Waad',team:'Qatar'},
+  // Grupp B — Schweiz
+  {name:'Embolo',team:'Schweiz'},{name:'Shaqiri',team:'Schweiz'},{name:'Xhaka',team:'Schweiz'},{name:'Akanji',team:'Schweiz'},{name:'Freuler',team:'Schweiz'},{name:'Sommer',team:'Schweiz'},{name:'Ndoye',team:'Schweiz'},{name:'Vargas',team:'Schweiz'},{name:'Rieder',team:'Schweiz'},{name:'Okafor',team:'Schweiz'},{name:'Amdouni',team:'Schweiz'},
+  // Grupp C — Brasilien
+  {name:'Vinícius Jr.',team:'Brasilien'},{name:'Rodrygo',team:'Brasilien'},{name:'Raphinha',team:'Brasilien'},{name:'Endrick',team:'Brasilien'},{name:'Neymar',team:'Brasilien'},{name:'Martinelli',team:'Brasilien'},{name:'Paquetá',team:'Brasilien'},{name:'Casemiro',team:'Brasilien'},{name:'Marquinhos',team:'Brasilien'},{name:'Alisson',team:'Brasilien'},{name:'Savinho',team:'Brasilien'},{name:'Richarlison',team:'Brasilien'},
+  // Grupp C — Marocko
+  {name:'Hakimi',team:'Marocko'},{name:'Ziyech',team:'Marocko'},{name:'En-Nesyri',team:'Marocko'},{name:'Boufal',team:'Marocko'},{name:'Amrabat',team:'Marocko'},{name:'Mazraoui',team:'Marocko'},{name:'Diaz',team:'Marocko'},{name:'Ounahi',team:'Marocko'},{name:'Aguerd',team:'Marocko'},{name:'El Kaabi',team:'Marocko'},
+  // Grupp C — Haiti
+  {name:'Duverger',team:'Haiti'},{name:'Pierrot',team:'Haiti'},{name:'Saint-Félix',team:'Haiti'},{name:'Alcéus',team:'Haiti'},{name:'Bazile',team:'Haiti'},{name:'Estimé',team:'Haiti'},{name:'Geffrard',team:'Haiti'},{name:'Jérôme',team:'Haiti'},{name:'Éveillard',team:'Haiti'},{name:'Placide',team:'Haiti'},
+  // Grupp C — Skottland
+  {name:'Robertson',team:'Skottland'},{name:'McGinn',team:'Skottland'},{name:'McTominay',team:'Skottland'},{name:'Adams',team:'Skottland'},{name:'Dykes',team:'Skottland'},{name:'Gilmour',team:'Skottland'},{name:'Tierney',team:'Skottland'},{name:'Christie',team:'Skottland'},{name:'Gunn',team:'Skottland'},{name:'Ferguson',team:'Skottland'},
+  // Grupp D — USA
+  {name:'Pulisic',team:'USA'},{name:'McKennie',team:'USA'},{name:'Reyna',team:'USA'},{name:'Weah',team:'USA'},{name:'Musah',team:'USA'},{name:'Adams',team:'USA'},{name:'Dest',team:'USA'},{name:'Balogun',team:'USA'},{name:'Pepi',team:'USA'},{name:'Turner',team:'USA'},{name:'Aaronson',team:'USA'},{name:'Wright',team:'USA'},
+  // Grupp D — Paraguay
+  {name:'Almirón',team:'Paraguay'},{name:'Enciso',team:'Paraguay'},{name:'Sanabria',team:'Paraguay'},{name:'Romero',team:'Paraguay'},{name:'Gómez',team:'Paraguay'},{name:'Villasanti',team:'Paraguay'},{name:'Cubas',team:'Paraguay'},{name:'Arzamendia',team:'Paraguay'},{name:'Sosa',team:'Paraguay'},{name:'Fernández',team:'Paraguay'},
+  // Grupp D — Australien
+  {name:'Hrustic',team:'Australien'},{name:'Duke',team:'Australien'},{name:'Leckie',team:'Australien'},{name:'Irvine',team:'Australien'},{name:'McGree',team:'Australien'},{name:'Maclaren',team:'Australien'},{name:'Kuol',team:'Australien'},{name:'Souttar',team:'Australien'},{name:'Ryan',team:'Australien'},{name:'Baccus',team:'Australien'},
+  // Grupp D — Turkiet
+  {name:'Çalhanoğlu',team:'Turkiet'},{name:'Yıldız',team:'Turkiet'},{name:'Ünder',team:'Turkiet'},{name:'Aktürkoğlu',team:'Turkiet'},{name:'Yılmaz',team:'Turkiet'},{name:'Kökcü',team:'Turkiet'},{name:'Güler',team:'Turkiet'},{name:'Demiral',team:'Turkiet'},{name:'Müldür',team:'Turkiet'},{name:'Bayındır',team:'Turkiet'},{name:'Yazıcı',team:'Turkiet'},
+  // Grupp E — Tyskland
+  {name:'Musiala',team:'Tyskland'},{name:'Wirtz',team:'Tyskland'},{name:'Havertz',team:'Tyskland'},{name:'Sané',team:'Tyskland'},{name:'Gnabry',team:'Tyskland'},{name:'Füllkrug',team:'Tyskland'},{name:'Gündoğan',team:'Tyskland'},{name:'Kimmich',team:'Tyskland'},{name:'Rüdiger',team:'Tyskland'},{name:'Neuer',team:'Tyskland'},{name:'Müller',team:'Tyskland'},{name:'Undav',team:'Tyskland'},
+  // Grupp E — Curaçao
+  {name:'Bacuna',team:'Curaçao'},{name:'Nepomuceno',team:'Curaçao'},{name:'Rijkaard',team:'Curaçao'},{name:'Hooi',team:'Curaçao'},{name:'Delvon',team:'Curaçao'},{name:'Kasteel',team:'Curaçao'},{name:'Gaari',team:'Curaçao'},{name:'Amaury',team:'Curaçao'},
+  // Grupp E — Elfenbenskusten
+  {name:'Haller',team:'Elfenbenskusten'},{name:'Pépé',team:'Elfenbenskusten'},{name:'Kessié',team:'Elfenbenskusten'},{name:'Boly',team:'Elfenbenskusten'},{name:'Gradel',team:'Elfenbenskusten'},{name:'Sangare',team:'Elfenbenskusten'},{name:'Fofana',team:'Elfenbenskusten'},{name:'Bamba',team:'Elfenbenskusten'},{name:'Diallo',team:'Elfenbenskusten'},{name:'Konaté',team:'Elfenbenskusten'},
+  // Grupp E — Ecuador
+  {name:'Valencia',team:'Ecuador'},{name:'Caicedo',team:'Ecuador'},{name:'Páez',team:'Ecuador'},{name:'Estupiñán',team:'Ecuador'},{name:'Hincapié',team:'Ecuador'},{name:'Plata',team:'Ecuador'},{name:'Sarmiento',team:'Ecuador'},{name:'Mena',team:'Ecuador'},{name:'Cifuentes',team:'Ecuador'},{name:'Galíndez',team:'Ecuador'},
+  // Grupp F — Nederländerna
+  {name:'Gakpo',team:'Nederländerna'},{name:'Depay',team:'Nederländerna'},{name:'De Jong',team:'Nederländerna'},{name:'Simons',team:'Nederländerna'},{name:'Dumfries',team:'Nederländerna'},{name:'De Ligt',team:'Nederländerna'},{name:'Van Dijk',team:'Nederländerna'},{name:'Bergwijn',team:'Nederländerna'},{name:'Timber',team:'Nederländerna'},{name:'Malen',team:'Nederländerna'},{name:'Zirkzee',team:'Nederländerna'},
+  // Grupp F — Japan
+  {name:'Mitoma',team:'Japan'},{name:'Kubo',team:'Japan'},{name:'Kamada',team:'Japan'},{name:'Doan',team:'Japan'},{name:'Endo',team:'Japan'},{name:'Tomiyasu',team:'Japan'},{name:'Maeda',team:'Japan'},{name:'Ueda',team:'Japan'},{name:'Tanaka',team:'Japan'},{name:'Minamino',team:'Japan'},{name:'Itakura',team:'Japan'},
+  // Grupp F — Sverige
+  {name:'Isak',team:'Sverige'},{name:'Kulusevski',team:'Sverige'},{name:'Gyökeres',team:'Sverige'},{name:'Forsberg',team:'Sverige'},{name:'Olsson',team:'Sverige'},{name:'Svanberg',team:'Sverige'},{name:'Augustinsson',team:'Sverige'},{name:'Lindelöf',team:'Sverige'},{name:'Johnsson',team:'Sverige'},{name:'Elanga',team:'Sverige'},{name:'Larsson',team:'Sverige'},{name:'Nanasi',team:'Sverige'},
+  // Grupp F — Tunisien
+  {name:'Khazri',team:'Tunisien'},{name:'Msakni',team:'Tunisien'},{name:'Jaziri',team:'Tunisien'},{name:'Sliti',team:'Tunisien'},{name:'Skhiri',team:'Tunisien'},{name:'Laidouni',team:'Tunisien'},{name:'Bronn',team:'Tunisien'},{name:'Mejbri',team:'Tunisien'},{name:'Talbi',team:'Tunisien'},{name:'Khenissi',team:'Tunisien'},
+  // Grupp G — Belgien
+  {name:'De Bruyne',team:'Belgien'},{name:'Lukaku',team:'Belgien'},{name:'Doku',team:'Belgien'},{name:'Trossard',team:'Belgien'},{name:'Openda',team:'Belgien'},{name:'Tielemans',team:'Belgien'},{name:'Onana',team:'Belgien'},{name:'Casteels',team:'Belgien'},{name:'Theate',team:'Belgien'},{name:'De Ketelaere',team:'Belgien'},{name:'Lukébakio',team:'Belgien'},
+  // Grupp G — Egypten
+  {name:'Salah',team:'Egypten'},{name:'Marmoush',team:'Egypten'},{name:'Trezeguet',team:'Egypten'},{name:'Elneny',team:'Egypten'},{name:'Hegazi',team:'Egypten'},{name:'Sobhi',team:'Egypten'},{name:'El Shenawy',team:'Egypten'},{name:'Mostafa',team:'Egypten'},{name:'Fathi',team:'Egypten'},{name:'Adel',team:'Egypten'},
+  // Grupp G — Iran
+  {name:'Taremi',team:'Iran'},{name:'Azmoun',team:'Iran'},{name:'Jahanbakhsh',team:'Iran'},{name:'Ezatolahi',team:'Iran'},{name:'Hosseini',team:'Iran'},{name:'Beiranvand',team:'Iran'},{name:'Ghoddos',team:'Iran'},{name:'Hajsafi',team:'Iran'},{name:'Mohammadi',team:'Iran'},{name:'Torabi',team:'Iran'},
+  // Grupp G — Nya Zeeland
+  {name:'Wood',team:'Nya Zeeland'},{name:'Singh',team:'Nya Zeeland'},{name:'Waine',team:'Nya Zeeland'},{name:'Cacace',team:'Nya Zeeland'},{name:'Bell',team:'Nya Zeeland'},{name:'Just',team:'Nya Zeeland'},{name:'Payne',team:'Nya Zeeland'},{name:'Stamatelopoulos',team:'Nya Zeeland'},{name:'Thomas',team:'Nya Zeeland'},{name:'Garbett',team:'Nya Zeeland'},
+  // Grupp H — Spanien
+  {name:'Yamal',team:'Spanien'},{name:'Williams',team:'Spanien'},{name:'Morata',team:'Spanien'},{name:'Pedri',team:'Spanien'},{name:'Gavi',team:'Spanien'},{name:'Rodri',team:'Spanien'},{name:'Olmo',team:'Spanien'},{name:'De la Cruz',team:'Spanien'},{name:'Carvajal',team:'Spanien'},{name:'Unai Simón',team:'Spanien'},{name:'Oyarzabal',team:'Spanien'},{name:'Ferran Torres',team:'Spanien'},
+  // Grupp H — Kap Verde
+  {name:'Rodrigues',team:'Kap Verde'},{name:'Borges',team:'Kap Verde'},{name:'Tavares',team:'Kap Verde'},{name:'Lopes',team:'Kap Verde'},{name:'Neves',team:'Kap Verde'},{name:'Gracelino',team:'Kap Verde'},{name:'Dias',team:'Kap Verde'},{name:'Fortes',team:'Kap Verde'},
+  // Grupp H — Saudiarabien
+  {name:'Al-Dawsari',team:'Saudiarabien'},{name:'Al-Shehri',team:'Saudiarabien'},{name:'Kanno',team:'Saudiarabien'},{name:'Al-Buraikan',team:'Saudiarabien'},{name:'Al-Amri',team:'Saudiarabien'},{name:'Al-Owais',team:'Saudiarabien'},{name:'Al-Ghannam',team:'Saudiarabien'},{name:'Al-Malki',team:'Saudiarabien'},{name:'Al-Faraj',team:'Saudiarabien'},{name:'Al-Hassan',team:'Saudiarabien'},
+  // Grupp H — Uruguay
+  {name:'Núñez',team:'Uruguay'},{name:'Suárez',team:'Uruguay'},{name:'Valverde',team:'Uruguay'},{name:'De Arrascaeta',team:'Uruguay'},{name:'Bentancur',team:'Uruguay'},{name:'Araujo',team:'Uruguay'},{name:'Godín',team:'Uruguay'},{name:'Muslera',team:'Uruguay'},{name:'Pellistri',team:'Uruguay'},{name:'Ugarte',team:'Uruguay'},{name:'Olivera',team:'Uruguay'},
+  // Grupp I — Frankrike
+  {name:'Mbappé',team:'Frankrike'},{name:'Griezmann',team:'Frankrike'},{name:'Dembélé',team:'Frankrike'},{name:'Giroud',team:'Frankrike'},{name:'Thuram',team:'Frankrike'},{name:'Kolo Muani',team:'Frankrike'},{name:'Tchouaméni',team:'Frankrike'},{name:'Rabiot',team:'Frankrike'},{name:'Upamecano',team:'Frankrike'},{name:'Maignan',team:'Frankrike'},{name:'Camavinga',team:'Frankrike'},{name:'Olise',team:'Frankrike'},{name:'Barcola',team:'Frankrike'},
+  // Grupp I — Senegal
+  {name:'Mané',team:'Senegal'},{name:'Dia',team:'Senegal'},{name:'Sarr',team:'Senegal'},{name:'Diallo',team:'Senegal'},{name:'Gueye',team:'Senegal'},{name:'Koulibaly',team:'Senegal'},{name:'Mendy',team:'Senegal'},{name:'Dieng',team:'Senegal'},{name:'Jakobs',team:'Senegal'},{name:'Diedhiou',team:'Senegal'},
+  // Grupp I — Norge
+  {name:'Haaland',team:'Norge'},{name:'Ødegaard',team:'Norge'},{name:'Sørloth',team:'Norge'},{name:'Berge',team:'Norge'},{name:'Nyland',team:'Norge'},{name:'Ajer',team:'Norge'},{name:'Myhre',team:'Norge'},{name:'King',team:'Norge'},{name:'Thorsby',team:'Norge'},{name:'Ryerson',team:'Norge'},{name:'Strand Larsen',team:'Norge'},
+  // Grupp I — Irak
+  {name:'Mohanad Ali',team:'Irak'},{name:'Aymen Hussein',team:'Irak'},{name:'Ibrahim',team:'Irak'},{name:'Attwan',team:'Irak'},{name:'Adnan',team:'Irak'},{name:'Amjed',team:'Irak'},{name:'Basim',team:'Irak'},{name:'Rebin',team:'Irak'},
+  // Grupp J — Argentina
+  {name:'Messi',team:'Argentina'},{name:'Álvarez',team:'Argentina'},{name:'Lautaro',team:'Argentina'},{name:'Di María',team:'Argentina'},{name:'De Paul',team:'Argentina'},{name:'Mac Allister',team:'Argentina'},{name:'Fernández',team:'Argentina'},{name:'Romero',team:'Argentina'},{name:'Otamendi',team:'Argentina'},{name:'Martínez',team:'Argentina'},{name:'Garnacho',team:'Argentina'},{name:'Dybala',team:'Argentina'},
+  // Grupp J — Algeriet
+  {name:'Mahrez',team:'Algeriet'},{name:'Bennacer',team:'Algeriet'},{name:'Slimani',team:'Algeriet'},{name:'Bounedjah',team:'Algeriet'},{name:'Feghouli',team:'Algeriet'},{name:'Belaïli',team:'Algeriet'},{name:'Atal',team:'Algeriet'},{name:'Bensebaïni',team:'Algeriet'},{name:'Benrahma',team:'Algeriet'},{name:'Zerrouki',team:'Algeriet'},
+  // Grupp J — Österrike
+  {name:'Arnautović',team:'Österrike'},{name:'Sabitzer',team:'Österrike'},{name:'Laimer',team:'Österrike'},{name:'Alaba',team:'Österrike'},{name:'Baumgartner',team:'Österrike'},{name:'Gregoritsch',team:'Österrike'},{name:'Schlager',team:'Österrike'},{name:'Posch',team:'Österrike'},{name:'Trauner',team:'Österrike'},{name:'Pentz',team:'Österrike'},{name:'Seiwald',team:'Österrike'},
+  // Grupp J — Jordanien
+  {name:'Al-Tamari',team:'Jordanien'},{name:'Al-Naimat',team:'Jordanien'},{name:'Baha Faisal',team:'Jordanien'},{name:'Yazan',team:'Jordanien'},{name:'Al-Taamari',team:'Jordanien'},{name:'Hammad',team:'Jordanien'},{name:'Abu Hammad',team:'Jordanien'},{name:'Shafi',team:'Jordanien'},
+  // Grupp K — Portugal
+  {name:'Ronaldo',team:'Portugal'},{name:'B. Silva',team:'Portugal'},{name:'B. Fernandes',team:'Portugal'},{name:'Leão',team:'Portugal'},{name:'Félix',team:'Portugal'},{name:'Jota',team:'Portugal'},{name:'Dias',team:'Portugal'},{name:'Cancelo',team:'Portugal'},{name:'Pepe',team:'Portugal'},{name:'Costa',team:'Portugal'},{name:'Neto',team:'Portugal'},{name:'Mendes',team:'Portugal'},
+  // Grupp K — DR Kongo
+  {name:'Bakambu',team:'DR Kongo'},{name:'Mbemba',team:'DR Kongo'},{name:'Wissa',team:'DR Kongo'},{name:'Kakuta',team:'DR Kongo'},{name:'Batshuayi',team:'DR Kongo'},{name:'Mbokani',team:'DR Kongo'},{name:'Masuaku',team:'DR Kongo'},{name:'Diata',team:'DR Kongo'},{name:'Moutoussamy',team:'DR Kongo'},{name:'Fulu',team:'DR Kongo'},
+  // Grupp K — Uzbekistan
+  {name:'Shomurodov',team:'Uzbekistan'},{name:'Nasimov',team:'Uzbekistan'},{name:'Kobilov',team:'Uzbekistan'},{name:'Fayzullaev',team:'Uzbekistan'},{name:'Abdullaev',team:'Uzbekistan'},{name:'Masharipov',team:'Uzbekistan'},{name:'Urunov',team:'Uzbekistan'},{name:'Norchaev',team:'Uzbekistan'},
+  // Grupp K — Colombia
+  {name:'James',team:'Colombia'},{name:'Díaz',team:'Colombia'},{name:'Zapata',team:'Colombia'},{name:'Muriel',team:'Colombia'},{name:'Cuadrado',team:'Colombia'},{name:'Arias',team:'Colombia'},{name:'Sánchez',team:'Colombia'},{name:'Borré',team:'Colombia'},{name:'Lerma',team:'Colombia'},{name:'Córdoba',team:'Colombia'},{name:'Durán',team:'Colombia'},
+  // Grupp L — England
+  {name:'Kane',team:'England'},{name:'Saka',team:'England'},{name:'Bellingham',team:'England'},{name:'Foden',team:'England'},{name:'Rice',team:'England'},{name:'Rashford',team:'England'},{name:'Palmer',team:'England'},{name:'Alexander-Arnold',team:'England'},{name:'Walker',team:'England'},{name:'Pickford',team:'England'},{name:'Gordon',team:'England'},{name:'Watkins',team:'England'},{name:'Toney',team:'England'},
+  // Grupp L — Kroatien
+  {name:'Modrić',team:'Kroatien'},{name:'Kramarić',team:'Kroatien'},{name:'Perišić',team:'Kroatien'},{name:'Kovačić',team:'Kroatien'},{name:'Brozović',team:'Kroatien'},{name:'Vlašić',team:'Kroatien'},{name:'Gvardiol',team:'Kroatien'},{name:'Livaja',team:'Kroatien'},{name:'Budimir',team:'Kroatien'},{name:'Sučić',team:'Kroatien'},
+  // Grupp L — Ghana
+  {name:'Kudus',team:'Ghana'},{name:'Ayew',team:'Ghana'},{name:'Williams',team:'Ghana'},{name:'Partey',team:'Ghana'},{name:'Sulemana',team:'Ghana'},{name:'Paintsil',team:'Ghana'},{name:'Amartey',team:'Ghana'},{name:'Lamptey',team:'Ghana'},{name:'Semenyo',team:'Ghana'},{name:'Salisu',team:'Ghana'},
+  // Grupp L — Panama
+  {name:'Fajardo',team:'Panama'},{name:'Bárcenas',team:'Panama'},{name:'Murillo',team:'Panama'},{name:'Godoy',team:'Panama'},{name:'Carrasquilla',team:'Panama'},{name:'Blackburn',team:'Panama'},{name:'Davis',team:'Panama'},{name:'Welch',team:'Panama'},{name:'Penedo',team:'Panama'},{name:'Andrade',team:'Panama'}
+];
+
+let acCounter = 0;
+function makeAutocomplete(id, value, onSelect) {
+  const uid = 'ac-' + (acCounter++);
+  setTimeout(() => {
+    const wrap = document.getElementById(uid);
+    if (!wrap) return;
+    const input = wrap.querySelector('input');
+    const list = wrap.querySelector('.autocomplete-list');
+    let activeIdx = -1;
+    let filtered = [];
+
+    function render(items) {
+      filtered = items;
+      activeIdx = -1;
+      if (items.length === 0) { list.classList.remove('show'); return; }
+      list.innerHTML = items.map((p, i) =>
+        `<div class="autocomplete-item" data-idx="${i}">${escHtml(p.name)} <span class="team-hint">${escHtml(p.team)}</span></div>`
+      ).join('');
+      list.classList.add('show');
+    }
+
+    function select(p) {
+      input.value = p.name;
+      list.classList.remove('show');
+      onSelect(p.name);
+    }
+
+    input.addEventListener('input', () => {
+      const q = input.value.trim().toLowerCase();
+      if (q.length < 1) { list.classList.remove('show'); return; }
+      const matches = VM_PLAYERS.filter(p =>
+        p.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+          .includes(q.normalize('NFD').replace(/[\u0300-\u036f]/g,'')) ||
+        p.name.toLowerCase().includes(q)
+      ).slice(0, 8);
+      render(matches);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (!list.classList.contains('show')) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = Math.min(activeIdx + 1, filtered.length - 1); updateActive(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); updateActive(); }
+      else if (e.key === 'Enter' && activeIdx >= 0) { e.preventDefault(); select(filtered[activeIdx]); }
+      else if (e.key === 'Escape') { list.classList.remove('show'); }
+    });
+
+    function updateActive() {
+      list.querySelectorAll('.autocomplete-item').forEach((el, i) => {
+        el.classList.toggle('active', i === activeIdx);
+        if (i === activeIdx) el.scrollIntoView({ block: 'nearest' });
+      });
+    }
+
+    list.addEventListener('click', (e) => {
+      const item = e.target.closest('.autocomplete-item');
+      if (item) select(filtered[parseInt(item.dataset.idx)]);
+    });
+
+    input.addEventListener('blur', () => { setTimeout(() => list.classList.remove('show'), 200); });
+    input.addEventListener('change', () => { onSelect(input.value.trim()); });
+  }, 0);
+
+  return `<div class="autocomplete-wrap" id="${uid}">
+    <input type="text" class="form-input" value="${escHtml(value)}" placeholder="Sök spelare...">
+    <div class="autocomplete-list"></div>
+  </div>`;
+}
 
 // ══════════════════════════════════════════════════════════════════════
 // THEME
@@ -1875,24 +2068,20 @@ function renderSpecial(container) {
   // First goal scorer
   html += `<div class="card">
     <h3>Turneringens första målskytt</h3>
-    <p class="text-muted" style="margin-bottom:10px">Ange spelarens efternamn</p>
+    <p class="text-muted" style="margin-bottom:10px">Sök på spelarens efternamn</p>
     <div class="form-group">
-      <input type="text" class="form-input" value="${escHtml(fs)}"
-        onchange="predictions.firstScorer=this.value.trim();markDirty();updateProgress()"
-        placeholder="T.ex. Mbappé">
+      ${makeAutocomplete('firstScorer', fs, (v) => { predictions.firstScorer = v; markDirty(); updateProgress(); })}
     </div>
   </div>`;
 
   // Top 3 scorers
   html += `<div class="card">
     <h3>Skytteliga topp 3</h3>
-    <p class="text-muted" style="margin-bottom:10px">Ange efternamn, rankad 1-3</p>`;
+    <p class="text-muted" style="margin-bottom:10px">Sök på efternamn, rankad 1-3</p>`;
   for (let i = 0; i < 3; i++) {
     html += `<div class="form-group">
       <label>${i+1}:a skyttekung</label>
-      <input type="text" class="form-input" value="${escHtml(ts[i]||'')}"
-        onchange="if(!predictions.topScorers)predictions.topScorers=['','',''];predictions.topScorers[${i}]=this.value.trim();markDirty();updateProgress()"
-        placeholder="Efternamn">
+      ${makeAutocomplete('topScorer'+i, ts[i]||'', ((idx) => (v) => { if(!predictions.topScorers)predictions.topScorers=['','','']; predictions.topScorers[idx]=v; markDirty(); updateProgress(); })(i))}
     </div>`;
   }
   html += '</div>';
@@ -2673,16 +2862,14 @@ function renderAdminSpecialResults(container) {
 
   html += `<div class="form-group">
     <label>Första målskytt</label>
-    <input type="text" class="form-input" value="${escHtml(adminResults.firstScorer||'')}"
-      onchange="adminResults.firstScorer=this.value.trim()">
+    ${makeAutocomplete('adminFirstScorer', adminResults.firstScorer||'', (v) => { adminResults.firstScorer = v; })}
   </div>`;
 
   const ts = adminResults.topScorers || ['','',''];
   for (let i = 0; i < 3; i++) {
     html += `<div class="form-group">
       <label>Skyttekung #${i+1}</label>
-      <input type="text" class="form-input" value="${escHtml(ts[i]||'')}"
-        onchange="if(!adminResults.topScorers)adminResults.topScorers=['','',''];adminResults.topScorers[${i}]=this.value.trim()">
+      ${makeAutocomplete('adminTopScorer'+i, ts[i]||'', ((idx) => (v) => { if(!adminResults.topScorers)adminResults.topScorers=['','','']; adminResults.topScorers[idx]=v; })(i))}
     </div>`;
   }
 
