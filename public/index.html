@@ -1,0 +1,2864 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>VM-Bettet 2026</title>
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f0f2f5;
+  --bg2: #ffffff;
+  --bg3: #f8f9fa;
+  --text: #1a1a2e;
+  --text2: #555;
+  --text3: #888;
+  --border: #e0e0e0;
+  --primary: #0c1f3f;
+  --primary-light: #1a2a6c;
+  --accent: #c8960c;
+  --accent-light: #e8b84d;
+  --green: #1a7a3c;
+  --green-bg: #e8f5e9;
+  --red: #c0392b;
+  --red-bg: #fdecea;
+  --gold: #b8860b;
+  --gold-bg: #fef3d0;
+  --card-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --radius: 10px;
+  --nav-h: 56px;
+  --bottom-nav-h: 64px;
+}
+.dark {
+  --bg: #0a0e1a;
+  --bg2: #141825;
+  --bg3: #1a1f30;
+  --text: #e8e8f0;
+  --text2: #aab;
+  --text3: #778;
+  --border: #2a2e3e;
+  --card-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  --green-bg: #0d2a18;
+  --red-bg: #2a0e0e;
+  --gold-bg: #2a2410;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-decoration: none; }
+
+/* ══════ SCROLLBAR ══════ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ══════ TOP NAV ══════ */
+.top-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: var(--nav-h);
+  background: var(--primary);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+}
+.top-nav .logo {
+  display: flex; align-items: center;
+  cursor: pointer;
+}
+.top-nav .logo img { height: 38px; border-radius: 4px; }
+.top-nav .desktop-links {
+  display: flex; gap: 4px;
+}
+.top-nav .desktop-links a {
+  color: rgba(255,255,255,0.7);
+  font-size: 13px; font-weight: 500;
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+.top-nav .desktop-links a:hover,
+.top-nav .desktop-links a.active {
+  color: #fff;
+  background: rgba(255,255,255,0.1);
+}
+.top-nav .desktop-links a.active { background: rgba(200,150,12,0.2); color: var(--accent); }
+.top-nav .right-section { display: flex; align-items: center; gap: 8px; }
+.top-nav .user-info {
+  color: rgba(255,255,255,0.8); font-size: 13px; font-weight: 500;
+}
+.theme-toggle {
+  background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,0.6); padding: 6px;
+  border-radius: 6px; transition: all 0.15s;
+  display: flex; align-items: center;
+}
+.theme-toggle:hover { color: #fff; background: rgba(255,255,255,0.1); }
+.btn-logout {
+  background: rgba(255,255,255,0.1); border: none; color: rgba(255,255,255,0.7);
+  font-size: 12px; padding: 6px 12px; border-radius: 6px; cursor: pointer;
+  font-family: inherit; transition: all 0.15s;
+}
+.btn-logout:hover { background: rgba(255,255,255,0.2); color: #fff; }
+
+/* ══════ BOTTOM NAV (MOBILE) ══════ */
+.bottom-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  height: var(--bottom-nav-h);
+  background: var(--primary);
+  justify-content: space-around; align-items: center;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.2);
+}
+.bottom-nav a {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  color: rgba(255,255,255,0.5); font-size: 10px; font-weight: 500;
+  padding: 6px 12px; border-radius: 8px; transition: all 0.15s;
+  text-decoration: none;
+}
+.bottom-nav a svg { width: 22px; height: 22px; }
+.bottom-nav a.active { color: var(--accent); }
+.bottom-nav a:hover { color: rgba(255,255,255,0.8); }
+
+@media (max-width: 768px) {
+  .top-nav .desktop-links { display: none; }
+  .bottom-nav { display: flex; }
+  .main-content { padding-bottom: calc(var(--bottom-nav-h) + 16px) !important; }
+}
+
+/* ══════ MAIN CONTENT ══════ */
+.main-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: calc(var(--nav-h) + 16px) 16px 24px;
+  min-height: 100vh;
+}
+.view { display: none; animation: fadeIn 0.2s ease; }
+.view.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ══════ CARDS ══════ */
+.card {
+  background: var(--bg2);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.card h2 {
+  font-size: 18px; font-weight: 700; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card h3 {
+  font-size: 15px; font-weight: 600; margin-bottom: 12px;
+  color: var(--text2);
+}
+
+/* ══════ BUTTONS ══════ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px; font-weight: 600;
+  border: none; cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--accent-light); }
+.btn-secondary {
+  background: var(--bg3);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { background: var(--border); }
+.btn-danger { background: var(--red); color: #fff; }
+.btn-danger:hover { opacity: 0.85; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ══════ FORMS ══════ */
+.form-group { margin-bottom: 14px; }
+.form-group label {
+  display: block; font-size: 13px; font-weight: 600;
+  margin-bottom: 4px; color: var(--text2);
+}
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  background: var(--bg3);
+  color: var(--text);
+  transition: border-color 0.15s;
+}
+.form-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(200,150,12,0.15);
+}
+select.form-input {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+}
+
+/* ══════ TABS ══════ */
+.tabs {
+  display: flex; gap: 4px; margin-bottom: 16px;
+  border-bottom: 2px solid var(--border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.tabs button {
+  background: none; border: none; cursor: pointer;
+  padding: 10px 16px;
+  font-family: inherit;
+  font-size: 13px; font-weight: 600;
+  color: var(--text3);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.tabs button:hover { color: var(--text); }
+.tabs button.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ══════ LANDING ══════ */
+.landing-hero {
+  text-align: center;
+  padding: 60px 20px 40px;
+}
+.landing-hero h1 {
+  font-size: 42px; font-weight: 900;
+  background: linear-gradient(135deg, var(--accent), #e8b84d);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+.landing-hero .subtitle {
+  font-size: 18px; color: var(--text2); font-weight: 400;
+  margin-bottom: 32px;
+}
+.landing-hero .trophy-icon {
+  font-size: 64px; margin-bottom: 16px;
+  display: block;
+}
+.landing-buttons {
+  display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+}
+.landing-buttons .btn { min-width: 160px; padding: 14px 28px; font-size: 16px; }
+.landing-info {
+  max-width: 600px; margin: 40px auto 0;
+  text-align: left;
+}
+.landing-info .card { padding: 24px; }
+.landing-info h3 { color: var(--accent); margin-bottom: 12px; font-size: 16px; }
+.landing-info ul { padding-left: 20px; }
+.landing-info li { margin-bottom: 6px; font-size: 14px; color: var(--text2); line-height: 1.5; }
+
+/* ══════ AUTH FORMS ══════ */
+.auth-container {
+  max-width: 400px; margin: 40px auto;
+}
+.auth-container h2 {
+  text-align: center; margin-bottom: 24px; font-size: 24px;
+}
+.auth-container .error-msg {
+  background: var(--red-bg); color: var(--red);
+  padding: 10px 14px; border-radius: 8px;
+  font-size: 13px; margin-bottom: 12px;
+  display: none;
+}
+.auth-container .switch-link {
+  text-align: center; margin-top: 16px; font-size: 13px; color: var(--text3);
+}
+
+/* ══════ COUNTDOWN ══════ */
+.countdown-bar {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px;
+}
+.countdown-bar .label { font-size: 13px; opacity: 0.8; }
+.countdown-bar .timer {
+  font-size: 20px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+}
+.countdown-bar .timer span { color: var(--accent); }
+.countdown-bar.locked { background: var(--red); }
+
+/* ══════ PROGRESS BAR ══════ */
+.progress-bar-container {
+  background: var(--bg3);
+  border-radius: 20px;
+  height: 8px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+  border-radius: 20px;
+  transition: width 0.3s ease;
+}
+.progress-text {
+  font-size: 12px; color: var(--text3); text-align: right;
+}
+
+/* ══════ GROUP CARD ══════ */
+.groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+}
+@media (max-width: 768px) {
+  .groups-grid { grid-template-columns: 1fr; }
+}
+.group-card {
+  background: var(--bg2);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.group-card-header {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: #fff;
+  padding: 10px 16px;
+  font-size: 15px; font-weight: 700;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.group-card-header .check-icon { color: var(--accent); font-size: 14px; }
+.group-card-body { padding: 12px; }
+
+/* Match row */
+.match-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.match-row:last-of-type { border-bottom: none; }
+.match-row .date { color: var(--text3); font-size: 11px; min-width: 60px; }
+.match-row .team { flex: 1; text-align: right; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.match-row .team.away { text-align: left; }
+.match-row .score-inputs {
+  display: flex; align-items: center; gap: 3px;
+  flex-shrink: 0;
+}
+.match-row .score-input {
+  width: 36px; height: 32px;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px; font-weight: 700;
+  background: var(--bg3);
+  color: var(--text);
+}
+.match-row .score-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--gold-bg);
+}
+.match-row .score-dash { font-weight: 700; color: var(--text3); }
+
+/* Group standings table */
+.group-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 12px;
+}
+.group-table th {
+  text-align: left;
+  padding: 6px 8px;
+  font-weight: 600;
+  color: var(--text3);
+  border-bottom: 2px solid var(--border);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.group-table th:not(:first-child) { text-align: center; }
+.group-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.group-table td:not(:first-child) { text-align: center; }
+.group-table tr.qualified td:first-child { font-weight: 700; }
+.group-table tr.qualified { background: rgba(26,122,60,0.06); }
+.dark .group-table tr.qualified { background: rgba(26,122,60,0.12); }
+.group-table tr.third-best td:first-child { font-weight: 600; }
+.group-table tr.third-best { background: rgba(200,150,12,0.06); }
+.dark .group-table tr.third-best { background: rgba(200,150,12,0.1); }
+
+/* Placement override */
+.placement-section { margin-top: 12px; }
+.placement-section h4 {
+  font-size: 12px; font-weight: 600; color: var(--text3);
+  margin-bottom: 6px; text-transform: uppercase;
+}
+.placement-row {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+.placement-row .pos {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  flex-shrink: 0;
+}
+.placement-row .pos.gold-pos { background: var(--accent); }
+.placement-row select {
+  flex: 1;
+  padding: 6px 28px 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: inherit; font-size: 13px;
+  background: var(--bg3);
+  color: var(--text);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+/* ══════ KNOCKOUT ══════ */
+.knockout-round { margin-bottom: 24px; }
+.knockout-round h3 {
+  font-size: 16px; font-weight: 700; color: var(--accent);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+}
+.knockout-matches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 10px;
+}
+@media (max-width: 768px) { .knockout-matches { grid-template-columns: 1fr; } }
+.knockout-match {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.knockout-match .match-label {
+  font-size: 11px; color: var(--text3); font-weight: 500;
+}
+.knockout-match .teams {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.knockout-match .team-option {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px; font-weight: 500;
+  border: 2px solid var(--border);
+  transition: all 0.15s;
+  background: var(--bg2);
+}
+.knockout-match .team-option:hover { border-color: var(--accent); }
+.knockout-match .team-option.selected {
+  border-color: var(--accent);
+  background: var(--gold-bg);
+  font-weight: 700;
+}
+.knockout-match .team-option.empty {
+  opacity: 0.4; cursor: default; border-style: dashed;
+}
+.knockout-match .team-option .flag { flex-shrink: 0; }
+.knockout-match .team-option .name { flex: 1; }
+.knockout-match .team-option .check { color: var(--accent); font-weight: 800; }
+
+/* ══════ SPECIAL TIPS ══════ */
+.special-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+/* ══════ SAVE BAR ══════ */
+.save-bar {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  background: var(--primary);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  display: flex; align-items: center; gap: 12px;
+  font-size: 13px; font-weight: 500;
+  transition: all 0.3s;
+  opacity: 0;
+  pointer-events: none;
+}
+.save-bar.visible { opacity: 1; pointer-events: auto; }
+.save-bar .save-status { color: var(--accent); }
+@media (max-width: 768px) { .save-bar { bottom: calc(var(--bottom-nav-h) + 12px); } }
+
+/* ══════ LEADERBOARD ══════ */
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.leaderboard-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 12px; font-weight: 600;
+  color: var(--text3);
+  border-bottom: 2px solid var(--border);
+  text-transform: uppercase;
+}
+.leaderboard-table th:not(:first-child):not(:nth-child(2)) { text-align: center; }
+.leaderboard-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.leaderboard-table td:not(:first-child):not(:nth-child(2)) { text-align: center; }
+.leaderboard-table .rank {
+  font-weight: 800; width: 40px;
+  font-variant-numeric: tabular-nums;
+}
+.leaderboard-table .rank-1 { color: var(--gold); }
+.leaderboard-table .rank-2 { color: #888; }
+.leaderboard-table .rank-3 { color: #cd7f32; }
+.leaderboard-table .name-cell { font-weight: 600; }
+.leaderboard-table .points-cell { font-weight: 800; color: var(--accent); font-size: 16px; }
+.leaderboard-table .change-up { color: var(--green); font-weight: 600; }
+.leaderboard-table .change-down { color: var(--red); font-weight: 600; }
+.leaderboard-table .change-same { color: var(--text3); }
+.leaderboard-table tr.expandable { cursor: pointer; }
+.leaderboard-table tr.expandable:hover { background: var(--bg3); }
+.leaderboard-table tr.breakdown-row td {
+  padding: 0; border-bottom: 1px solid var(--border);
+}
+.breakdown-content {
+  padding: 12px 16px;
+  background: var(--bg3);
+  display: none;
+}
+.breakdown-content.open { display: block; }
+.breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+.breakdown-item {
+  display: flex; justify-content: space-between;
+  font-size: 12px; padding: 4px 8px;
+  background: var(--bg2);
+  border-radius: 4px;
+}
+.breakdown-item .label { color: var(--text2); }
+.breakdown-item .value { font-weight: 700; }
+
+/* ══════ RESULTS VIEW ══════ */
+.result-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.result-summary .stat-card {
+  background: var(--bg3);
+  border-radius: 8px;
+  padding: 14px;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+.result-summary .stat-card .val {
+  font-size: 24px; font-weight: 800; color: var(--accent);
+}
+.result-summary .stat-card .lbl {
+  font-size: 11px; color: var(--text3); margin-top: 2px;
+  text-transform: uppercase; font-weight: 600;
+}
+
+.result-match-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  border-radius: 4px;
+}
+.result-match-row.correct { background: var(--green-bg); }
+.result-match-row.wrong { background: var(--red-bg); }
+.result-match-row.pending { background: var(--gold-bg); }
+.result-match-row .pts {
+  min-width: 40px; text-align: right;
+  font-weight: 700; font-size: 12px;
+}
+.result-match-row .pts.positive { color: var(--green); }
+.result-match-row .pts.zero { color: var(--red); }
+
+/* ══════ ALLA SVAR / PROJECTION ══════ */
+.participant-tabs {
+  display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.participant-tabs button {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: 12px; font-weight: 500;
+  cursor: pointer;
+  color: var(--text2);
+  transition: all 0.15s;
+}
+.participant-tabs button.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ══════ SIDEBETS ══════ */
+.sidebet-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.sidebet-card .sidebet-title { font-weight: 700; font-size: 14px; }
+.sidebet-card .sidebet-meta { font-size: 12px; color: var(--text3); margin-top: 4px; }
+.sidebet-card .sidebet-stake {
+  display: inline-block;
+  background: var(--gold-bg);
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 6px;
+}
+.sidebet-card .sidebet-actions { margin-top: 8px; display: flex; gap: 8px; }
+.sidebet-status {
+  display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
+}
+.sidebet-status.open { background: #e3f2fd; color: #1565c0; }
+.sidebet-status.matched { background: var(--gold-bg); color: var(--gold); }
+.sidebet-status.settled { background: var(--green-bg); color: var(--green); }
+
+/* ══════ ADMIN ══════ */
+.admin-user-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.admin-user-row .user-name { font-weight: 600; }
+.admin-user-row .user-email { color: var(--text3); font-size: 12px; }
+.admin-user-row .actions { display: flex; gap: 6px; }
+
+/* ══════ TOAST ══════ */
+.toast {
+  position: fixed;
+  top: calc(var(--nav-h) + 12px);
+  right: 16px;
+  z-index: 200;
+  background: var(--primary);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 13px; font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  transform: translateX(120%);
+  transition: transform 0.3s ease;
+}
+.toast.show { transform: translateX(0); }
+.toast.error { background: var(--red); }
+.toast.success { background: var(--green); }
+
+/* ══════ LOADING ══════ */
+.spinner {
+  display: inline-block;
+  width: 20px; height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-overlay {
+  display: flex; align-items: center; justify-content: center;
+  padding: 60px 20px;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--text3);
+  font-size: 14px;
+}
+
+/* ══════ MISC ══════ */
+.empty-state {
+  text-align: center; padding: 40px 20px;
+  color: var(--text3); font-size: 14px;
+}
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 11px; font-weight: 600;
+}
+.badge-admin { background: rgba(200,150,12,0.15); color: var(--accent); }
+.section-title {
+  font-size: 20px; font-weight: 800; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+.text-muted { color: var(--text3); font-size: 13px; }
+
+/* Responsive helpers */
+.desktop-only { display: initial; }
+.mobile-only { display: none; }
+@media (max-width: 768px) {
+  .desktop-only { display: none !important; }
+  .mobile-only { display: initial !important; }
+  .section-title { font-size: 18px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════ TOP NAV ══════════════════════════ -->
+<nav class="top-nav" id="topNav">
+  <div class="logo" onclick="navigate('landing')">
+    <img src="logo.png" alt="VM-Bettet 2026" style="height:38px;border-radius:4px;">
+  </div>
+  <div class="desktop-links" id="navLinks"></div>
+  <div class="right-section">
+    <span class="user-info" id="userInfo"></span>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Byt tema">
+      <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <button class="btn-logout" id="logoutBtn" onclick="logout()" style="display:none">Logga ut</button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════ BOTTOM NAV ══════════════════════════ -->
+<nav class="bottom-nav" id="bottomNav"></nav>
+
+<!-- ══════════════════════════ TOAST ══════════════════════════ -->
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════ SAVE BAR ══════════════════════════ -->
+<div class="save-bar" id="saveBar">
+  <span class="save-status" id="saveStatus">Sparar...</span>
+  <button class="btn btn-primary btn-sm" onclick="savePredictions(true)">Spara nu</button>
+</div>
+
+<!-- ══════════════════════════ MAIN CONTENT ══════════════════════════ -->
+<div class="main-content">
+
+  <!-- LANDING -->
+  <div class="view" id="view-landing">
+    <div class="landing-hero">
+      <img src="logo.png" alt="VM-Bettet 2026" style="width:min(280px,70vw);border-radius:12px;margin-bottom:8px;">
+      <p class="subtitle">Tippa alla matcher i fotbolls-VM 2026</p>
+      <div class="landing-buttons" id="landingButtons">
+        <button class="btn btn-primary" onclick="navigate('login')">Logga in</button>
+        <button class="btn btn-secondary" onclick="navigate('register')">Registrera</button>
+      </div>
+    </div>
+    <div class="landing-info">
+      <div class="card">
+        <h3>Hur fungerar det?</h3>
+        <ul>
+          <li>Tippa alla 72 gruppspelsmatcher (1X2 + exakt resultat)</li>
+          <li>Placera lagen 1-4 i varje grupp</li>
+          <li>Fyll i hela slutspelsträdet fram till final</li>
+          <li>Tippa skyttekung, första mål, första röda kort m.m.</li>
+          <li>Deadline: 11 juni 2026 kl 21:00</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGIN -->
+  <div class="view" id="view-login">
+    <div class="auth-container">
+      <div class="card">
+        <h2>Logga in</h2>
+        <div class="error-msg" id="loginError"></div>
+        <form onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label>E-post</label>
+            <input type="email" class="form-input" id="loginEmail" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label>Lösenord</label>
+            <input type="password" class="form-input" id="loginPassword" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%">Logga in</button>
+        </form>
+        <div class="switch-link">Har du inget konto? <a href="#register" onclick="navigate('register')">Registrera dig</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGISTER -->
+  <div class="view" id="view-register">
+    <div class="auth-container">
+      <div class="card">
+        <h2>Registrera</h2>
+        <div class="error-msg" id="registerError"></div>
+        <form onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label>Namn</label>
+            <input type="text" class="form-input" id="regName" required autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label>E-post</label>
+            <input type="email" class="form-input" id="regEmail" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label>Lösenord</label>
+            <input type="password" class="form-input" id="regPassword" required minlength="4" autocomplete="new-password">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%">Registrera</button>
+        </form>
+        <div class="switch-link">Har du redan konto? <a href="#login" onclick="navigate('login')">Logga in</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIPPA -->
+  <div class="view" id="view-tippa">
+    <div class="section-title">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Tippa
+    </div>
+    <div id="countdownBar" class="countdown-bar">
+      <div>
+        <div class="label">Deadline</div>
+        <div class="timer" id="countdownTimer">--d --h --m --s</div>
+      </div>
+      <div>
+        <div class="label">Ifyllt</div>
+        <div style="width:200px">
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+          </div>
+          <div class="progress-text" id="progressText">0%</div>
+        </div>
+      </div>
+    </div>
+    <div class="tabs" id="tippaTabs">
+      <button class="active" onclick="setTippaTab('grupper')">Gruppspel</button>
+      <button onclick="setTippaTab('slutspel')">Slutspel</button>
+      <button onclick="setTippaTab('special')">Specialtips</button>
+    </div>
+    <div id="tippaContent"></div>
+  </div>
+
+  <!-- RESULTAT -->
+  <div class="view" id="view-resultat">
+    <div class="section-title">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      Mina resultat
+    </div>
+    <div id="resultatContent"><div class="loading-overlay"><div class="spinner"></div> Laddar...</div></div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="view" id="view-leaderboard">
+    <div class="section-title">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 7 17 7"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+      Topplista
+    </div>
+    <div id="leaderboardContent"><div class="loading-overlay"><div class="spinner"></div> Laddar...</div></div>
+  </div>
+
+  <!-- ALLA SVAR -->
+  <div class="view" id="view-alla">
+    <div class="section-title">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Alla svar
+    </div>
+    <div id="allaContent"><div class="loading-overlay"><div class="spinner"></div> Laddar...</div></div>
+  </div>
+
+  <!-- PROJEKTION -->
+  <div class="view" id="view-projektion">
+    <div class="section-title">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Projektion
+    </div>
+    <div id="projektionContent"><div class="loading-overlay"><div class="spinner"></div> Laddar...</div></div>
+  </div>
+
+  <!-- SIDEBETS -->
+  <div class="view" id="view-sidebets">
+    <div class="section-title">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Sidebets
+    </div>
+    <div id="sidebetsContent"><div class="loading-overlay"><div class="spinner"></div> Laddar...</div></div>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="view" id="view-admin">
+    <div class="section-title">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      Admin
+    </div>
+    <div class="tabs" id="adminTabs">
+      <button class="active" onclick="setAdminTab('results-group')">Rätta gruppspel</button>
+      <button onclick="setAdminTab('results-knockout')">Rätta slutspel</button>
+      <button onclick="setAdminTab('results-special')">Rätta special</button>
+      <button onclick="setAdminTab('users')">Användare</button>
+      <button onclick="setAdminTab('settings')">Inställningar</button>
+      <button onclick="setAdminTab('snapshots')">Snapshots</button>
+    </div>
+    <div id="adminContent"></div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- JAVASCRIPT -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<script>
+// ══════════════════════════════════════════════════════════════════════
+// GLOBAL STATE
+// ══════════════════════════════════════════════════════════════════════
+
+let T = null;          // tournament data (cached)
+let currentUser = null;
+let settings = {};
+let predictions = {};  // user's predictions
+let saveTimeout = null;
+let isDirty = false;
+let currentView = 'landing';
+let tippaTab = 'grupper';
+let adminTab = 'results-group';
+let adminResults = {};
+
+// ══════════════════════════════════════════════════════════════════════
+// THEME
+// ══════════════════════════════════════════════════════════════════════
+
+function initTheme() {
+  const saved = localStorage.getItem('vm-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  updateThemeIcon();
+}
+function toggleTheme() {
+  document.documentElement.classList.toggle('dark');
+  localStorage.setItem('vm-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  updateThemeIcon();
+}
+function updateThemeIcon() {
+  const dark = document.documentElement.classList.contains('dark');
+  document.getElementById('themeIcon').innerHTML = dark
+    ? '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'
+    : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════════════════
+
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type;
+  setTimeout(() => t.classList.add('show'), 10);
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// API HELPER
+// ══════════════════════════════════════════════════════════════════════
+
+async function api(url, opts = {}) {
+  const res = await fetch(url, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...opts.headers },
+    ...opts
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Något gick fel');
+  return data;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════════════════════
+
+async function checkAuth() {
+  try {
+    const { user } = await api('/api/auth/me');
+    currentUser = user;
+  } catch { currentUser = null; }
+  updateNav();
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  try {
+    const { user } = await api('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: document.getElementById('loginEmail').value,
+        password: document.getElementById('loginPassword').value
+      })
+    });
+    currentUser = user;
+    updateNav();
+    navigate('tippa');
+    showToast('Inloggad!', 'success');
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  }
+}
+
+async function handleRegister(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('registerError');
+  errEl.style.display = 'none';
+  try {
+    const { user } = await api('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: document.getElementById('regName').value,
+        email: document.getElementById('regEmail').value,
+        password: document.getElementById('regPassword').value
+      })
+    });
+    currentUser = user;
+    updateNav();
+    navigate('tippa');
+    showToast('Registrerad och inloggad!', 'success');
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  }
+}
+
+async function logout() {
+  await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
+  currentUser = null;
+  predictions = {};
+  updateNav();
+  navigate('landing');
+  showToast('Utloggad');
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════════════════
+
+function navigate(view) {
+  window.location.hash = view;
+}
+
+function handleHash() {
+  const hash = (window.location.hash || '#landing').slice(1);
+  const authed = ['tippa','resultat','leaderboard','alla','projektion','sidebets','admin'];
+  if (authed.includes(hash) && !currentUser) {
+    navigate('login');
+    return;
+  }
+  if (hash === 'admin' && !currentUser?.is_admin) {
+    navigate('tippa');
+    return;
+  }
+  showView(hash);
+}
+
+function showView(view) {
+  currentView = view;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const el = document.getElementById('view-' + view);
+  if (el) el.classList.add('active');
+  else {
+    document.getElementById('view-landing').classList.add('active');
+    currentView = 'landing';
+  }
+  updateNav();
+  // Trigger view-specific loading
+  if (view === 'tippa') loadTippa();
+  if (view === 'resultat') loadResultat();
+  if (view === 'leaderboard') loadLeaderboard();
+  if (view === 'alla') loadAlla();
+  if (view === 'projektion') loadProjektion();
+  if (view === 'sidebets') loadSidebets();
+  if (view === 'admin') loadAdmin();
+}
+
+function updateNav() {
+  const loggedIn = !!currentUser;
+  document.getElementById('logoutBtn').style.display = loggedIn ? '' : 'none';
+  document.getElementById('userInfo').textContent = loggedIn ? currentUser.name : '';
+
+  // Landing buttons
+  const lb = document.getElementById('landingButtons');
+  if (lb) {
+    lb.innerHTML = loggedIn
+      ? '<button class="btn btn-primary" onclick="navigate(\'tippa\')">Tippa</button><button class="btn btn-secondary" onclick="navigate(\'leaderboard\')">Topplista</button>'
+      : '<button class="btn btn-primary" onclick="navigate(\'login\')">Logga in</button><button class="btn btn-secondary" onclick="navigate(\'register\')">Registrera</button>';
+  }
+
+  // Desktop nav
+  const links = document.getElementById('navLinks');
+  if (loggedIn) {
+    let html = '';
+    const items = [
+      ['tippa','Tippa'],['resultat','Resultat'],['leaderboard','Topplista'],
+      ['alla','Alla svar'],['projektion','Projektion'],['sidebets','Sidebets']
+    ];
+    if (currentUser?.is_admin) items.push(['admin','Admin']);
+    for (const [id, label] of items) {
+      html += `<a href="#${id}" class="${currentView===id?'active':''}">${label}</a>`;
+    }
+    links.innerHTML = html;
+  } else {
+    links.innerHTML = '<a href="#login" class="' + (currentView==='login'?'active':'') + '">Logga in</a><a href="#register" class="' + (currentView==='register'?'active':'') + '">Registrera</a>';
+  }
+
+  // Bottom nav
+  const bn = document.getElementById('bottomNav');
+  if (loggedIn) {
+    const items = [
+      ['tippa','Tippa','<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>'],
+      ['resultat','Resultat','<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'],
+      ['leaderboard','Tabell','<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 7 17 7"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>'],
+      ['alla','Alla','<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>'],
+      ['sidebets','Bets','<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>']
+    ];
+    if (currentUser?.is_admin) items.push(['admin','Admin','<circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>']);
+    bn.innerHTML = items.map(([id,label,icon]) =>
+      `<a href="#${id}" class="${currentView===id?'active':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${icon}</svg>${label}</a>`
+    ).join('');
+  } else { bn.innerHTML = ''; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// LOAD TOURNAMENT DATA
+// ══════════════════════════════════════════════════════════════════════
+
+async function loadTournament() {
+  if (T) return T;
+  T = await api('/api/tournament');
+  return T;
+}
+
+async function loadSettings() {
+  settings = await api('/api/settings');
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// DATE FORMATTING
+// ══════════════════════════════════════════════════════════════════════
+
+function parseMatchDate(dateStr, timeET) {
+  // dateStr = "2026-06-11", timeET = "15:00" (US Eastern Time)
+  const [h, m] = timeET.split(':').map(Number);
+  const d = new Date(dateStr + 'T' + timeET + ':00-04:00'); // EDT = UTC-4
+  return d;
+}
+
+function formatDate(d) {
+  const months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+  return d.getDate() + ' ' + months[d.getMonth()];
+}
+function formatTime(d) {
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+function formatDateTime(d) {
+  return formatDate(d) + ' ' + formatTime(d);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// COUNTDOWN
+// ══════════════════════════════════════════════════════════════════════
+
+let countdownInterval = null;
+function startCountdown() {
+  if (countdownInterval) clearInterval(countdownInterval);
+  const bar = document.getElementById('countdownBar');
+  const timer = document.getElementById('countdownTimer');
+  const deadline = settings.deadline ? new Date(settings.deadline) : new Date('2026-06-11T19:00:00Z');
+
+  function update() {
+    const now = new Date();
+    const diff = deadline - now;
+    if (diff <= 0 || settings.locked === '1') {
+      timer.innerHTML = 'TIPSET ÄR LÅST';
+      bar.classList.add('locked');
+      clearInterval(countdownInterval);
+      return;
+    }
+    const days = Math.floor(diff / 86400000);
+    const hrs = Math.floor((diff % 86400000) / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+    timer.innerHTML = `<span>${days}</span>d <span>${hrs}</span>h <span>${mins}</span>m <span>${secs}</span>s`;
+  }
+  update();
+  countdownInterval = setInterval(update, 1000);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// PREDICTION HELPERS
+// ══════════════════════════════════════════════════════════════════════
+
+function getPred() {
+  return predictions || {};
+}
+function setPred(key, val) {
+  if (!predictions) predictions = {};
+  predictions[key] = val;
+  markDirty();
+}
+function setMatch(matchNum, scores) {
+  if (!predictions.matches) predictions.matches = {};
+  predictions.matches[String(matchNum)] = scores;
+  markDirty();
+}
+function setPlacement(group, arr) {
+  if (!predictions.placements) predictions.placements = {};
+  predictions.placements[group] = arr;
+  markDirty();
+}
+function setBracketMatch(matchNum, data) {
+  if (!predictions.bracket) predictions.bracket = {};
+  predictions.bracket[String(matchNum)] = data;
+  markDirty();
+}
+
+function markDirty() {
+  isDirty = true;
+  const bar = document.getElementById('saveBar');
+  const status = document.getElementById('saveStatus');
+  bar.classList.add('visible');
+  status.textContent = 'Osparade ändringar...';
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => savePredictions(false), 3000);
+}
+
+async function savePredictions(manual) {
+  if (!currentUser) return;
+  const bar = document.getElementById('saveBar');
+  const status = document.getElementById('saveStatus');
+  status.textContent = 'Sparar...';
+  try {
+    await api('/api/predictions', {
+      method: 'POST',
+      body: JSON.stringify({ data: predictions })
+    });
+    isDirty = false;
+    status.textContent = 'Sparat!';
+    setTimeout(() => { if (!isDirty) bar.classList.remove('visible'); }, 1500);
+    if (manual) showToast('Sparat!', 'success');
+  } catch (err) {
+    status.textContent = 'Kunde inte spara';
+    showToast(err.message, 'error');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// GROUP STANDINGS COMPUTATION
+// ══════════════════════════════════════════════════════════════════════
+
+function computeGroupStandings(groupLetter) {
+  const teams = T.groups[groupLetter];
+  const matches = T.groupMatches.filter(m => m[5] === groupLetter);
+  const stats = {};
+  teams.forEach(t => { stats[t] = { team: t, pts: 0, gf: 0, ga: 0, gd: 0, w: 0, d: 0, l: 0, played: 0 }; });
+
+  const pMatches = predictions.matches || {};
+  for (const m of matches) {
+    const mn = String(m[0]);
+    const score = pMatches[mn];
+    if (!score || score[0] == null || score[1] == null || score[0] === '' || score[1] === '') continue;
+    const h = parseInt(score[0]), a = parseInt(score[1]);
+    if (isNaN(h) || isNaN(a)) continue;
+    const home = m[3], away = m[4];
+    if (!stats[home] || !stats[away]) continue;
+    stats[home].gf += h; stats[home].ga += a; stats[home].gd += (h - a);
+    stats[away].gf += a; stats[away].ga += h; stats[away].gd += (a - h);
+    stats[home].played++; stats[away].played++;
+    if (h > a) { stats[home].pts += 3; stats[home].w++; stats[away].l++; }
+    else if (h === a) { stats[home].pts += 1; stats[away].pts += 1; stats[home].d++; stats[away].d++; }
+    else { stats[away].pts += 3; stats[away].w++; stats[home].l++; }
+  }
+
+  const sorted = Object.values(stats).sort((a, b) =>
+    b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.team.localeCompare(b.team)
+  );
+  return sorted;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// BEST THIRD PLACE COMPUTATION
+// ══════════════════════════════════════════════════════════════════════
+
+function computeBestThirds() {
+  const thirds = [];
+  const groups = Object.keys(T.groups);
+  for (const g of groups) {
+    const placements = predictions.placements?.[g];
+    if (placements && placements[2]) {
+      // Get the third-placed team's stats
+      const standings = computeGroupStandings(g);
+      const thirdTeam = placements[2];
+      const stat = standings.find(s => s.team === thirdTeam);
+      if (stat) {
+        thirds.push({ group: g, team: thirdTeam, pts: stat.pts, gd: stat.gd, gf: stat.gf });
+      }
+    }
+  }
+  // Rank thirds
+  thirds.sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
+  return thirds;
+}
+
+function getQualifyingThirds() {
+  const thirds = computeBestThirds();
+  return thirds.slice(0, 8); // Top 8 thirds qualify
+}
+
+function getThirdPlaceTeamForSlot(slot) {
+  // slot like "3ABCDF" - pick a qualifying third from those groups
+  const possibleGroups = slot.slice(1).split('');
+  const qualifying = getQualifyingThirds();
+  // Find a qualifying third from the possible groups that hasn't been assigned yet
+  // Simple approach: just find first match
+  for (const q of qualifying) {
+    if (possibleGroups.includes(q.group)) {
+      return q.team;
+    }
+  }
+  return null;
+}
+
+// More sophisticated allocation: assign all 8 third-place slots at once
+function allocateThirdPlaceTeams() {
+  const qualifying = getQualifyingThirds();
+  const qualGroups = qualifying.map(q => q.group).sort();
+  const qualGroupStr = qualGroups.join('');
+
+  // The R32 matches with third-place slots, in match number order
+  const thirdSlots = T.r32Matches.filter(m => String(m[3]).startsWith('3') || String(m[4]).startsWith('3'));
+  const allocation = {};
+
+  // For each slot, pick from the qualifying thirds
+  const assigned = new Set();
+  for (const m of thirdSlots) {
+    for (const side of [3, 4]) {
+      const slotStr = String(m[side]);
+      if (!slotStr.startsWith('3')) continue;
+      const possibleGroups = slotStr.slice(1).split('');
+      for (const q of qualifying) {
+        if (possibleGroups.includes(q.group) && !assigned.has(q.group)) {
+          allocation[String(m[0]) + '_' + (side === 3 ? 'home' : 'away')] = q.team;
+          assigned.add(q.group);
+          break;
+        }
+      }
+    }
+  }
+  return allocation;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// BRACKET TEAM RESOLUTION
+// ══════════════════════════════════════════════════════════════════════
+
+function resolveR32Team(slot, matchNum, side) {
+  if (!slot) return null;
+  const s = String(slot);
+  if (s.startsWith('3')) {
+    // Best third place
+    const alloc = allocateThirdPlaceTeams();
+    return alloc[matchNum + '_' + side] || null;
+  }
+  // e.g., "1A" = 1st in group A, "2B" = 2nd in group B
+  const pos = parseInt(s[0]) - 1; // 0-indexed
+  const group = s[1];
+  const placements = predictions.placements?.[group];
+  if (placements && placements[pos]) return placements[pos];
+  return null;
+}
+
+function resolveKnockoutTeam(source, matchNum, side) {
+  if (!source) return null;
+  const s = String(source);
+  // W73 = winner of match 73, L101 = loser of match 101
+  const isWinner = s[0] === 'W';
+  const isLoser = s[0] === 'L';
+  const srcMatch = s.slice(1);
+  const bracket = predictions.bracket || {};
+  const b = bracket[srcMatch];
+  if (!b || !b.winner) return null;
+  if (isWinner) return b.winner;
+  if (isLoser) {
+    return b.home === b.winner ? b.away : b.home;
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// PROGRESS COMPUTATION
+// ══════════════════════════════════════════════════════════════════════
+
+function computeProgress() {
+  if (!T) return 0;
+  let filled = 0, total = 0;
+
+  // Group matches (72)
+  total += 72;
+  const pm = predictions.matches || {};
+  for (const m of T.groupMatches) {
+    const s = pm[String(m[0])];
+    if (s && s[0] !== '' && s[0] != null && s[1] !== '' && s[1] != null) filled++;
+  }
+
+  // Placements (12 groups x 4)
+  total += 48;
+  const pl = predictions.placements || {};
+  for (const g of Object.keys(T.groups)) {
+    const arr = pl[g] || [];
+    for (let i = 0; i < 4; i++) { if (arr[i]) filled++; }
+  }
+
+  // Bracket winners (R32=16, R16=8, QF=4, SF=2, Bronze=1, Final=1 = 32)
+  total += 32;
+  const br = predictions.bracket || {};
+  const knockoutMatches = [...T.r32Matches, ...T.r16Matches, ...T.qfMatches, ...T.sfMatches,
+    [T.bronzeMatch[0]], [T.finalMatch[0]]];
+  for (const km of knockoutMatches) {
+    const mn = String(km[0]);
+    if (br[mn]?.winner) filled++;
+  }
+
+  // Special (firstScorer, topScorers x3, firstRedCard, firstPenalty = 6)
+  total += 6;
+  if (predictions.firstScorer) filled++;
+  if (predictions.firstRedCard) filled++;
+  if (predictions.firstPenalty) filled++;
+  const ts = predictions.topScorers || [];
+  for (let i = 0; i < 3; i++) { if (ts[i]) filled++; }
+
+  return total > 0 ? Math.round((filled / total) * 100) : 0;
+}
+
+function updateProgress() {
+  const pct = computeProgress();
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = pct + '% klart';
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// TIPPA VIEW
+// ══════════════════════════════════════════════════════════════════════
+
+async function loadTippa() {
+  await loadTournament();
+  await loadSettings();
+  startCountdown();
+
+  // Load predictions
+  try {
+    const data = await api('/api/predictions');
+    if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+      predictions = typeof data === 'string' ? JSON.parse(data) : data;
+    }
+  } catch {}
+
+  renderTippaTab();
+  updateProgress();
+}
+
+function setTippaTab(tab) {
+  tippaTab = tab;
+  document.querySelectorAll('#tippaTabs button').forEach((b, i) => {
+    b.classList.toggle('active', ['grupper','slutspel','special'][i] === tab);
+  });
+  renderTippaTab();
+}
+
+function renderTippaTab() {
+  const c = document.getElementById('tippaContent');
+  if (tippaTab === 'grupper') renderGrupper(c);
+  else if (tippaTab === 'slutspel') renderSlutspel(c);
+  else if (tippaTab === 'special') renderSpecial(c);
+}
+
+// ─── GRUPPER ───
+
+function renderGrupper(container) {
+  const groups = Object.keys(T.groups);
+  let html = '<div class="groups-grid">';
+  for (const g of groups) {
+    html += renderGroupCard(g);
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function renderGroupCard(g) {
+  const teams = T.groups[g];
+  const matches = T.groupMatches.filter(m => m[5] === g);
+  const pm = predictions.matches || {};
+  const standings = computeGroupStandings(g);
+  const placements = predictions.placements?.[g] || [];
+
+  // Check if all 6 matches are filled
+  let matchesFilled = 0;
+  for (const m of matches) {
+    const s = pm[String(m[0])];
+    if (s && s[0] !== '' && s[0] != null && s[1] !== '' && s[1] != null) matchesFilled++;
+  }
+  const allFilled = matchesFilled === 6;
+  const placementsFilled = placements.length === 4 && placements.every(Boolean);
+  const checkIcon = (allFilled && placementsFilled) ? ' &#10003;' : '';
+
+  let html = `<div class="group-card">
+    <div class="group-card-header">
+      <span>Grupp ${g}</span>
+      <span class="check-icon">${checkIcon}</span>
+    </div>
+    <div class="group-card-body">`;
+
+  // Matches
+  for (const m of matches) {
+    const mn = String(m[0]);
+    const d = parseMatchDate(m[1], m[2]);
+    const score = pm[mn] || ['', ''];
+    html += `<div class="match-row">
+      <span class="date">${formatDate(d)} ${formatTime(d)}</span>
+      <span class="team">${m[3]}</span>
+      <div class="score-inputs">
+        <input type="number" class="score-input" min="0" max="20" value="${score[0]!==''&&score[0]!=null?score[0]:''}"
+          onchange="onMatchScore('${mn}', 0, this.value, '${g}')" onfocus="this.select()">
+        <span class="score-dash">-</span>
+        <input type="number" class="score-input" min="0" max="20" value="${score[1]!==''&&score[1]!=null?score[1]:''}"
+          onchange="onMatchScore('${mn}', 1, this.value, '${g}')" onfocus="this.select()">
+      </div>
+      <span class="team away">${m[4]}</span>
+    </div>`;
+  }
+
+  // Standings table
+  html += `<table class="group-table" id="groupTable_${g}">
+    <tr><th>Lag</th><th>S</th><th>V</th><th>O</th><th>F</th><th>GM</th><th>IM</th><th>MS</th><th>P</th></tr>`;
+  standings.forEach((s, i) => {
+    const cls = i < 2 ? 'qualified' : (i === 2 ? 'third-best' : '');
+    html += `<tr class="${cls}">
+      <td>${s.team}</td>
+      <td>${s.played}</td><td>${s.w}</td><td>${s.d}</td><td>${s.l}</td>
+      <td>${s.gf}</td><td>${s.ga}</td><td>${s.gd>0?'+':''}${s.gd}</td>
+      <td><strong>${s.pts}</strong></td>
+    </tr>`;
+  });
+  html += '</table>';
+
+  // Placement overrides
+  const computedOrder = standings.map(s => s.team);
+  // Use computed order as default if no placements set
+  const currentPlacements = placements.length === 4 ? placements : computedOrder;
+
+  html += `<div class="placement-section">
+    <h4>Slutplacering i gruppen</h4>`;
+  for (let i = 0; i < 4; i++) {
+    const posLabel = ['1:a','2:a','3:a','4:a'][i];
+    const posClass = i < 2 ? 'gold-pos' : '';
+    html += `<div class="placement-row">
+      <span class="pos ${posClass}">${i+1}</span>
+      <select onchange="onPlacementChange('${g}', ${i}, this.value)" id="place_${g}_${i}">
+        <option value="">Välj...</option>`;
+    for (const t of teams) {
+      const sel = currentPlacements[i] === t ? 'selected' : '';
+      html += `<option value="${t}" ${sel}>${t}</option>`;
+    }
+    html += `</select></div>`;
+  }
+  html += '</div></div></div>';
+  return html;
+}
+
+function onMatchScore(matchNum, idx, value, group) {
+  if (!predictions.matches) predictions.matches = {};
+  if (!predictions.matches[matchNum]) predictions.matches[matchNum] = ['', ''];
+  predictions.matches[matchNum][idx] = value === '' ? '' : parseInt(value);
+  markDirty();
+
+  // Recompute standings for this group
+  const standings = computeGroupStandings(group);
+  const table = document.getElementById('groupTable_' + group);
+  if (table) {
+    const rows = table.querySelectorAll('tr');
+    standings.forEach((s, i) => {
+      const row = rows[i + 1]; // skip header
+      if (!row) return;
+      row.className = i < 2 ? 'qualified' : (i === 2 ? 'third-best' : '');
+      const cells = row.querySelectorAll('td');
+      cells[0].textContent = s.team;
+      cells[1].textContent = s.played;
+      cells[2].textContent = s.w;
+      cells[3].textContent = s.d;
+      cells[4].textContent = s.l;
+      cells[5].textContent = s.gf;
+      cells[6].textContent = s.ga;
+      cells[7].textContent = (s.gd > 0 ? '+' : '') + s.gd;
+      cells[8].innerHTML = '<strong>' + s.pts + '</strong>';
+    });
+  }
+
+  // Auto-set placements from computed standings if user hasn't manually set them
+  const computedOrder = standings.map(s => s.team);
+  if (!predictions.placements) predictions.placements = {};
+  // Only auto-set if all 6 matches in this group have scores
+  const matches = T.groupMatches.filter(m => m[5] === group);
+  let allFilled = true;
+  for (const m of matches) {
+    const s = predictions.matches[String(m[0])];
+    if (!s || s[0] === '' || s[0] == null || s[1] === '' || s[1] == null) { allFilled = false; break; }
+  }
+  if (allFilled) {
+    predictions.placements[group] = computedOrder;
+    // Update dropdowns
+    for (let i = 0; i < 4; i++) {
+      const sel = document.getElementById('place_' + group + '_' + i);
+      if (sel) sel.value = computedOrder[i];
+    }
+  }
+  updateProgress();
+}
+
+function onPlacementChange(group, pos, team) {
+  if (!predictions.placements) predictions.placements = {};
+  if (!predictions.placements[group]) {
+    const standings = computeGroupStandings(group);
+    predictions.placements[group] = standings.map(s => s.team);
+  }
+  const arr = [...predictions.placements[group]];
+
+  // If this team is already placed elsewhere, swap
+  const existingIdx = arr.indexOf(team);
+  if (existingIdx !== -1 && existingIdx !== pos) {
+    arr[existingIdx] = arr[pos];
+  }
+  arr[pos] = team;
+  predictions.placements[group] = arr;
+
+  // Update all dropdowns for this group
+  for (let i = 0; i < 4; i++) {
+    const sel = document.getElementById('place_' + group + '_' + i);
+    if (sel) sel.value = arr[i] || '';
+  }
+
+  markDirty();
+  updateProgress();
+
+  // If we're on slutspel tab, we'd need to refresh. For now, bracket resolves dynamically.
+}
+
+// ─── SLUTSPEL (KNOCKOUT) ───
+
+function renderSlutspel(container) {
+  let html = '';
+
+  // R32
+  html += '<div class="knockout-round"><h3>32-delsfinal</h3><div class="knockout-matches">';
+  for (const m of T.r32Matches) {
+    html += renderKnockoutMatch(m, 'r32');
+  }
+  html += '</div></div>';
+
+  // R16
+  html += '<div class="knockout-round"><h3>16-delsfinal</h3><div class="knockout-matches">';
+  for (const m of T.r16Matches) {
+    html += renderKnockoutMatch(m, 'r16');
+  }
+  html += '</div></div>';
+
+  // QF
+  html += '<div class="knockout-round"><h3>Kvartsfinal</h3><div class="knockout-matches">';
+  for (const m of T.qfMatches) {
+    html += renderKnockoutMatch(m, 'qf');
+  }
+  html += '</div></div>';
+
+  // SF
+  html += '<div class="knockout-round"><h3>Semifinal</h3><div class="knockout-matches">';
+  for (const m of T.sfMatches) {
+    html += renderKnockoutMatch(m, 'sf');
+  }
+  html += '</div></div>';
+
+  // Bronze
+  html += '<div class="knockout-round"><h3>Bronsmatch</h3><div class="knockout-matches">';
+  html += renderKnockoutMatch(T.bronzeMatch, 'bronze');
+  html += '</div></div>';
+
+  // Final
+  html += '<div class="knockout-round"><h3>Final</h3><div class="knockout-matches">';
+  html += renderKnockoutMatch(T.finalMatch, 'final');
+  html += '</div></div>';
+
+  container.innerHTML = html;
+}
+
+function renderKnockoutMatch(m, round) {
+  const mn = String(m[0]);
+  const d = parseMatchDate(m[1], m[2]);
+  let homeTeam = null, awayTeam = null;
+  let homeSlot = m[3], awaySlot = m[4];
+  let homeLabel = String(m[3] || ''), awayLabel = String(m[4] || '');
+
+  if (round === 'r32') {
+    homeTeam = resolveR32Team(homeSlot, mn, 'home');
+    awayTeam = resolveR32Team(awaySlot, mn, 'away');
+    // Format labels
+    homeLabel = formatSlotLabel(homeSlot);
+    awayLabel = formatSlotLabel(awaySlot);
+  } else {
+    homeTeam = resolveKnockoutTeam(homeSlot, mn, 'home');
+    awayTeam = resolveKnockoutTeam(awaySlot, mn, 'away');
+    homeLabel = formatSourceLabel(homeSlot);
+    awayLabel = formatSourceLabel(awaySlot);
+  }
+
+  const bracket = predictions.bracket || {};
+  const current = bracket[mn] || {};
+  const winner = current.winner;
+
+  // Update bracket home/away silently
+  if (homeTeam || awayTeam) {
+    if (!predictions.bracket) predictions.bracket = {};
+    if (!predictions.bracket[mn]) predictions.bracket[mn] = {};
+    predictions.bracket[mn].home = homeTeam;
+    predictions.bracket[mn].away = awayTeam;
+  }
+
+  const homeEmpty = !homeTeam;
+  const awayEmpty = !awayTeam;
+
+  const homeOnclick = homeEmpty ? '' : `selectWinner(&quot;${mn}&quot;,&quot;home&quot;)`;
+  const awayOnclick = awayEmpty ? '' : `selectWinner(&quot;${mn}&quot;,&quot;away&quot;)`;
+  let html = `<div class="knockout-match" data-match="${mn}">
+    <div class="match-label">Match ${mn} &middot; ${formatDate(d)} ${formatTime(d)}</div>
+    <div class="teams">
+      <div class="team-option ${homeEmpty?'empty':''} ${winner===homeTeam&&homeTeam?'selected':''}"
+        onclick="${homeOnclick}" title="${escHtml(homeLabel)}">
+        <span class="name">${homeTeam || homeLabel}</span>
+        ${winner===homeTeam&&homeTeam?'<span class="check">&#10003;</span>':''}
+      </div>
+      <div class="team-option ${awayEmpty?'empty':''} ${winner===awayTeam&&awayTeam?'selected':''}"
+        onclick="${awayOnclick}" title="${escHtml(awayLabel)}">
+        <span class="name">${awayTeam || awayLabel}</span>
+        ${winner===awayTeam&&awayTeam?'<span class="check">&#10003;</span>':''}
+      </div>
+    </div>
+  </div>`;
+  return html;
+}
+
+function formatSlotLabel(slot) {
+  const s = String(slot);
+  if (s.startsWith('3')) {
+    return 'Bästa 3:a (' + s.slice(1).split('').join('/') + ')';
+  }
+  const pos = s[0];
+  const group = s[1];
+  return (pos === '1' ? '1:a' : '2:a') + ' Grupp ' + group;
+}
+
+function formatSourceLabel(source) {
+  const s = String(source);
+  if (s.startsWith('W')) return 'Vinnare match ' + s.slice(1);
+  if (s.startsWith('L')) return 'Förlorare match ' + s.slice(1);
+  return s;
+}
+
+function selectWinner(matchNum, side) {
+  if (!predictions.bracket) predictions.bracket = {};
+  if (!predictions.bracket[matchNum]) predictions.bracket[matchNum] = {};
+  const b = predictions.bracket[matchNum];
+  const winner = side === 'home' ? b.home : b.away;
+  if (!winner) return;
+
+  // Check if winner changed
+  const oldWinner = b.winner;
+  b.winner = winner;
+
+  // Clear downstream picks if winner changed
+  if (oldWinner && oldWinner !== winner) {
+    clearDownstream(matchNum);
+  }
+
+  markDirty();
+  updateProgress();
+
+  // Re-render the entire knockout view to cascade changes
+  renderSlutspel(document.getElementById('tippaContent'));
+}
+
+function clearDownstream(matchNum) {
+  // Find any match that references this match's winner
+  const wRef = 'W' + matchNum;
+  const lRef = 'L' + matchNum;
+  const allMatches = [...T.r16Matches, ...T.qfMatches, ...T.sfMatches,
+    T.bronzeMatch, T.finalMatch];
+
+  for (const m of allMatches) {
+    const mn = String(m[0]);
+    if (String(m[3]) === wRef || String(m[4]) === wRef ||
+        String(m[3]) === lRef || String(m[4]) === lRef) {
+      if (predictions.bracket?.[mn]?.winner) {
+        const oldW = predictions.bracket[mn].winner;
+        delete predictions.bracket[mn].winner;
+        predictions.bracket[mn].home = null;
+        predictions.bracket[mn].away = null;
+        clearDownstream(mn);
+      }
+    }
+  }
+}
+
+// ─── SPECIAL TIPS ───
+
+function renderSpecial(container) {
+  const allTeams = T.allTeams;
+  const ts = predictions.topScorers || ['','',''];
+  const fs = predictions.firstScorer || '';
+  const frc = predictions.firstRedCard || '';
+  const fp = predictions.firstPenalty || '';
+
+  let html = '<div class="special-grid">';
+
+  // First goal scorer
+  html += `<div class="card">
+    <h3>Turneringens första målskytt</h3>
+    <p class="text-muted" style="margin-bottom:10px">Ange spelarens efternamn</p>
+    <div class="form-group">
+      <input type="text" class="form-input" value="${escHtml(fs)}"
+        onchange="predictions.firstScorer=this.value.trim();markDirty();updateProgress()"
+        placeholder="T.ex. Mbappé">
+    </div>
+  </div>`;
+
+  // Top 3 scorers
+  html += `<div class="card">
+    <h3>Skytteliga topp 3</h3>
+    <p class="text-muted" style="margin-bottom:10px">Ange efternamn, rankad 1-3</p>`;
+  for (let i = 0; i < 3; i++) {
+    html += `<div class="form-group">
+      <label>${i+1}:a skyttekung</label>
+      <input type="text" class="form-input" value="${escHtml(ts[i]||'')}"
+        onchange="if(!predictions.topScorers)predictions.topScorers=['','',''];predictions.topScorers[${i}]=this.value.trim();markDirty();updateProgress()"
+        placeholder="Efternamn">
+    </div>`;
+  }
+  html += '</div>';
+
+  // First red card team
+  html += `<div class="card">
+    <h3>Första röda kortet - lag</h3>
+    <p class="text-muted" style="margin-bottom:10px">Vilket lag får turneringens första röda kort?</p>
+    <div class="form-group">
+      <select class="form-input" onchange="predictions.firstRedCard=this.value;markDirty();updateProgress()">
+        <option value="">Välj lag...</option>`;
+  for (const t of allTeams.sort((a,b) => a.localeCompare(b,'sv'))) {
+    html += `<option value="${t}" ${frc===t?'selected':''}>${t}</option>`;
+  }
+  html += `</select></div></div>`;
+
+  // First penalty team
+  html += `<div class="card">
+    <h3>Första straffen - lag</h3>
+    <p class="text-muted" style="margin-bottom:10px">Vilket lag får turneringens första straffspark?</p>
+    <div class="form-group">
+      <select class="form-input" onchange="predictions.firstPenalty=this.value;markDirty();updateProgress()">
+        <option value="">Välj lag...</option>`;
+  for (const t of allTeams.sort((a,b) => a.localeCompare(b,'sv'))) {
+    html += `<option value="${t}" ${fp===t?'selected':''}>${t}</option>`;
+  }
+  html += `</select></div></div>`;
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// RESULTAT VIEW
+// ══════════════════════════════════════════════════════════════════════
+
+async function loadResultat() {
+  const c = document.getElementById('resultatContent');
+  c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Laddar...</div>';
+  try {
+    await loadTournament();
+    const data = await api('/api/results');
+    renderResultat(c, data);
+  } catch (err) {
+    c.innerHTML = '<div class="empty-state">Kunde inte ladda resultat: ' + escHtml(err.message) + '</div>';
+  }
+}
+
+function renderResultat(container, data) {
+  const { actual, prediction, score } = data;
+  const bd = score.breakdown || {};
+
+  let html = '';
+
+  // Summary stats
+  html += '<div class="result-summary">';
+  html += `<div class="stat-card"><div class="val">${score.total}</div><div class="lbl">Totalt</div></div>`;
+
+  const categories = [
+    ['matchSign', 'matchSignBonus', '1X2'],
+    ['matchExact', 'matchExactBonus', 'Exakt'],
+    ['placements', 'placementsBonus', 'Placeringar'],
+    ['r32', 'r32Bonus', 'R32'],
+    ['r16', 'r16Bonus', 'R16'],
+    ['qf', 'qfBonus', 'KF'],
+    ['sf', 'sfBonus', 'SF'],
+    ['finalPlacements', null, 'Final 1-4'],
+    ['topScorers', null, 'Skytteliga'],
+    ['firstScorer', null, 'Första mål'],
+    ['firstRedCard', null, 'Rött kort'],
+    ['firstPenalty', null, 'Straff']
+  ];
+  for (const [key, bonusKey, label] of categories) {
+    const pts = (bd[key] || 0) + (bonusKey ? (bd[bonusKey] || 0) : 0);
+    if (pts > 0 || actual?.matches) {
+      html += `<div class="stat-card"><div class="val">${pts}</div><div class="lbl">${label}</div></div>`;
+    }
+  }
+  html += '</div>';
+
+  // Group-by-group match results
+  if (actual?.matches && prediction?.matches) {
+    for (const g of Object.keys(T.groups)) {
+      const matches = T.groupMatches.filter(m => m[5] === g);
+      html += `<div class="card"><h3>Grupp ${g}</h3>`;
+      for (const m of matches) {
+        const mn = String(m[0]);
+        const p = prediction.matches?.[mn];
+        const a = actual.matches?.[mn];
+        if (!a || a[0] == null) {
+          // No actual result yet
+          const pStr = p ? `${p[0]}-${p[1]}` : '-';
+          html += `<div class="result-match-row pending">
+            <span class="date" style="min-width:60px">${m[3]}</span>
+            <span style="flex:1;text-align:center">Ditt tips: ${pStr}</span>
+            <span class="team away">${m[4]}</span>
+            <span class="pts">-</span>
+          </div>`;
+        } else {
+          const pSign = p ? calcSignLocal(p[0], p[1]) : null;
+          const aSign = calcSignLocal(a[0], a[1]);
+          const signOk = pSign === aSign;
+          const exactOk = p && p[0] === a[0] && p[1] === a[1];
+          const pts = (signOk ? 10 : 0) + (exactOk ? 5 : 0);
+          const cls = exactOk ? 'correct' : (signOk ? 'correct' : 'wrong');
+          html += `<div class="result-match-row ${cls}">
+            <span style="min-width:100px">${m[3]} - ${m[4]}</span>
+            <span style="flex:1;text-align:center">Tips: ${p?p[0]+'-'+p[1]:'-'} | Facit: ${a[0]}-${a[1]}</span>
+            <span class="pts ${pts>0?'positive':'zero'}">${pts>0?'+'+pts:0}p</span>
+          </div>`;
+        }
+      }
+      html += '</div>';
+    }
+  }
+
+  // Placement results
+  if (actual?.placements && prediction?.placements) {
+    html += '<div class="card"><h3>Gruppplaceringar</h3>';
+    for (const g of Object.keys(T.groups)) {
+      const p = prediction.placements?.[g] || [];
+      const a = actual.placements?.[g] || [];
+      if (a.length < 4) continue;
+      html += `<div style="margin-bottom:12px"><strong>Grupp ${g}</strong><br>`;
+      for (let i = 0; i < 4; i++) {
+        const ok = p[i] === a[i];
+        html += `<span style="display:inline-block;padding:2px 8px;margin:2px;border-radius:4px;font-size:12px;background:${ok?'var(--green-bg)':'var(--red-bg)'}">${i+1}. Tips: ${p[i]||'-'} | Facit: ${a[i]}</span> `;
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  // Special tips results
+  html += '<div class="card"><h3>Specialtips</h3>';
+  const specials = [
+    ['firstScorer', 'Första målskytt'],
+    ['firstRedCard', 'Första röda kort (lag)'],
+    ['firstPenalty', 'Första straff (lag)']
+  ];
+  for (const [key, label] of specials) {
+    const p = prediction?.[key] || '-';
+    const a = actual?.[key];
+    if (!a) {
+      html += `<div class="result-match-row pending"><span>${label}: ${p}</span><span class="pts">-</span></div>`;
+    } else {
+      const ok = String(p).toLowerCase().trim() === String(a).toLowerCase().trim();
+      html += `<div class="result-match-row ${ok?'correct':'wrong'}"><span>${label}: Tips: ${p} | Facit: ${a}</span>
+        <span class="pts ${ok?'positive':'zero'}">${ok?'+'+bd[key]+'p':'0p'}</span></div>`;
+    }
+  }
+  // Top scorers
+  const pTs = prediction?.topScorers || [];
+  const aTs = actual?.topScorers || [];
+  if (aTs.length > 0) {
+    for (let i = 0; i < 3; i++) {
+      const p = pTs[i] || '-';
+      const a = aTs[i] || '-';
+      const ok = p && a && p.toLowerCase().trim() === a.toLowerCase().trim();
+      html += `<div class="result-match-row ${ok?'correct':'wrong'}"><span>Skyttekung #${i+1}: Tips: ${p} | Facit: ${a}</span></div>`;
+    }
+  } else {
+    for (let i = 0; i < 3; i++) {
+      html += `<div class="result-match-row pending"><span>Skyttekung #${i+1}: ${pTs[i]||'-'}</span><span class="pts">-</span></div>`;
+    }
+  }
+  html += '</div>';
+
+  if (!actual?.matches || Object.keys(actual.matches).length === 0) {
+    html = '<div class="card"><div class="empty-state">Inga faktiska resultat har lagts in ännu. Dina poäng beräknas när turneringen börjar.</div></div>' + html;
+  }
+
+  container.innerHTML = html;
+}
+
+function calcSignLocal(h, a) {
+  if (h > a) return '1';
+  if (h === a) return 'X';
+  return '2';
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// LEADERBOARD VIEW
+// ══════════════════════════════════════════════════════════════════════
+
+async function loadLeaderboard() {
+  const c = document.getElementById('leaderboardContent');
+  c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Laddar...</div>';
+  try {
+    const data = await api('/api/leaderboard');
+    renderLeaderboard(c, data);
+  } catch (err) {
+    c.innerHTML = '<div class="empty-state">' + escHtml(err.message) + '</div>';
+  }
+}
+
+function renderLeaderboard(container, data) {
+  const { board, prevSnapshot } = data;
+  if (!board || board.length === 0) {
+    container.innerHTML = '<div class="empty-state">Inga deltagare ännu.</div>';
+    return;
+  }
+
+  // Build prev rank map
+  const prevRanks = {};
+  if (prevSnapshot) {
+    const snap = Array.isArray(prevSnapshot) ? prevSnapshot : (prevSnapshot.board || []);
+    snap.forEach((p, i) => { prevRanks[p.name] = i + 1; });
+  }
+
+  let html = '<div class="card" style="overflow-x:auto"><table class="leaderboard-table"><thead><tr>';
+  html += '<th>#</th><th>Namn</th><th>Poäng</th>';
+  if (prevSnapshot) html += '<th>Förändring</th>';
+  html += '</tr></thead><tbody>';
+
+  board.forEach((p, i) => {
+    const rank = i + 1;
+    const rankClass = rank <= 3 ? 'rank-' + rank : '';
+    const prevRank = prevRanks[p.name];
+    let changeHtml = '';
+    if (prevSnapshot && prevRank) {
+      const diff = prevRank - rank;
+      if (diff > 0) changeHtml = `<span class="change-up">&#9650; ${diff}</span>`;
+      else if (diff < 0) changeHtml = `<span class="change-down">&#9660; ${Math.abs(diff)}</span>`;
+      else changeHtml = '<span class="change-same">&mdash;</span>';
+    } else if (prevSnapshot) {
+      changeHtml = '<span class="change-up">NY</span>';
+    }
+
+    html += `<tr class="expandable" onclick="toggleBreakdown(this)">
+      <td class="rank ${rankClass}">${rank}</td>
+      <td class="name-cell">${escHtml(p.name)}</td>
+      <td class="points-cell">${p.points}</td>`;
+    if (prevSnapshot) html += `<td>${changeHtml}</td>`;
+    html += '</tr>';
+
+    // Breakdown row
+    html += `<tr class="breakdown-row"><td colspan="${prevSnapshot?4:3}">
+      <div class="breakdown-content">
+        <div class="breakdown-grid">`;
+    const bdLabels = {
+      matchSign: '1X2', matchExact: 'Exakt resultat', matchSignBonus: '1X2-bonus',
+      matchExactBonus: 'Exakt-bonus', placements: 'Placeringar', placementsBonus: 'Placeringsbonus',
+      r32: 'R32-lag', r32Bonus: 'R32-bonus', r16: 'R16-lag', r16Bonus: 'R16-bonus',
+      qf: 'KF-lag', qfBonus: 'KF-bonus', sf: 'SF-lag', sfBonus: 'SF-bonus',
+      finalPlacements: 'Final 1-4', topScorers: 'Skytteliga',
+      firstScorer: 'Första mål', firstRedCard: 'Rött kort', firstPenalty: 'Straff'
+    };
+    const bd = p.breakdown || {};
+    for (const [key, label] of Object.entries(bdLabels)) {
+      const val = bd[key] || 0;
+      if (val > 0) {
+        html += `<div class="breakdown-item"><span class="label">${label}</span><span class="value">${val}p</span></div>`;
+      }
+    }
+    if (Object.values(bd).every(v => !v)) {
+      html += '<div class="breakdown-item"><span class="label">Inga poäng ännu</span><span class="value">0p</span></div>';
+    }
+    html += '</div></div></td></tr>';
+  });
+
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+}
+
+function toggleBreakdown(row) {
+  const next = row.nextElementSibling;
+  if (next && next.classList.contains('breakdown-row')) {
+    const content = next.querySelector('.breakdown-content');
+    content.classList.toggle('open');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// ALLA SVAR VIEW
+// ══════════════════════════════════════════════════════════════════════
+
+let allaData = null;
+let allaSelectedIdx = 0;
+
+async function loadAlla() {
+  const c = document.getElementById('allaContent');
+  c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Laddar...</div>';
+  try {
+    await loadTournament();
+    allaData = await api('/api/allPredictions');
+    allaSelectedIdx = 0;
+    renderAlla(c);
+  } catch (err) {
+    c.innerHTML = '<div class="empty-state">' + escHtml(err.message) + '</div>';
+  }
+}
+
+function renderAlla(container) {
+  if (!allaData?.participants || allaData.participants.length === 0) {
+    container.innerHTML = '<div class="empty-state">Inga svar att visa.</div>';
+    return;
+  }
+
+  let html = '<div class="participant-tabs">';
+  allaData.participants.forEach((p, i) => {
+    html += `<button class="${i===allaSelectedIdx?'active':''}" onclick="allaSelectedIdx=${i};renderAlla(document.getElementById('allaContent'))">${escHtml(p.name)}</button>`;
+  });
+  html += '</div>';
+
+  const p = allaData.participants[allaSelectedIdx];
+  const pred = typeof p.data === 'string' ? JSON.parse(p.data) : (p.data || {});
+
+  // Group predictions
+  for (const g of Object.keys(T.groups)) {
+    const matches = T.groupMatches.filter(m => m[5] === g);
+    const placements = pred.placements?.[g] || [];
+    html += `<div class="card"><h3>Grupp ${g}</h3>`;
+    for (const m of matches) {
+      const mn = String(m[0]);
+      const s = pred.matches?.[mn];
+      html += `<div class="match-row" style="border:none;padding:3px 0">
+        <span class="team">${m[3]}</span>
+        <span style="font-weight:700;padding:0 8px">${s?s[0]+' - '+s[1]:'-'}</span>
+        <span class="team away">${m[4]}</span>
+      </div>`;
+    }
+    if (placements.length > 0) {
+      html += '<div style="margin-top:8px;font-size:12px;color:var(--text3)">Placering: ';
+      placements.forEach((t, i) => { html += `${i+1}. ${t||'?'} `; });
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  // Bracket
+  const bracket = pred.bracket || {};
+  const rounds = [
+    ['32-delsfinal', T.r32Matches],
+    ['16-delsfinal', T.r16Matches],
+    ['Kvartsfinal', T.qfMatches],
+    ['Semifinal', T.sfMatches],
+    ['Bronsmatch', [T.bronzeMatch]],
+    ['Final', [T.finalMatch]]
+  ];
+  for (const [label, matches] of rounds) {
+    html += `<div class="card"><h3>${label}</h3>`;
+    for (const m of matches) {
+      const mn = String(m[0]);
+      const b = bracket[mn] || {};
+      html += `<div style="padding:4px 0;font-size:13px">
+        Match ${mn}: ${b.home||'?'} vs ${b.away||'?'}
+        ${b.winner ? '<strong style="color:var(--accent)"> &#10132; ' + b.winner + '</strong>' : ''}
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  // Special
+  html += '<div class="card"><h3>Specialtips</h3>';
+  html += `<div style="font-size:13px">
+    <p>Första målskytt: <strong>${escHtml(pred.firstScorer||'-')}</strong></p>
+    <p>Skytteliga: ${(pred.topScorers||[]).map((s,i)=>`${i+1}. ${escHtml(s||'-')}`).join(', ')}</p>
+    <p>Första röda kort: <strong>${escHtml(pred.firstRedCard||'-')}</strong></p>
+    <p>Första straff: <strong>${escHtml(pred.firstPenalty||'-')}</strong></p>
+  </div></div>`;
+
+  container.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// PROJEKTION VIEW
+// ══════════════════════════════════════════════════════════════════════
+
+let projectionData = null;
+let projHypothetical = {};
+
+async function loadProjektion() {
+  const c = document.getElementById('projektionContent');
+  c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Laddar...</div>';
+  try {
+    await loadTournament();
+    projectionData = await api('/api/projection');
+    projHypothetical = JSON.parse(JSON.stringify(projectionData.actual || {}));
+    renderProjektion(c);
+  } catch (err) {
+    c.innerHTML = '<div class="empty-state">' + escHtml(err.message) + '</div>';
+  }
+}
+
+function renderProjektion(container) {
+  if (!projectionData) {
+    container.innerHTML = '<div class="empty-state">Kunde inte ladda projektionsdata.</div>';
+    return;
+  }
+
+  let html = '<div class="card"><p class="text-muted">Ange hypotetiska resultat för matcher som inte rättats ännu och se hur det påverkar ställningen.</p></div>';
+
+  // Show matches without results
+  const actual = projectionData.actual || {};
+  const actualMatches = actual.matches || {};
+
+  html += '<div class="card"><h3>Hypotetiska resultat</h3>';
+  let hasUnresolved = false;
+  for (const g of Object.keys(T.groups)) {
+    const matches = T.groupMatches.filter(m => m[5] === g);
+    let groupHtml = '';
+    for (const m of matches) {
+      const mn = String(m[0]);
+      if (actualMatches[mn] && actualMatches[mn][0] != null) continue;
+      hasUnresolved = true;
+      const hyp = projHypothetical.matches?.[mn] || ['',''];
+      groupHtml += `<div class="match-row">
+        <span class="team">${m[3]}</span>
+        <div class="score-inputs">
+          <input type="number" class="score-input" min="0" max="20" value="${hyp[0]!==''&&hyp[0]!=null?hyp[0]:''}"
+            onchange="onProjScore('${mn}',0,this.value)">
+          <span class="score-dash">-</span>
+          <input type="number" class="score-input" min="0" max="20" value="${hyp[1]!==''&&hyp[1]!=null?hyp[1]:''}"
+            onchange="onProjScore('${mn}',1,this.value)">
+        </div>
+        <span class="team away">${m[4]}</span>
+      </div>`;
+    }
+    if (groupHtml) {
+      html += `<h4 style="margin-top:10px;font-size:13px;color:var(--text3)">Grupp ${g}</h4>` + groupHtml;
+    }
+  }
+  if (!hasUnresolved) {
+    html += '<p class="text-muted">Alla gruppspelsmatcher är rättade.</p>';
+  }
+  html += '<button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="calcProjection()">Beräkna projektion</button>';
+  html += '</div>';
+
+  html += '<div id="projectionResults"></div>';
+  container.innerHTML = html;
+}
+
+function onProjScore(matchNum, idx, value) {
+  if (!projHypothetical.matches) projHypothetical.matches = {};
+  if (!projHypothetical.matches[matchNum]) projHypothetical.matches[matchNum] = ['',''];
+  projHypothetical.matches[matchNum][idx] = value === '' ? '' : parseInt(value);
+}
+
+function calcProjection() {
+  if (!projectionData) return;
+  const scoring = projectionData.scoring;
+  const participants = projectionData.participants;
+
+  // Build a merged "actual" from real results + hypothetical
+  const merged = JSON.parse(JSON.stringify(projHypothetical));
+
+  // Compute scores for each participant
+  const results = [];
+  for (const p of participants) {
+    const pred = typeof p.data === 'string' ? JSON.parse(p.data) : (p.data || {});
+    const score = computeScoreLocal(pred, merged, scoring);
+    results.push({ name: p.name, points: score.total, breakdown: score.breakdown });
+  }
+  results.sort((a, b) => b.points - a.points);
+
+  let html = '<div class="card"><h3>Projicerad topplista</h3>';
+  html += '<table class="leaderboard-table"><thead><tr><th>#</th><th>Namn</th><th>Poäng</th></tr></thead><tbody>';
+  results.forEach((r, i) => {
+    html += `<tr><td class="rank">${i+1}</td><td class="name-cell">${escHtml(r.name)}</td><td class="points-cell">${r.points}</td></tr>`;
+  });
+  html += '</tbody></table></div>';
+
+  document.getElementById('projectionResults').innerHTML = html;
+}
+
+// Local scoring engine (simplified, matches server logic)
+function computeScoreLocal(predRaw, actual, scoring) {
+  const pred = predRaw || {};
+  const bd = {};
+  let total = 0;
+
+  // Group matches
+  let matchSignPts = 0, matchExactPts = 0;
+  const pMatches = pred.matches || {};
+  const aMatches = actual.matches || {};
+  for (const mn of Object.keys(aMatches)) {
+    const a = aMatches[mn];
+    const p = pMatches[mn];
+    if (!a || a[0] == null || a[1] == null || a[0] === '' || a[1] === '') continue;
+    if (!p || p[0] == null || p[1] == null) continue;
+    const pSign = calcSignLocal(p[0], p[1]);
+    const aSign = calcSignLocal(a[0], a[1]);
+    if (pSign === aSign) matchSignPts += (scoring?.matchSign || 10);
+    if (parseInt(p[0]) === parseInt(a[0]) && parseInt(p[1]) === parseInt(a[1])) matchExactPts += (scoring?.matchExact || 5);
+  }
+  bd.matchSign = matchSignPts;
+  bd.matchExact = matchExactPts;
+  total += matchSignPts + matchExactPts;
+
+  // Placements
+  let placePts = 0;
+  const pPl = pred.placements || {};
+  const aPl = actual.placements || {};
+  for (const g of Object.keys(aPl)) {
+    const pArr = pPl[g] || [];
+    const aArr = aPl[g] || [];
+    for (let i = 0; i < 4; i++) {
+      if (pArr[i] && aArr[i] && pArr[i] === aArr[i]) placePts += (scoring?.placement || 10);
+    }
+  }
+  bd.placements = placePts;
+  total += placePts;
+
+  return { total, breakdown: bd };
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// SIDEBETS VIEW
+// ══════════════════════════════════════════════════════════════════════
+
+let sidebetsData = [];
+
+async function loadSidebets() {
+  const c = document.getElementById('sidebetsContent');
+  c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Laddar...</div>';
+  try {
+    sidebetsData = await api('/api/sidebets');
+    renderSidebets(c);
+  } catch (err) {
+    c.innerHTML = '<div class="empty-state">' + escHtml(err.message) + '</div>';
+  }
+}
+
+function renderSidebets(container) {
+  let html = '';
+
+  // Create new sidebet
+  html += `<div class="card">
+    <h3>Skapa nytt sidebet</h3>
+    <div class="form-group">
+      <label>Titel</label>
+      <input type="text" class="form-input" id="sidebetTitle" placeholder="T.ex. Sverige går till kvartsfinal">
+    </div>
+    <div class="form-group">
+      <label>Insats (poäng)</label>
+      <input type="number" class="form-input" id="sidebetStake" min="1" value="10">
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="createSidebet()">Skapa</button>
+  </div>`;
+
+  // Open bets
+  const open = sidebetsData.filter(b => b.status === 'open');
+  const matched = sidebetsData.filter(b => b.status === 'matched');
+  const settled = sidebetsData.filter(b => b.status === 'settled');
+
+  if (open.length > 0) {
+    html += '<h3 style="margin:16px 0 8px">Öppna bets</h3>';
+    for (const b of open) {
+      html += renderSidebetCard(b);
+    }
+  }
+  if (matched.length > 0) {
+    html += '<h3 style="margin:16px 0 8px">Matchade bets</h3>';
+    for (const b of matched) {
+      html += renderSidebetCard(b);
+    }
+  }
+  if (settled.length > 0) {
+    html += '<h3 style="margin:16px 0 8px">Avgjorda bets</h3>';
+    for (const b of settled) {
+      html += renderSidebetCard(b);
+    }
+  }
+
+  if (sidebetsData.length === 0) {
+    html += '<div class="empty-state">Inga sidebets ännu. Skapa det första!</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+function renderSidebetCard(b) {
+  let html = `<div class="sidebet-card">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="sidebet-title">${escHtml(b.title)}</span>
+      <span class="sidebet-status ${b.status}">${b.status === 'open' ? 'Öppen' : b.status === 'matched' ? 'Matchad' : 'Avgjord'}</span>
+    </div>
+    <div class="sidebet-meta">${escHtml(b.creator_name)}${b.acceptor_name ? ' vs ' + escHtml(b.acceptor_name) : ''}</div>
+    <div class="sidebet-stake">${b.stake}p insats</div>`;
+
+  if (b.status === 'settled' && b.winner_name) {
+    html += `<div style="margin-top:6px;font-size:13px;color:var(--green);font-weight:600">Vinnare: ${escHtml(b.winner_name)}</div>`;
+    if (b.comment) html += `<div style="font-size:12px;color:var(--text3)">${escHtml(b.comment)}</div>`;
+  }
+
+  html += '<div class="sidebet-actions">';
+  if (b.status === 'open' && b.creator_id !== currentUser.id) {
+    html += `<button class="btn btn-primary btn-sm" onclick="acceptSidebet(${b.id})">Acceptera</button>`;
+  }
+  if (b.status === 'open' && b.creator_id === currentUser.id) {
+    html += `<button class="btn btn-danger btn-sm" onclick="withdrawSidebet(${b.id})">Ta tillbaka</button>`;
+  }
+  if (b.status === 'matched' && b.creator_id === currentUser.id) {
+    html += `<button class="btn btn-primary btn-sm" onclick="settleSidebet(${b.id}, ${b.creator_id}, '${escHtml(b.creator_name)}', ${b.acceptor_id}, '${escHtml(b.acceptor_name)}')">Avgör</button>`;
+  }
+  html += '</div></div>';
+  return html;
+}
+
+async function createSidebet() {
+  const title = document.getElementById('sidebetTitle').value.trim();
+  const stake = parseInt(document.getElementById('sidebetStake').value);
+  if (!title || !stake || stake < 1) { showToast('Fyll i titel och insats', 'error'); return; }
+  try {
+    await api('/api/sidebets', { method: 'POST', body: JSON.stringify({ title, stake }) });
+    showToast('Sidebet skapat!', 'success');
+    loadSidebets();
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function acceptSidebet(id) {
+  try {
+    await api('/api/sidebets/' + id + '/accept', { method: 'POST' });
+    showToast('Accepterat!', 'success');
+    loadSidebets();
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function withdrawSidebet(id) {
+  try {
+    await api('/api/sidebets/' + id + '/withdraw', { method: 'POST' });
+    showToast('Tillbakadraget', 'success');
+    loadSidebets();
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+function settleSidebet(id, creatorId, creatorName, acceptorId, acceptorName) {
+  const winner = prompt(`Vem vann? Skriv "1" för ${creatorName} eller "2" för ${acceptorName}`);
+  if (!winner) return;
+  const winnerId = winner === '1' ? creatorId : winner === '2' ? acceptorId : null;
+  if (!winnerId) { showToast('Ogiltigt val', 'error'); return; }
+  const comment = prompt('Kommentar (valfritt):') || '';
+  api('/api/sidebets/' + id + '/settle', {
+    method: 'POST',
+    body: JSON.stringify({ winner_id: winnerId, comment })
+  }).then(() => { showToast('Avgjort!', 'success'); loadSidebets(); })
+  .catch(err => showToast(err.message, 'error'));
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// ADMIN VIEW
+// ══════════════════════════════════════════════════════════════════════
+
+async function loadAdmin() {
+  if (!currentUser?.is_admin) return;
+  await loadTournament();
+  try {
+    adminResults = await api('/api/admin/results');
+    if (typeof adminResults === 'string') adminResults = JSON.parse(adminResults);
+    if (!adminResults || typeof adminResults !== 'object') adminResults = {};
+  } catch { adminResults = {}; }
+  renderAdminTab();
+}
+
+function setAdminTab(tab) {
+  adminTab = tab;
+  document.querySelectorAll('#adminTabs button').forEach(b => {
+    const tabs = ['results-group','results-knockout','results-special','users','settings','snapshots'];
+    b.classList.toggle('active', tabs[Array.from(b.parentNode.children).indexOf(b)] === tab);
+  });
+  renderAdminTab();
+}
+
+function renderAdminTab() {
+  const c = document.getElementById('adminContent');
+  switch (adminTab) {
+    case 'results-group': renderAdminGroupResults(c); break;
+    case 'results-knockout': renderAdminKnockoutResults(c); break;
+    case 'results-special': renderAdminSpecialResults(c); break;
+    case 'users': renderAdminUsers(c); break;
+    case 'settings': renderAdminSettings(c); break;
+    case 'snapshots': renderAdminSnapshots(c); break;
+  }
+}
+
+function renderAdminGroupResults(container) {
+  const am = adminResults.matches || {};
+  let html = '<div class="card"><h3>Faktiska matchresultat - Gruppspel</h3><p class="text-muted" style="margin-bottom:12px">Fyll i faktiska resultat. Spara med knappen längst ner.</p>';
+
+  for (const g of Object.keys(T.groups)) {
+    html += `<h4 style="margin-top:14px;font-size:14px;color:var(--accent)">Grupp ${g}</h4>`;
+    const matches = T.groupMatches.filter(m => m[5] === g);
+    for (const m of matches) {
+      const mn = String(m[0]);
+      const s = am[mn] || ['',''];
+      const d = parseMatchDate(m[1], m[2]);
+      html += `<div class="match-row">
+        <span class="date">${formatDate(d)}</span>
+        <span class="team">${m[3]}</span>
+        <div class="score-inputs">
+          <input type="number" class="score-input" min="0" max="20" value="${s[0]!==''&&s[0]!=null?s[0]:''}"
+            onchange="onAdminMatchScore('${mn}',0,this.value)">
+          <span class="score-dash">-</span>
+          <input type="number" class="score-input" min="0" max="20" value="${s[1]!==''&&s[1]!=null?s[1]:''}"
+            onchange="onAdminMatchScore('${mn}',1,this.value)">
+        </div>
+        <span class="team away">${m[4]}</span>
+      </div>`;
+    }
+  }
+  html += '<button class="btn btn-primary" style="margin-top:16px" onclick="saveAdminResults()">Spara resultat</button>';
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function onAdminMatchScore(matchNum, idx, value) {
+  if (!adminResults.matches) adminResults.matches = {};
+  if (!adminResults.matches[matchNum]) adminResults.matches[matchNum] = ['',''];
+  adminResults.matches[matchNum][idx] = value === '' ? null : parseInt(value);
+}
+
+function renderAdminKnockoutResults(container) {
+  let html = '<div class="card"><h3>Faktiska resultat - Slutspel</h3>';
+  html += '<p class="text-muted" style="margin-bottom:12px">Ange placeringar, R32-lag, R16-lag etc. Dessa fält sparas som arrays.</p>';
+
+  // Group placements
+  html += '<h4 style="margin-top:14px;color:var(--accent)">Gruppplaceringar (facit)</h4>';
+  const ap = adminResults.placements || {};
+  for (const g of Object.keys(T.groups)) {
+    const teams = T.groups[g];
+    const arr = ap[g] || ['','','',''];
+    html += `<div style="margin-bottom:8px"><strong>Grupp ${g}</strong><div style="display:flex;gap:6px;flex-wrap:wrap">`;
+    for (let i = 0; i < 4; i++) {
+      html += `<select class="form-input" style="width:auto;min-width:120px" onchange="onAdminPlacement('${g}',${i},this.value)">
+        <option value="">${i+1}:a</option>`;
+      for (const t of teams) {
+        html += `<option value="${t}" ${arr[i]===t?'selected':''}>${t}</option>`;
+      }
+      html += '</select>';
+    }
+    html += '</div></div>';
+  }
+
+  // R32 teams, R16 teams etc
+  const roundFields = [
+    ['r32Teams', 'R32-lag (kommaseparerade)'],
+    ['r16Teams', 'R16-lag (kommaseparerade)'],
+    ['qfTeams', 'KF-lag (kommaseparerade)'],
+    ['sfTeams', 'SF-lag (kommaseparerade)']
+  ];
+  for (const [key, label] of roundFields) {
+    const val = (adminResults[key] || []).join(', ');
+    html += `<div class="form-group" style="margin-top:12px">
+      <label>${label}</label>
+      <input type="text" class="form-input" value="${escHtml(val)}" onchange="adminResults['${key}']=this.value.split(',').map(s=>s.trim()).filter(Boolean)">
+    </div>`;
+  }
+
+  // Final placements
+  html += '<h4 style="margin-top:14px;color:var(--accent)">Slutplacering 1-4</h4>';
+  const fp = adminResults.finalPlacements || {};
+  for (let i = 1; i <= 4; i++) {
+    html += `<div class="form-group">
+      <label>Plats ${i}</label>
+      <input type="text" class="form-input" value="${escHtml(fp[String(i)]||'')}"
+        onchange="if(!adminResults.finalPlacements)adminResults.finalPlacements={};adminResults.finalPlacements['${i}']=this.value.trim()">
+    </div>`;
+  }
+
+  html += '<button class="btn btn-primary" style="margin-top:16px" onclick="saveAdminResults()">Spara resultat</button>';
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function onAdminPlacement(group, pos, team) {
+  if (!adminResults.placements) adminResults.placements = {};
+  if (!adminResults.placements[group]) adminResults.placements[group] = ['','','',''];
+  adminResults.placements[group][pos] = team;
+}
+
+function renderAdminSpecialResults(container) {
+  let html = '<div class="card"><h3>Faktiska resultat - Specialtips</h3>';
+
+  html += `<div class="form-group">
+    <label>Första målskytt</label>
+    <input type="text" class="form-input" value="${escHtml(adminResults.firstScorer||'')}"
+      onchange="adminResults.firstScorer=this.value.trim()">
+  </div>`;
+
+  const ts = adminResults.topScorers || ['','',''];
+  for (let i = 0; i < 3; i++) {
+    html += `<div class="form-group">
+      <label>Skyttekung #${i+1}</label>
+      <input type="text" class="form-input" value="${escHtml(ts[i]||'')}"
+        onchange="if(!adminResults.topScorers)adminResults.topScorers=['','',''];adminResults.topScorers[${i}]=this.value.trim()">
+    </div>`;
+  }
+
+  html += `<div class="form-group">
+    <label>Första röda kort (lag)</label>
+    <select class="form-input" onchange="adminResults.firstRedCard=this.value">
+      <option value="">Välj lag...</option>`;
+  for (const t of T.allTeams.sort((a,b) => a.localeCompare(b,'sv'))) {
+    html += `<option value="${t}" ${adminResults.firstRedCard===t?'selected':''}>${t}</option>`;
+  }
+  html += `</select></div>`;
+
+  html += `<div class="form-group">
+    <label>Första straff (lag)</label>
+    <select class="form-input" onchange="adminResults.firstPenalty=this.value">
+      <option value="">Välj lag...</option>`;
+  for (const t of T.allTeams.sort((a,b) => a.localeCompare(b,'sv'))) {
+    html += `<option value="${t}" ${adminResults.firstPenalty===t?'selected':''}>${t}</option>`;
+  }
+  html += `</select></div>`;
+
+  html += '<button class="btn btn-primary" style="margin-top:16px" onclick="saveAdminResults()">Spara resultat</button>';
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+async function saveAdminResults() {
+  try {
+    await api('/api/admin/results', { method: 'PUT', body: JSON.stringify({ data: adminResults }) });
+    showToast('Resultat sparade!', 'success');
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function renderAdminUsers(container) {
+  let html = '<div class="card"><h3>Användare</h3>';
+  try {
+    const users = await api('/api/admin/users');
+    for (const u of users) {
+      html += `<div class="admin-user-row">
+        <div>
+          <span class="user-name">${escHtml(u.name)}</span>
+          ${u.is_admin ? '<span class="badge badge-admin">Admin</span>' : ''}
+          <br><span class="user-email">${escHtml(u.email)}</span>
+        </div>
+        <div class="actions">
+          <button class="btn btn-secondary btn-sm" onclick="toggleAdmin(${u.id})">${u.is_admin?'Ta bort admin':'Gör admin'}</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id},'${escHtml(u.name)}')">Ta bort</button>
+        </div>
+      </div>`;
+    }
+  } catch (err) { html += '<p class="text-muted">' + escHtml(err.message) + '</p>'; }
+
+  html += '<div class="divider"></div><h3>Lägg till användare</h3>';
+  html += `<div class="form-group"><label>Namn</label><input type="text" class="form-input" id="adminNewName"></div>
+    <div class="form-group"><label>E-post</label><input type="email" class="form-input" id="adminNewEmail"></div>
+    <div class="form-group"><label>Lösenord</label><input type="password" class="form-input" id="adminNewPass"></div>
+    <label style="font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:12px">
+      <input type="checkbox" id="adminNewIsAdmin"> Admin
+    </label>
+    <button class="btn btn-primary btn-sm" onclick="addUser()">Lägg till</button>`;
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+async function toggleAdmin(id) {
+  try {
+    await api('/api/admin/users/' + id + '/toggle-admin', { method: 'PUT' });
+    showToast('Uppdaterat', 'success');
+    renderAdminTab();
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function deleteUser(id, name) {
+  if (!confirm('Ta bort ' + name + '? Alla deras tips försvinner.')) return;
+  try {
+    await api('/api/admin/users/' + id, { method: 'DELETE' });
+    showToast('Borttagen', 'success');
+    renderAdminTab();
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function addUser() {
+  try {
+    await api('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: document.getElementById('adminNewName').value,
+        email: document.getElementById('adminNewEmail').value,
+        password: document.getElementById('adminNewPass').value,
+        is_admin: document.getElementById('adminNewIsAdmin').checked
+      })
+    });
+    showToast('Tillagd!', 'success');
+    renderAdminTab();
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function renderAdminSettings(container) {
+  await loadSettings();
+  let html = '<div class="card"><h3>Inställningar</h3>';
+  html += `<div class="form-group">
+    <label>Poolnamn</label>
+    <input type="text" class="form-input" id="adminPoolName" value="${escHtml(settings.pool_name||'VM-Bettet 2026')}">
+  </div>
+  <div class="form-group">
+    <label>Deadline (ISO-format)</label>
+    <input type="datetime-local" class="form-input" id="adminDeadline"
+      value="${settings.deadline ? new Date(settings.deadline).toISOString().slice(0,16) : '2026-06-11T19:00'}">
+  </div>
+  <div class="form-group">
+    <label style="display:flex;align-items:center;gap:8px">
+      <input type="checkbox" id="adminLocked" ${settings.locked==='1'?'checked':''}>
+      Lås tipset (ingen kan ändra sina tips)
+    </label>
+  </div>
+  <button class="btn btn-primary btn-sm" onclick="saveSettings()">Spara</button>`;
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+async function saveSettings() {
+  try {
+    await api('/api/admin/settings', {
+      method: 'PUT',
+      body: JSON.stringify({
+        pool_name: document.getElementById('adminPoolName').value,
+        deadline: new Date(document.getElementById('adminDeadline').value).toISOString(),
+        locked: document.getElementById('adminLocked').checked
+      })
+    });
+    await loadSettings();
+    showToast('Inställningar sparade!', 'success');
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+function renderAdminSnapshots(container) {
+  let html = '<div class="card"><h3>Leaderboard-snapshots</h3>';
+  html += '<p class="text-muted" style="margin-bottom:12px">Spara en snapshot av den aktuella topplistan. Nästa gång visas positionsförändringar.</p>';
+  html += `<div class="form-group">
+    <label>Etikett (valfritt)</label>
+    <input type="text" class="form-input" id="snapshotLabel" placeholder="T.ex. Efter gruppspelet">
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-primary btn-sm" onclick="saveSnapshot()">Spara snapshot</button>
+    <button class="btn btn-danger btn-sm" onclick="clearSnapshot()">Rensa snapshots</button>
+  </div>`;
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+async function saveSnapshot() {
+  try {
+    const label = document.getElementById('snapshotLabel')?.value || '';
+    await api('/api/admin/leaderboard/snapshot', { method: 'POST', body: JSON.stringify({ label }) });
+    showToast('Snapshot sparad!', 'success');
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function clearSnapshot() {
+  if (!confirm('Rensa alla snapshots?')) return;
+  try {
+    await api('/api/admin/leaderboard/snapshot', { method: 'DELETE' });
+    showToast('Snapshots rensade', 'success');
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════════
+
+(async function init() {
+  initTheme();
+  await checkAuth();
+  window.addEventListener('hashchange', handleHash);
+  handleHash();
+})();
+</script>
+</body>
+</html>
