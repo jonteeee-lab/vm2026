@@ -522,24 +522,92 @@ select.form-input {
   font-weight: 700;
 }
 
-/* ══════ KNOCKOUT ══════ */
+/* ══════ KNOCKOUT (legacy — used only for Bronze match card) ══════ */
 .knockout-round { margin-bottom: 24px; }
-.knockout-round h3 {
-  font-size: 14px; font-weight: 800;
-  margin-bottom: 12px;
-  padding: 8px 14px;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-  color: #fff;
-  border-radius: 8px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
 .knockout-matches {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 10px;
 }
 @media (max-width: 768px) { .knockout-matches { grid-template-columns: 1fr; } }
+
+/* ══════ BRACKET TREE ══════ */
+.bracket-outer { }
+.bracket-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 12px;
+}
+.bracket-col-headers {
+  display: flex;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+}
+.bracket-col-headers > div {
+  text-align: center;
+  font-size: 10px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--text3);
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+.bracket-field {
+  position: relative;
+}
+.bracket-svg {
+  position: absolute; top: 0; left: 0;
+  pointer-events: none; overflow: visible;
+}
+.bm-box {
+  position: absolute;
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+  box-shadow: 0 1px 8px rgba(12,31,63,0.08);
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.bm-box:hover { border-color: var(--accent); box-shadow: 0 2px 12px rgba(200,150,12,0.18); }
+.bm-team {
+  padding: 0 7px;
+  height: 25px;
+  display: flex; align-items: center;
+  font-size: 11.5px; font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background 0.1s;
+  user-select: none;
+  gap: 3px;
+}
+.bm-team:hover:not(.bm-empty) { background: var(--gold-bg); }
+.bm-team.bm-win {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+.bm-team.bm-empty {
+  cursor: default;
+  color: var(--text3);
+}
+.bm-slot { font-size: 10px; overflow: hidden; text-overflow: ellipsis; }
+.bm-divider { height: 1px; background: var(--border); flex-shrink: 0; }
+.bracket-bronze {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 2px solid var(--border);
+}
+.bracket-bronze-title {
+  display: inline-block;
+  font-size: 10px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--text3);
+  padding: 5px 12px;
+  background: var(--bg3);
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
 .knockout-match {
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -1991,50 +2059,139 @@ function onPlacementChange(group, pos, team) {
   // If we're on slutspel tab, we'd need to refresh. For now, bracket resolves dynamically.
 }
 
-// ─── SLUTSPEL (KNOCKOUT) ───
+// ─── SLUTSPEL — classic left-to-right bracket ───
 
 function renderSlutspel(container) {
-  let html = '';
+  // ── Layout constants ──────────────────────────────────────────────
+  const SLOT   = 60;   // px allocated per R32 match (height)
+  const MW     = 175;  // match box width
+  const MH     = 51;   // match box height (25 + 1 + 25)
+  const COL_W  = 205;  // column width including connector gap
+  const PAD    = 12;   // left padding inside column for match box
+  const TOTAL_H = 16 * SLOT;   // 960px
+  const TOTAL_W = 5 * COL_W;   // 1025px
 
-  // R32
-  html += '<div class="knockout-round"><h3>32-delsfinal</h3><div class="knockout-matches">';
-  for (const m of T.r32Matches) {
-    html += renderKnockoutMatch(m, 'r32');
+  // ── Bracket order (top → bottom) for each round ──────────────────
+  // Derived from match data: each consecutive pair feeds the next round
+  const ORDER = [
+    [74,77, 73,75, 83,84, 81,82, 76,78, 79,80, 86,88, 85,87], // R32
+    [89, 90, 93, 94, 91, 92, 95, 96],                          // R16
+    [97, 98, 99, 100],                                          // QF
+    [101, 102],                                                 // SF
+    [104]                                                       // Final
+  ];
+  const ROUND_KEY = ['r32','r16','qf','sf','final'];
+
+  // ── Match lookup ─────────────────────────────────────────────────
+  const matchMap = {};
+  [...T.r32Matches, ...T.r16Matches, ...T.qfMatches,
+   ...T.sfMatches, T.bronzeMatch, T.finalMatch]
+    .forEach(m => { matchMap[String(m[0])] = m; });
+
+  // ── Center Y for round n, position i ─────────────────────────────
+  function cY(n, i) {
+    const step = Math.pow(2, n) * SLOT;
+    return step * i + step / 2;
   }
-  html += '</div></div>';
 
-  // R16
-  html += '<div class="knockout-round"><h3>16-delsfinal</h3><div class="knockout-matches">';
-  for (const m of T.r16Matches) {
-    html += renderKnockoutMatch(m, 'r16');
+  // ── SVG connector lines ──────────────────────────────────────────
+  const lines = [];
+  for (let n = 0; n < 4; n++) {
+    const rx  = n * COL_W + PAD + MW;        // right edge of this round's match
+    const lx  = (n + 1) * COL_W + PAD;       // left edge of next round's match
+    const mx  = Math.round((rx + lx) / 2);   // midpoint x for vertical bracket
+    const pairs = ORDER[n].length / 2;
+    for (let j = 0; j < pairs; j++) {
+      const ay = cY(n, j * 2);        // top sibling center y
+      const by = cY(n, j * 2 + 1);    // bottom sibling center y
+      const ny = cY(n + 1, j);        // parent match center y
+      lines.push(
+        `<line x1="${rx}" y1="${ay}" x2="${mx}" y2="${ay}"/>`,
+        `<line x1="${rx}" y1="${by}" x2="${mx}" y2="${by}"/>`,
+        `<line x1="${mx}" y1="${ay}" x2="${mx}" y2="${by}"/>`,
+        `<line x1="${mx}" y1="${ny}" x2="${lx}" y2="${ny}"/>`
+      );
+    }
   }
-  html += '</div></div>';
 
-  // QF
-  html += '<div class="knockout-round"><h3>Kvartsfinal</h3><div class="knockout-matches">';
-  for (const m of T.qfMatches) {
-    html += renderKnockoutMatch(m, 'qf');
+  // ── Render one match box ─────────────────────────────────────────
+  function bmHTML(matchNum, n, i) {
+    const mn = String(matchNum);
+    const m  = matchMap[mn];
+    if (!m) return '';
+    const d = parseMatchDate(m[1], m[2]);
+    const round = ROUND_KEY[n];
+
+    let homeTeam, awayTeam, homeLabel, awayLabel;
+    if (round === 'r32') {
+      homeTeam  = resolveR32Team(m[3], mn, 'home');
+      awayTeam  = resolveR32Team(m[4], mn, 'away');
+      homeLabel = formatSlotLabel(m[3]);
+      awayLabel = formatSlotLabel(m[4]);
+    } else {
+      homeTeam  = resolveKnockoutTeam(m[3], mn, 'home');
+      awayTeam  = resolveKnockoutTeam(m[4], mn, 'away');
+      homeLabel = formatSourceLabel(m[3]);
+      awayLabel = formatSourceLabel(m[4]);
+    }
+
+    // Silently update bracket home/away so selectWinner can read them
+    if (!predictions.bracket) predictions.bracket = {};
+    if (!predictions.bracket[mn]) predictions.bracket[mn] = {};
+    predictions.bracket[mn].home = homeTeam || null;
+    predictions.bracket[mn].away = awayTeam || null;
+
+    const winner = predictions.bracket[mn].winner;
+    const left = n * COL_W + PAD;
+    const top  = cY(n, i) - Math.floor(MH / 2);
+
+    function teamRow(team, label, side) {
+      const empty   = !team;
+      const win     = !!(team && winner === team);
+      const cls     = `bm-team${empty ? ' bm-empty' : ''}${win ? ' bm-win' : ''}`;
+      const onclick = empty ? '' : `onclick="selectWinner('${mn}','${side}')"`;
+      const content = team
+        ? teamWithFlag(team)
+        : `<span class="bm-slot">${escHtml(label)}</span>`;
+      return `<div class="${cls}" ${onclick}>${content}</div>`;
+    }
+
+    return `<div class="bm-box" style="left:${left}px;top:${top}px;width:${MW}px;"
+      data-match="${mn}" title="Match ${mn} · ${formatDate(d)} ${formatTime(d)}">
+      ${teamRow(homeTeam, homeLabel, 'home')}
+      <div class="bm-divider"></div>
+      ${teamRow(awayTeam, awayLabel, 'away')}
+    </div>`;
   }
-  html += '</div></div>';
 
-  // SF
-  html += '<div class="knockout-round"><h3>Semifinal</h3><div class="knockout-matches">';
-  for (const m of T.sfMatches) {
-    html += renderKnockoutMatch(m, 'sf');
-  }
-  html += '</div></div>';
+  // ── Build all match boxes ─────────────────────────────────────────
+  let boxes = '';
+  ORDER.forEach((order, n) => {
+    order.forEach((mn, i) => { boxes += bmHTML(mn, n, i); });
+  });
 
-  // Bronze
-  html += '<div class="knockout-round"><h3>Bronsmatch</h3><div class="knockout-matches">';
-  html += renderKnockoutMatch(T.bronzeMatch, 'bronze');
-  html += '</div></div>';
+  // ── Column headers ────────────────────────────────────────────────
+  const HEADERS = ['32-delsfinal','16-delsfinal','Kvartsfinal','Semifinal','Final'];
+  const hdrHtml = HEADERS.map(h =>
+    `<div style="width:${COL_W}px">${h}</div>`
+  ).join('');
 
-  // Final
-  html += '<div class="knockout-round"><h3>Final</h3><div class="knockout-matches">';
-  html += renderKnockoutMatch(T.finalMatch, 'final');
-  html += '</div></div>';
-
-  container.innerHTML = html;
+  container.innerHTML = `
+    <div class="bracket-outer">
+      <div class="bracket-scroll">
+        <div class="bracket-col-headers" style="width:${TOTAL_W}px">${hdrHtml}</div>
+        <div class="bracket-field" style="width:${TOTAL_W}px;height:${TOTAL_H}px;">
+          <svg width="${TOTAL_W}" height="${TOTAL_H}" class="bracket-svg">
+            <g stroke="var(--border)" stroke-width="1.5" fill="none">${lines.join('')}</g>
+          </svg>
+          ${boxes}
+        </div>
+      </div>
+      <div class="bracket-bronze">
+        <div class="bracket-bronze-title">Bronsmatch</div>
+        <div class="knockout-matches">${renderKnockoutMatch(T.bronzeMatch, 'bronze')}</div>
+      </div>
+    </div>`;
 }
 
 function renderKnockoutMatch(m, round) {
