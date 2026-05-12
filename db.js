@@ -16,6 +16,7 @@ async function initDb() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT`);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS predictions (
       id SERIAL PRIMARY KEY,

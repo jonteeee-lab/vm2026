@@ -459,7 +459,7 @@ app.post('/api/auth/register', async (req, res) => {
     const isFirst = !(await get('SELECT id FROM users LIMIT 1'));
     await run('INSERT INTO users (name, email, password_hash, is_admin) VALUES (?, ?, ?, ?)',
       [name, email, hash, isFirst ? 1 : 0]);
-    const user = await get('SELECT id, name, email, is_admin FROM users WHERE email = ?', [email]);
+    const user = await get('SELECT id, name, email, is_admin, avatar FROM users WHERE email = ?', [email]);
     const token = jwt.sign({ id: user.id, name: user.name, email: user.email, is_admin: user.is_admin }, JWT_SECRET, { expiresIn: '30d' });
     res.cookie('token', token, { httpOnly: true, maxAge: 30*24*60*60*1000 });
     res.json({ user, token });
@@ -475,12 +475,37 @@ app.post('/api/auth/login', async (req, res) => {
     const payload = { id: user.id, name: user.name, email: user.email, is_admin: user.is_admin };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' });
     res.cookie('token', token, { httpOnly: true, maxAge: 30*24*60*60*1000 });
-    res.json({ user: payload, token });
+    res.json({ user: { ...payload, avatar: user.avatar }, token });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/auth/logout', (req, res) => { res.clearCookie('token'); res.json({ ok: true }); });
-app.get('/api/auth/me', auth, (req, res) => res.json({ user: req.user }));
+app.get('/api/auth/me', auth, async (req, res) => {
+  try {
+    const u = await get('SELECT id, name, email, is_admin, avatar FROM users WHERE id = ?', [req.user.id]);
+    if (!u) return res.status(401).json({ error: 'Användare borttagen' });
+    res.json({ user: u });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Avatar upload/delete ──
+const MAX_AVATAR_LEN = 200000; // ~150 kB JPEG base64
+app.put('/api/users/me/avatar', auth, async (req, res) => {
+  try {
+    const { avatar } = req.body;
+    if (!avatar || typeof avatar !== 'string') return res.status(400).json({ error: 'Bild saknas' });
+    if (!/^data:image\/(jpeg|png|webp);base64,/.test(avatar)) return res.status(400).json({ error: 'Ogiltigt format' });
+    if (avatar.length > MAX_AVATAR_LEN) return res.status(400).json({ error: 'Bilden är för stor' });
+    await run('UPDATE users SET avatar = ? WHERE id = ?', [avatar, req.user.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.delete('/api/users/me/avatar', auth, async (req, res) => {
+  try {
+    await run('UPDATE users SET avatar = NULL WHERE id = ?', [req.user.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 // ══════════════════════════════════════════════════════════════════════════════
 // TOURNAMENT DATA ENDPOINT
@@ -565,7 +590,7 @@ app.get('/api/results', auth, async (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 async function calcLeaderboard() {
-  const users = await all('SELECT id, name FROM users ORDER BY created_at');
+  const users = await all('SELECT id, name, avatar FROM users ORDER BY created_at');
   const preds = await all('SELECT user_id, data FROM predictions');
   const resRow = await get('SELECT data FROM results ORDER BY id LIMIT 1');
   const actualData = resRow ? resRow.data : {};
@@ -578,7 +603,7 @@ async function calcLeaderboard() {
     const predData = predMap[u.id] || {};
     const scoreable = buildScoreablePrediction(predData);
     const score = computeScore(scoreable, scoreableActual);
-    return { name: u.name, points: score.total, breakdown: score.breakdown };
+    return { name: u.name, avatar: u.avatar, points: score.total, breakdown: score.breakdown };
   });
   board.sort((a, b) => b.points - a.points);
   return board;
@@ -603,11 +628,11 @@ app.get('/api/allPredictions', auth, async (req, res) => {
     const deadline = await get("SELECT value FROM settings WHERE key='deadline'");
     const isLocked = locked?.value === '1' || new Date(deadline?.value) < new Date();
     if (!isLocked) return res.status(403).json({ error: 'Inte låst ännu' });
-    const users = await all('SELECT id, name FROM users ORDER BY name');
+    const users = await all('SELECT id, name, avatar FROM users ORDER BY name');
     const preds = await all('SELECT user_id, data FROM predictions');
     const predMap = {};
     preds.forEach(p => { predMap[p.user_id] = p.data; });
-    const participants = users.map(u => ({ name: u.name, data: predMap[u.id] || {} }));
+    const participants = users.map(u => ({ name: u.name, avatar: u.avatar, data: predMap[u.id] || {} }));
     res.json({ participants });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -644,9 +669,10 @@ app.get('/api/sidebets', auth, async (req, res) => {
     await run("DELETE FROM sidebets WHERE status = 'open' AND expires_at IS NOT NULL AND expires_at < NOW()");
     const rows = await all(`
       SELECT s.id, s.title, s.stake, s.status, s.created_at, s.expires_at,
-        s.creator_id, uc.name AS creator_name,
-        s.acceptor_id, ua.name AS acceptor_name,
-        s.winner_id, uw.name AS winner_name, s.comment
+        s.creator_id, uc.name AS creator_name, uc.avatar AS creator_avatar,
+        s.acceptor_id, ua.name AS acceptor_name, ua.avatar AS acceptor_avatar,
+        s.winner_id, uw.name AS winner_name, uw.avatar AS winner_avatar,
+        s.comment
       FROM sidebets s
       JOIN users uc ON uc.id = s.creator_id
       LEFT JOIN users ua ON ua.id = s.acceptor_id
