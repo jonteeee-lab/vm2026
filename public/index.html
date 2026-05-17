@@ -2340,7 +2340,7 @@ function renderSlutspelDropdown(container) {
         const isOther = !isThis && Object.values(fp).includes(t);
         html += `<div class="ko-chip${isThis ? ' selected' : ''}${isOther ? ' locked' : ''}"
           data-pos="${k}" data-team="${escHtml(t)}"
-          onclick="if(!this.classList.contains('locked'))setFinalPlacement(this.dataset.pos,this.dataset.team)">${teamWithFlag(t)}</div>`;
+          onclick="setFinalPlacement(this.dataset.pos,this.dataset.team)">${teamWithFlag(t)}</div>`;
       }
       html += `</div></div>`;
     }

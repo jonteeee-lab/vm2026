@@ -312,98 +312,42 @@ function computeScore(pred, actual, consensusMap = {}) {
   return { total, breakdown: bd };
 }
 
-// Derive knockout teams from prediction bracket
-function deriveKnockoutTeams(pred) {
-  const bracket = pred.bracket || {};
-  const r32Teams = [], r16Teams = [], qfTeams = [], sfTeams = [];
-  // R32: teams in each match
-  for (const m of R32_MATCHES) {
-    const mn = String(m[0]);
-    const b = bracket[mn];
-    if (b) {
-      if (b.home) r32Teams.push(b.home);
-      if (b.away) r32Teams.push(b.away);
-    }
-  }
-  // R16: winners of R32
-  for (const m of R16_MATCHES) {
-    const mn = String(m[0]);
-    const b = bracket[mn];
-    if (b) {
-      if (b.home) r16Teams.push(b.home);
-      if (b.away) r16Teams.push(b.away);
-    }
-  }
-  // QF: winners of R16
-  for (const m of QF_MATCHES) {
-    const mn = String(m[0]);
-    const b = bracket[mn];
-    if (b) {
-      if (b.home) qfTeams.push(b.home);
-      if (b.away) qfTeams.push(b.away);
-    }
-  }
-  // SF: winners of QF
-  for (const m of SF_MATCHES) {
-    const mn = String(m[0]);
-    const b = bracket[mn];
-    if (b) {
-      if (b.home) sfTeams.push(b.home);
-      if (b.away) sfTeams.push(b.away);
-    }
-  }
-  return {
-    r32Teams: [...new Set(r32Teams)],
-    r16Teams: [...new Set(r16Teams)],
-    qfTeams: [...new Set(qfTeams)],
-    sfTeams: [...new Set(sfTeams)]
-  };
-}
-
-// Build a scoreable prediction from stored data
+// Build a scoreable prediction from stored data.
+// r32Teams is derived from group placements (24 auto) + thirdPlaceQualifiers (8 manual).
 function buildScoreablePrediction(predData) {
-  const kt = deriveKnockoutTeams(predData);
-  const bracket = predData.bracket || {};
-  // Final placements from bracket
-  const fp = {};
-  const finalMatch = bracket['104'];
-  const bronzeMatch = bracket['103'];
-  if (finalMatch?.winner) {
-    fp['1'] = finalMatch.winner;
-    fp['2'] = finalMatch.home === finalMatch.winner ? finalMatch.away : finalMatch.home;
+  const r32Teams = [];
+  for (const g of Object.keys(GROUPS)) {
+    const pl = predData.placements?.[g];
+    if (pl) {
+      if (pl[0]) r32Teams.push(pl[0]); // group winner
+      if (pl[1]) r32Teams.push(pl[1]); // runner-up
+    }
   }
-  if (bronzeMatch?.winner) {
-    fp['3'] = bronzeMatch.winner;
-    fp['4'] = bronzeMatch.home === bronzeMatch.winner ? bronzeMatch.away : bronzeMatch.home;
+  for (const t of (predData.thirdPlaceQualifiers || [])) {
+    if (t) r32Teams.push(t);
   }
   return {
-    matches: predData.matches || {},
-    placements: predData.placements || {},
-    r32Teams: kt.r32Teams,
-    r16Teams: kt.r16Teams,
-    qfTeams: kt.qfTeams,
-    sfTeams: kt.sfTeams,
-    finalPlacements: fp,
-    topScorers: predData.topScorers || [],
-    firstScorer: predData.firstScorer || '',
-    firstRedCard: predData.firstRedCard || '',
-    firstPenalty: predData.firstPenalty || ''
+    matches:         predData.matches         || {},
+    placements:      predData.placements      || {},
+    r32Teams:        [...new Set(r32Teams)],
+    r16Teams:        predData.r16Teams        || [],
+    qfTeams:         predData.qfTeams         || [],
+    sfTeams:         predData.sfTeams         || [],
+    finalPlacements: predData.finalPlacements || {},
+    questions:       predData.questions       || {}
   };
 }
 
 function buildScoreableResults(resData) {
   return {
-    matches: resData.matches || {},
-    placements: resData.placements || {},
-    r32Teams: resData.r32Teams || [],
-    r16Teams: resData.r16Teams || [],
-    qfTeams: resData.qfTeams || [],
-    sfTeams: resData.sfTeams || [],
+    matches:         resData.matches         || {},
+    placements:      resData.placements      || {},
+    r32Teams:        resData.r32Teams        || [],
+    r16Teams:        resData.r16Teams        || [],
+    qfTeams:         resData.qfTeams         || [],
+    sfTeams:         resData.sfTeams         || [],
     finalPlacements: resData.finalPlacements || {},
-    topScorers: resData.topScorers || [],
-    firstScorer: resData.firstScorer || '',
-    firstRedCard: resData.firstRedCard || '',
-    firstPenalty: resData.firstPenalty || ''
+    questions:       resData.questions       || {}
   };
 }
 
