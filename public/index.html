@@ -405,14 +405,14 @@ select.form-input {
 
 /* Match row */
 .match-row-header {
-  display: grid; grid-template-columns: 1fr 94px 44px; gap: 8px;
+  display: grid; grid-template-columns: 1fr 94px 66px; gap: 8px;
   font-size: 11px; font-weight: 700; color: var(--text3);
   text-transform: uppercase; letter-spacing: .5px;
   padding: 2px 0 6px; border-bottom: 2px solid var(--border); margin-bottom: 2px;
 }
 .match-row-header > div:not(:first-child) { text-align: center; }
 .match-row {
-  display: grid; grid-template-columns: 1fr 94px 44px;
+  display: grid; grid-template-columns: 1fr 94px 66px;
   align-items: center; gap: 8px;
   padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px;
 }
@@ -420,7 +420,15 @@ select.form-input {
 .match-teams { font-weight: 600; overflow: hidden; }
 .match-date { display: block; font-size: 11px; font-weight: 400; color: var(--text3); margin-bottom: 2px; }
 .match-vs { color: var(--text3); font-weight: 400; margin: 0 3px; }
-.margin-cell { width: 44px; display: flex; justify-content: center; }
+.margin-cell { width: 66px; display: flex; justify-content: center; }
+@media (max-width: 520px) {
+  .match-row-header { grid-template-columns: 1fr 94px 66px; }
+  .match-row { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; row-gap: 5px; }
+  .match-teams { grid-column: 1 / 3; white-space: normal; }
+  .sign-btns { grid-column: 1; }
+  .margin-cell { grid-column: 2; justify-content: flex-end; width: auto; }
+  .match-row-header { display: none; }
+}
 .sign-btns { display: flex; gap: 2px; }
 .sign-btn {
   width: 30px; height: 34px;
@@ -433,7 +441,7 @@ select.form-input {
 .sign-btn.active { background: var(--primary); border-color: var(--accent); color: var(--accent); }
 .sign-btn:hover:not(.active) { border-color: var(--accent); }
 .margin-input {
-  width: 38px; height: 34px;
+  width: 52px; height: 34px;
   text-align: center; border: none; border-radius: 6px;
   font-family: inherit; font-size: 15px; font-weight: 900;
   background: var(--primary); color: var(--accent);

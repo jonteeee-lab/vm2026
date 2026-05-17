@@ -165,8 +165,8 @@ const FINAL_MATCH = [104,'2026-07-19','15:00','W101','W102'];
 // ══════════════════════════════════════════════════════════════════════════════
 
 const SCORING = {
-  matchSign: 2,         // correct 1X2
-  matchMargin: 3,       // correct goal-margin (requires correct sign)
+  matchSign: 3,         // correct 1X2 (× consensus multiplier)
+  matchMargin: 2,       // correct goal-margin — 1/2 only, flat (no multiplier)
   // Group placement per group: points for 0/1/2/3/4 correct positions
   // (3 correct is impossible in a 4-team permutation, so index 3 is never reached)
   placementTier: [0, 5, 10, 0, 20],
@@ -234,11 +234,10 @@ function computeScore(pred, actual, consensusMap = {}) {
     if (pSign === aSign) {
       signPts += SCORING.matchSign * mult;
       if (mult > 1) boostPts += SCORING.matchSign * (mult - 1);
-      const pMargin = Math.abs(Number(p[0]) - Number(p[1]));
-      const aMargin = Math.abs(Number(a[0]) - Number(a[1]));
-      if (pMargin === aMargin) {
-        marginPts += SCORING.matchMargin * mult;
-        if (mult > 1) boostPts += SCORING.matchMargin * (mult - 1);
+      if (pSign !== 'X') {
+        const pMargin = Math.abs(Number(p[0]) - Number(p[1]));
+        const aMargin = Math.abs(Number(a[0]) - Number(a[1]));
+        if (pMargin === aMargin) marginPts += SCORING.matchMargin; // flat, no mult
       }
     }
   }
