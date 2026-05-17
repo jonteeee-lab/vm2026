@@ -522,6 +522,53 @@ select.form-input {
   font-weight: 700;
 }
 
+/* ══════ KNOCKOUT DROPDOWN UI ══════ */
+.ko-section {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.ko-section-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+}
+.ko-round-name { font-size: 15px; font-weight: 700; }
+.ko-counter { font-size: 12px; color: var(--text3); font-weight: 600; }
+.ko-counter-done { color: var(--green) !important; }
+.ko-notice {
+  font-size: 13px; color: var(--text3);
+  padding: 10px 14px; background: var(--bg3); border-radius: 8px;
+}
+.ko-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 13px; border-radius: 20px;
+  border: 2px solid var(--border);
+  cursor: pointer; font-size: 13px; font-weight: 500;
+  background: var(--bg3);
+  transition: border-color 0.12s, background 0.12s, opacity 0.12s;
+  user-select: none;
+}
+.ko-chip:hover:not(.auto):not(.locked) { border-color: var(--accent); }
+.ko-chip.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
+.ko-chip.auto { cursor: default; border-style: dashed; opacity: 0.75; }
+.ko-chip.locked { opacity: 0.3; cursor: not-allowed; }
+.ko-chip-empty { opacity: 0.45; font-style: italic; cursor: default !important; }
+.ko-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ko-notice-warn { background: var(--red-bg, #fff0f0); color: var(--red, #c0392b); }
+.ko-auto-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  margin-bottom: 14px;
+}
+.ko-auto-col { display: flex; flex-direction: column; gap: 5px; }
+.ko-auto-label { font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+.ko-thirds-header { font-size: 13px; font-weight: 600; margin: 14px 0 8px; }
+.ko-thirds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 8px; }
+.ko-final-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.ko-final-item label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 5px; }
+@media (max-width: 600px) { .ko-auto-grid { grid-template-columns: 1fr; } }
+
 /* ══════ KNOCKOUT (legacy — used only for Bronze match card) ══════ */
 .knockout-round { margin-bottom: 24px; }
 .knockout-matches {
@@ -1792,11 +1839,6 @@ function setPlacement(group, arr) {
   predictions.placements[group] = arr;
   markDirty();
 }
-function setBracketMatch(matchNum, data) {
-  if (!predictions.bracket) predictions.bracket = {};
-  predictions.bracket[String(matchNum)] = data;
-  markDirty();
-}
 
 function markDirty() {
   isDirty = true;
@@ -1865,110 +1907,6 @@ function computeGroupStandings(groupLetter) {
 // BEST THIRD PLACE COMPUTATION
 // ══════════════════════════════════════════════════════════════════════
 
-function computeBestThirds() {
-  const thirds = [];
-  const groups = Object.keys(T.groups);
-  for (const g of groups) {
-    const placements = predictions.placements?.[g];
-    if (placements && placements[2]) {
-      // Get the third-placed team's stats
-      const standings = computeGroupStandings(g);
-      const thirdTeam = placements[2];
-      const stat = standings.find(s => s.team === thirdTeam);
-      if (stat) {
-        thirds.push({ group: g, team: thirdTeam, pts: stat.pts, gd: stat.gd, gf: stat.gf });
-      }
-    }
-  }
-  // Rank thirds
-  thirds.sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
-  return thirds;
-}
-
-function getQualifyingThirds() {
-  const thirds = computeBestThirds();
-  return thirds.slice(0, 8); // Top 8 thirds qualify
-}
-
-function getThirdPlaceTeamForSlot(slot) {
-  // slot like "3ABCDF" - pick a qualifying third from those groups
-  const possibleGroups = slot.slice(1).split('');
-  const qualifying = getQualifyingThirds();
-  // Find a qualifying third from the possible groups that hasn't been assigned yet
-  // Simple approach: just find first match
-  for (const q of qualifying) {
-    if (possibleGroups.includes(q.group)) {
-      return q.team;
-    }
-  }
-  return null;
-}
-
-// More sophisticated allocation: assign all 8 third-place slots at once
-function allocateThirdPlaceTeams() {
-  const qualifying = getQualifyingThirds();
-  const qualGroups = qualifying.map(q => q.group).sort();
-  const qualGroupStr = qualGroups.join('');
-
-  // The R32 matches with third-place slots, in match number order
-  const thirdSlots = T.r32Matches.filter(m => String(m[3]).startsWith('3') || String(m[4]).startsWith('3'));
-  const allocation = {};
-
-  // For each slot, pick from the qualifying thirds
-  const assigned = new Set();
-  for (const m of thirdSlots) {
-    for (const side of [3, 4]) {
-      const slotStr = String(m[side]);
-      if (!slotStr.startsWith('3')) continue;
-      const possibleGroups = slotStr.slice(1).split('');
-      for (const q of qualifying) {
-        if (possibleGroups.includes(q.group) && !assigned.has(q.group)) {
-          allocation[String(m[0]) + '_' + (side === 3 ? 'home' : 'away')] = q.team;
-          assigned.add(q.group);
-          break;
-        }
-      }
-    }
-  }
-  return allocation;
-}
-
-// ══════════════════════════════════════════════════════════════════════
-// BRACKET TEAM RESOLUTION
-// ══════════════════════════════════════════════════════════════════════
-
-function resolveR32Team(slot, matchNum, side) {
-  if (!slot) return null;
-  const s = String(slot);
-  if (s.startsWith('3')) {
-    // Best third place
-    const alloc = allocateThirdPlaceTeams();
-    return alloc[matchNum + '_' + side] || null;
-  }
-  // e.g., "1A" = 1st in group A, "2B" = 2nd in group B
-  const pos = parseInt(s[0]) - 1; // 0-indexed
-  const group = s[1];
-  const placements = predictions.placements?.[group];
-  if (placements && placements[pos]) return placements[pos];
-  return null;
-}
-
-function resolveKnockoutTeam(source, matchNum, side) {
-  if (!source) return null;
-  const s = String(source);
-  // W73 = winner of match 73, L101 = loser of match 101
-  const isWinner = s[0] === 'W';
-  const isLoser = s[0] === 'L';
-  const srcMatch = s.slice(1);
-  const bracket = predictions.bracket || {};
-  const b = bracket[srcMatch];
-  if (!b || !b.winner) return null;
-  if (isWinner) return b.winner;
-  if (isLoser) {
-    return b.home === b.winner ? b.away : b.home;
-  }
-  return null;
-}
 
 // ══════════════════════════════════════════════════════════════════════
 // PROGRESS COMPUTATION
@@ -1994,15 +1932,15 @@ function computeProgress() {
     for (let i = 0; i < 4; i++) { if (arr[i]) filled++; }
   }
 
-  // Bracket winners (R32=16, R16=8, QF=4, SF=2, Bronze=1, Final=1 = 32)
-  total += 32;
-  const br = predictions.bracket || {};
-  const knockoutMatches = [...T.r32Matches, ...T.r16Matches, ...T.qfMatches, ...T.sfMatches,
-    [T.bronzeMatch[0]], [T.finalMatch[0]]];
-  for (const km of knockoutMatches) {
-    const mn = String(km[0]);
-    if (br[mn]?.winner) filled++;
-  }
+  // Knockout: 8 treor + 16 r16 + 8 qf + 4 sf + 4 final = 40
+  total += 40;
+  const thirds3 = predictions.thirdPlaceQualifiers || [];
+  for (let i = 0; i < 8; i++) { if (thirds3[i]) filled++; }
+  for (const t of (predictions.r16Teams || [])) if (t) filled++;
+  for (const t of (predictions.qfTeams  || [])) if (t) filled++;
+  for (const t of (predictions.sfTeams  || [])) if (t) filled++;
+  const fp0 = predictions.finalPlacements || {};
+  for (const k of ['1','2','3','4']) { if (fp0[k]) filled++; }
 
   // Special (firstScorer, topScorers x3, firstRedCard, firstPenalty = 6)
   total += 6;
@@ -2053,7 +1991,7 @@ function setTippaTab(tab) {
 function renderTippaTab() {
   const c = document.getElementById('tippaContent');
   if (tippaTab === 'grupper') renderGrupper(c);
-  else if (tippaTab === 'slutspel') renderSlutspel(c);
+  else if (tippaTab === 'slutspel') renderSlutspelDropdown(c);
   else if (tippaTab === 'special') renderSpecial(c);
 }
 
@@ -2232,256 +2170,200 @@ function onPlacementChange(group, pos, team) {
   // If we're on slutspel tab, we'd need to refresh. For now, bracket resolves dynamically.
 }
 
-// ─── SLUTSPEL — classic left-to-right bracket ───
+// ─── SLUTSPEL — dropdown per runda ───
 
-function renderSlutspel(container) {
-  // ── Layout constants ──────────────────────────────────────────────
-  const SLOT   = 60;   // px allocated per R32 match (height)
-  const MW     = 175;  // match box width
-  const MH     = 51;   // match box height (25 + 1 + 25)
-  const COL_W  = 205;  // column width including connector gap
-  const PAD    = 12;   // left padding inside column for match box
-  const TOTAL_H = 16 * SLOT;   // 960px
-  const TOTAL_W = 5 * COL_W;   // 1025px
+function renderSlutspelDropdown(container) {
+  if (!predictions.thirdPlaceQualifiers) predictions.thirdPlaceQualifiers = Array(8).fill('');
+  if (!predictions.r16Teams) predictions.r16Teams = [];
+  if (!predictions.qfTeams) predictions.qfTeams = [];
+  if (!predictions.sfTeams) predictions.sfTeams = [];
+  if (!predictions.finalPlacements) predictions.finalPlacements = {};
 
-  // ── Bracket order (top → bottom) for each round ──────────────────
-  // Derived from match data: each consecutive pair feeds the next round
-  const ORDER = [
-    [74,77, 73,75, 83,84, 81,82, 76,78, 79,80, 86,88, 85,87], // R32
-    [89, 90, 93, 94, 91, 92, 95, 96],                          // R16
-    [97, 98, 99, 100],                                          // QF
-    [101, 102],                                                 // SF
-    [104]                                                       // Final
+  const groups = Object.keys(T.groups).sort();
+
+  const autoWinners = groups.map(g => predictions.placements?.[g]?.[0] || null);
+  const autoRunners = groups.map(g => predictions.placements?.[g]?.[1] || null);
+  const thirds = predictions.thirdPlaceQualifiers;
+  const r32Flat = [...autoWinners, ...autoRunners, ...thirds].filter(Boolean);
+
+  const allThirdPossible = groups.map(g => predictions.placements?.[g]?.[2] || null).filter(Boolean);
+
+  const r32Count = autoWinners.filter(Boolean).length + autoRunners.filter(Boolean).length + thirds.filter(Boolean).length;
+  const r32Done  = r32Count === 32;
+
+  // ── Sextondelsfinal ──
+  let html = `<div class="ko-section">
+    <div class="ko-round-name">Sextondelsfinal <span class="ko-counter${r32Done ? ' ko-counter-done' : ''}">${r32Count}/32 lag</span></div>
+    <div class="ko-notice" style="margin-bottom:10px">24 lag fylls automatiskt från din grupptippning. Välj 8 bästa treor.</div>`;
+
+  html += `<div class="ko-auto-label" style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 5px">Vinnare grupp (automatisk)</div>
+    <div class="ko-chips" style="margin-bottom:10px">`;
+  for (let i = 0; i < groups.length; i++) {
+    const t = autoWinners[i];
+    html += `<div class="ko-chip auto${t ? '' : ' ko-chip-empty'}">${t ? teamWithFlag(t) : `Grupp ${groups[i]} 1:a`}</div>`;
+  }
+  html += `</div>
+    <div class="ko-auto-label" style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 5px">Tvåor grupp (automatisk)</div>
+    <div class="ko-chips" style="margin-bottom:10px">`;
+  for (let i = 0; i < groups.length; i++) {
+    const t = autoRunners[i];
+    html += `<div class="ko-chip auto${t ? '' : ' ko-chip-empty'}">${t ? teamWithFlag(t) : `Grupp ${groups[i]} 2:a`}</div>`;
+  }
+  html += `</div>
+    <div class="ko-auto-label" style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 5px">Bästa treor — välj 8</div>
+    <div class="ko-thirds-grid">`;
+  for (let i = 0; i < 8; i++) {
+    const cur = thirds[i] || '';
+    const otherUsed = thirds.filter((t, j) => j !== i && t);
+    const opts = allThirdPossible.filter(t => !otherUsed.includes(t) || t === cur);
+    if (cur && !opts.includes(cur)) opts.push(cur);
+    html += `<div><select class="form-input" style="font-size:13px" onchange="setThirdQualifier(${i},this.value)">
+      <option value="">— 3:a plats ${i + 1} —</option>`;
+    for (const t of opts) {
+      html += `<option value="${escHtml(t)}"${cur === t ? ' selected' : ''}>${escHtml(t)}</option>`;
+    }
+    html += `</select></div>`;
+  }
+  html += '</div></div>';
+
+  // ── Åttondelsfinal / Kvartsfinal / Semifinal ──
+  const koRounds = [
+    { key: 'r16Teams', name: 'Åttondelsfinal', source: r32Flat,                  pick: 16 },
+    { key: 'qfTeams',  name: 'Kvartsfinal',    source: predictions.r16Teams || [], pick: 8 },
+    { key: 'sfTeams',  name: 'Semifinal',       source: predictions.qfTeams  || [], pick: 4 },
   ];
-  const ROUND_KEY = ['r32','r16','qf','sf','final'];
-
-  // ── Match lookup ─────────────────────────────────────────────────
-  const matchMap = {};
-  [...T.r32Matches, ...T.r16Matches, ...T.qfMatches,
-   ...T.sfMatches, T.bronzeMatch, T.finalMatch]
-    .forEach(m => { matchMap[String(m[0])] = m; });
-
-  // ── Center Y for round n, position i ─────────────────────────────
-  function cY(n, i) {
-    const step = Math.pow(2, n) * SLOT;
-    return step * i + step / 2;
-  }
-
-  // ── SVG connector lines ──────────────────────────────────────────
-  const lines = [];
-  for (let n = 0; n < 4; n++) {
-    const rx  = n * COL_W + PAD + MW;        // right edge of this round's match
-    const lx  = (n + 1) * COL_W + PAD;       // left edge of next round's match
-    const mx  = Math.round((rx + lx) / 2);   // midpoint x for vertical bracket
-    const pairs = ORDER[n].length / 2;
-    for (let j = 0; j < pairs; j++) {
-      const ay = cY(n, j * 2);        // top sibling center y
-      const by = cY(n, j * 2 + 1);    // bottom sibling center y
-      const ny = cY(n + 1, j);        // parent match center y
-      lines.push(
-        `<line x1="${rx}" y1="${ay}" x2="${mx}" y2="${ay}"/>`,
-        `<line x1="${rx}" y1="${by}" x2="${mx}" y2="${by}"/>`,
-        `<line x1="${mx}" y1="${ay}" x2="${mx}" y2="${by}"/>`,
-        `<line x1="${mx}" y1="${ny}" x2="${lx}" y2="${ny}"/>`
-      );
-    }
-  }
-
-  // ── Render one match box ─────────────────────────────────────────
-  function bmHTML(matchNum, n, i) {
-    const mn = String(matchNum);
-    const m  = matchMap[mn];
-    if (!m) return '';
-    const d = parseMatchDate(m[1], m[2]);
-    const round = ROUND_KEY[n];
-
-    let homeTeam, awayTeam, homeLabel, awayLabel;
-    if (round === 'r32') {
-      homeTeam  = resolveR32Team(m[3], mn, 'home');
-      awayTeam  = resolveR32Team(m[4], mn, 'away');
-      homeLabel = formatSlotLabel(m[3]);
-      awayLabel = formatSlotLabel(m[4]);
+  for (const { key, name, source, pick } of koRounds) {
+    const sel = predictions[key] || [];
+    const cnt = sel.length;
+    const locked = source.length === 0;
+    html += `<div class="ko-section">
+      <div class="ko-round-name">${name} <span class="ko-counter${cnt === pick ? ' ko-counter-done' : ''}">${cnt}/${pick} valda</span></div>`;
+    if (locked) {
+      html += `<div class="ko-notice ko-notice-warn">Fyll i föregående runda för att låsa upp.</div>`;
     } else {
-      homeTeam  = resolveKnockoutTeam(m[3], mn, 'home');
-      awayTeam  = resolveKnockoutTeam(m[4], mn, 'away');
-      homeLabel = formatSourceLabel(m[3]);
-      awayLabel = formatSourceLabel(m[4]);
+      html += `<div class="ko-notice" style="margin-bottom:10px">Klicka på lagen som går vidare (${pick} st)</div><div class="ko-chips">`;
+      for (const team of source) {
+        const on   = sel.includes(team);
+        const full = !on && cnt >= pick;
+        html += `<div class="ko-chip${on ? ' selected' : ''}${full ? ' locked' : ''}"
+          data-round="${key}" data-team="${escHtml(team)}"
+          onclick="if(!this.classList.contains('locked'))toggleKoTeam(this.dataset.round,this.dataset.team)">${teamWithFlag(team)}</div>`;
+      }
+      html += '</div>';
     }
-
-    // Silently update bracket home/away so selectWinner can read them
-    if (!predictions.bracket) predictions.bracket = {};
-    if (!predictions.bracket[mn]) predictions.bracket[mn] = {};
-    predictions.bracket[mn].home = homeTeam || null;
-    predictions.bracket[mn].away = awayTeam || null;
-
-    const winner = predictions.bracket[mn].winner;
-    const left = n * COL_W + PAD;
-    const top  = cY(n, i) - Math.floor(MH / 2);
-
-    function teamRow(team, label, side) {
-      const empty   = !team;
-      const win     = !!(team && winner === team);
-      const cls     = `bm-team${empty ? ' bm-empty' : ''}${win ? ' bm-win' : ''}`;
-      const onclick = empty ? '' : `onclick="selectWinner('${mn}','${side}')"`;
-      const content = team
-        ? teamWithFlag(team)
-        : `<span class="bm-slot">${escHtml(label)}</span>`;
-      return `<div class="${cls}" ${onclick}>${content}</div>`;
-    }
-
-    return `<div class="bm-box" style="left:${left}px;top:${top}px;width:${MW}px;"
-      data-match="${mn}" title="Match ${mn} · ${formatDate(d)} ${formatTime(d)}">
-      ${teamRow(homeTeam, homeLabel, 'home')}
-      <div class="bm-divider"></div>
-      ${teamRow(awayTeam, awayLabel, 'away')}
-    </div>`;
+    html += '</div>';
   }
 
-  // ── Build all match boxes ─────────────────────────────────────────
-  let boxes = '';
-  ORDER.forEach((order, n) => {
-    order.forEach((mn, i) => { boxes += bmHTML(mn, n, i); });
-  });
-
-  // ── Column headers ────────────────────────────────────────────────
-  const HEADERS = ['32-delsfinal','16-delsfinal','Kvartsfinal','Semifinal','Final'];
-  const hdrHtml = HEADERS.map(h =>
-    `<div style="width:${COL_W}px">${h}</div>`
-  ).join('');
-
-  container.innerHTML = `
-    <div class="bracket-outer">
-      <div class="bracket-scroll">
-        <div class="bracket-col-headers" style="width:${TOTAL_W}px">${hdrHtml}</div>
-        <div class="bracket-field" style="width:${TOTAL_W}px;height:${TOTAL_H}px;">
-          <svg width="${TOTAL_W}" height="${TOTAL_H}" class="bracket-svg">
-            <g stroke="var(--border)" stroke-width="1.5" fill="none">${lines.join('')}</g>
-          </svg>
-          ${boxes}
-        </div>
-      </div>
-      <div class="bracket-bronze">
-        <div class="bracket-bronze-title">Bronsmatch</div>
-        <div class="knockout-matches">${renderKnockoutMatch(T.bronzeMatch, 'bronze')}</div>
-      </div>
-    </div>`;
-}
-
-function renderKnockoutMatch(m, round) {
-  const mn = String(m[0]);
-  const d = parseMatchDate(m[1], m[2]);
-  let homeTeam = null, awayTeam = null;
-  let homeSlot = m[3], awaySlot = m[4];
-  let homeLabel = String(m[3] || ''), awayLabel = String(m[4] || '');
-
-  if (round === 'r32') {
-    homeTeam = resolveR32Team(homeSlot, mn, 'home');
-    awayTeam = resolveR32Team(awaySlot, mn, 'away');
-    // Format labels
-    homeLabel = formatSlotLabel(homeSlot);
-    awayLabel = formatSlotLabel(awaySlot);
+  // ── Final & pallplatser ──
+  const sfTeams = predictions.sfTeams || [];
+  const fp = predictions.finalPlacements || {};
+  const locked5 = sfTeams.length < 4;
+  html += `<div class="ko-section">
+    <div class="ko-round-name">Final &amp; pallplatser</div>`;
+  if (locked5) {
+    html += `<div class="ko-notice ko-notice-warn">Välj 4 semifinalister för att låsa upp.</div>`;
   } else {
-    homeTeam = resolveKnockoutTeam(homeSlot, mn, 'home');
-    awayTeam = resolveKnockoutTeam(awaySlot, mn, 'away');
-    homeLabel = formatSourceLabel(homeSlot);
-    awayLabel = formatSourceLabel(awaySlot);
+    html += `<div class="ko-notice" style="margin-bottom:10px">Välj slutplacering 1–4 bland dina semifinalister.</div><div class="ko-final-grid">`;
+    const positions = [
+      { k: '1', label: '1:a plats (Vinnare)' },
+      { k: '2', label: '2:a plats (Runner-up)' },
+      { k: '3', label: '3:e plats' },
+      { k: '4', label: '4:e plats' },
+    ];
+    for (const { k, label } of positions) {
+      const usedElsewhere = positions.filter(p => p.k !== k).map(p => fp[p.k]).filter(Boolean);
+      html += `<div class="ko-final-item">
+        <label style="display:block;font-size:13px;font-weight:700;margin-bottom:5px">${label}</label>
+        <select class="form-input" style="font-size:13px" onchange="setFinalPlacement('${k}',this.value)">
+          <option value="">— Välj lag —</option>`;
+      for (const t of sfTeams) {
+        const dis = usedElsewhere.includes(t) ? ' disabled' : '';
+        html += `<option value="${escHtml(t)}"${fp[k] === t ? ' selected' : ''}${dis}>${escHtml(t)}</option>`;
+      }
+      html += `</select></div>`;
+    }
+    html += '</div>';
   }
+  html += '</div>';
 
-  const bracket = predictions.bracket || {};
-  const current = bracket[mn] || {};
-  const winner = current.winner;
-
-  // Update bracket home/away silently
-  if (homeTeam || awayTeam) {
-    if (!predictions.bracket) predictions.bracket = {};
-    if (!predictions.bracket[mn]) predictions.bracket[mn] = {};
-    predictions.bracket[mn].home = homeTeam;
-    predictions.bracket[mn].away = awayTeam;
-  }
-
-  const homeEmpty = !homeTeam;
-  const awayEmpty = !awayTeam;
-
-  const homeOnclick = homeEmpty ? '' : `selectWinner(&quot;${mn}&quot;,&quot;home&quot;)`;
-  const awayOnclick = awayEmpty ? '' : `selectWinner(&quot;${mn}&quot;,&quot;away&quot;)`;
-  let html = `<div class="knockout-match" data-match="${mn}">
-    <div class="match-label">Match ${mn} &middot; ${formatDate(d)} ${formatTime(d)}</div>
-    <div class="teams">
-      <div class="team-option ${homeEmpty?'empty':''} ${winner===homeTeam&&homeTeam?'selected':''}"
-        onclick="${homeOnclick}" title="${escHtml(homeLabel)}">
-        <span class="name">${homeTeam ? teamWithFlag(homeTeam) : homeLabel}</span>
-        ${winner===homeTeam&&homeTeam?'<span class="check">&#10003;</span>':''}
-      </div>
-      <div class="team-option ${awayEmpty?'empty':''} ${winner===awayTeam&&awayTeam?'selected':''}"
-        onclick="${awayOnclick}" title="${escHtml(awayLabel)}">
-        <span class="name">${awayTeam ? teamWithFlag(awayTeam) : awayLabel}</span>
-        ${winner===awayTeam&&awayTeam?'<span class="check">&#10003;</span>':''}
-      </div>
-    </div>
-  </div>`;
-  return html;
+  container.innerHTML = html;
 }
 
-function formatSlotLabel(slot) {
-  const s = String(slot);
-  if (s.startsWith('3')) {
-    return 'Bästa 3:a (' + s.slice(1).split('').join('/') + ')';
+function getAutoR32TeamsFlat() {
+  return Object.keys(T.groups).sort().flatMap(g => {
+    const pl = predictions.placements?.[g] || [];
+    return [pl[0], pl[1]].filter(Boolean);
+  });
+}
+
+function setThirdQualifier(idx, team) {
+  if (!predictions.thirdPlaceQualifiers) predictions.thirdPlaceQualifiers = Array(8).fill('');
+  predictions.thirdPlaceQualifiers[idx] = team;
+  _cascadeKoTrim();
+  markDirty(); updateProgress();
+  refreshSlutspel();
+}
+
+function toggleKoTeam(roundKey, team) {
+  if (!predictions[roundKey]) predictions[roundKey] = [];
+  const maxPick = { r16Teams: 16, qfTeams: 8, sfTeams: 4 }[roundKey];
+  const idx = predictions[roundKey].indexOf(team);
+  if (idx >= 0) {
+    predictions[roundKey].splice(idx, 1);
+    _cascadeKoRemoval(team, roundKey);
+  } else {
+    if (predictions[roundKey].length >= maxPick) return;
+    predictions[roundKey].push(team);
   }
-  const pos = s[0];
-  const group = s[1];
-  return (pos === '1' ? '1:a' : '2:a') + ' Grupp ' + group;
+  markDirty(); updateProgress();
+  refreshSlutspel();
 }
 
-function formatSourceLabel(source) {
-  const s = String(source);
-  if (s.startsWith('W')) return 'Vinnare match ' + s.slice(1);
-  if (s.startsWith('L')) return 'Förlorare match ' + s.slice(1);
-  return s;
-}
-
-function selectWinner(matchNum, side) {
-  if (!predictions.bracket) predictions.bracket = {};
-  if (!predictions.bracket[matchNum]) predictions.bracket[matchNum] = {};
-  const b = predictions.bracket[matchNum];
-  const winner = side === 'home' ? b.home : b.away;
-  if (!winner) return;
-
-  // Check if winner changed
-  const oldWinner = b.winner;
-  b.winner = winner;
-
-  // Clear downstream picks if winner changed
-  if (oldWinner && oldWinner !== winner) {
-    clearDownstream(matchNum);
+function _cascadeKoRemoval(team, fromRound) {
+  const order = ['r16Teams', 'qfTeams', 'sfTeams'];
+  const fromIdx = order.indexOf(fromRound);
+  for (let i = fromIdx + 1; i < order.length; i++) {
+    if (!predictions[order[i]]) continue;
+    predictions[order[i]] = predictions[order[i]].filter(t => t !== team);
   }
-
-  markDirty();
-  updateProgress();
-
-  // Re-render the entire knockout view to cascade changes
-  renderSlutspel(document.getElementById('tippaContent'));
+  if (predictions.finalPlacements) {
+    for (const k of Object.keys(predictions.finalPlacements)) {
+      if (predictions.finalPlacements[k] === team) delete predictions.finalPlacements[k];
+    }
+  }
 }
 
-function clearDownstream(matchNum) {
-  // Find any match that references this match's winner
-  const wRef = 'W' + matchNum;
-  const lRef = 'L' + matchNum;
-  const allMatches = [...T.r16Matches, ...T.qfMatches, ...T.sfMatches,
-    T.bronzeMatch, T.finalMatch];
-
-  for (const m of allMatches) {
-    const mn = String(m[0]);
-    if (String(m[3]) === wRef || String(m[4]) === wRef ||
-        String(m[3]) === lRef || String(m[4]) === lRef) {
-      if (predictions.bracket?.[mn]?.winner) {
-        const oldW = predictions.bracket[mn].winner;
-        delete predictions.bracket[mn].winner;
-        predictions.bracket[mn].home = null;
-        predictions.bracket[mn].away = null;
-        clearDownstream(mn);
+function _cascadeKoTrim() {
+  const r32All = [...getAutoR32TeamsFlat(), ...(predictions.thirdPlaceQualifiers || []).filter(Boolean)];
+  predictions.r16Teams = (predictions.r16Teams || []).filter(t => r32All.includes(t));
+  predictions.qfTeams  = (predictions.qfTeams  || []).filter(t => (predictions.r16Teams || []).includes(t));
+  predictions.sfTeams  = (predictions.sfTeams  || []).filter(t => (predictions.qfTeams  || []).includes(t));
+  if (predictions.finalPlacements) {
+    for (const k of Object.keys(predictions.finalPlacements)) {
+      if (!(predictions.sfTeams || []).includes(predictions.finalPlacements[k])) {
+        delete predictions.finalPlacements[k];
       }
     }
   }
+}
+
+function setFinalPlacement(position, team) {
+  if (!predictions.finalPlacements) predictions.finalPlacements = {};
+  if (!team) {
+    delete predictions.finalPlacements[position];
+  } else {
+    for (const k of Object.keys(predictions.finalPlacements)) {
+      if (predictions.finalPlacements[k] === team && k !== position) delete predictions.finalPlacements[k];
+    }
+    predictions.finalPlacements[position] = team;
+  }
+  markDirty(); updateProgress();
+  refreshSlutspel();
+}
+
+function refreshSlutspel() {
+  const c = document.getElementById('tippaContent');
+  if (c && tippaTab === 'slutspel') renderSlutspelDropdown(c);
 }
 
 // ─── SPECIAL TIPS ───
