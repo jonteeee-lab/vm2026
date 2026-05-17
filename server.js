@@ -221,7 +221,7 @@ function computeScore(pred, actual, consensusMap = {}) {
   let total = 0;
 
   // ── A. Group matches (72 matches) ──
-  let signPts = 0, marginPts = 0;
+  let signPts = 0, marginPts = 0, boostPts = 0;
   for (const m of GROUP_MATCHES) {
     const mn = String(m[0]);
     const p = pred.matches?.[mn];
@@ -233,13 +233,18 @@ function computeScore(pred, actual, consensusMap = {}) {
     const mult  = pct !== null ? consensusMult(pct) : 1;
     if (pSign === aSign) {
       signPts += SCORING.matchSign * mult;
+      if (mult > 1) boostPts += SCORING.matchSign * (mult - 1);
       const pMargin = Math.abs(Number(p[0]) - Number(p[1]));
       const aMargin = Math.abs(Number(a[0]) - Number(a[1]));
-      if (pMargin === aMargin) marginPts += SCORING.matchMargin * mult;
+      if (pMargin === aMargin) {
+        marginPts += SCORING.matchMargin * mult;
+        if (mult > 1) boostPts += SCORING.matchMargin * (mult - 1);
+      }
     }
   }
-  bd.matchSign   = Math.round(signPts);
-  bd.matchMargin = Math.round(marginPts);
+  bd.matchSign      = Math.round(signPts);
+  bd.matchMargin    = Math.round(marginPts);
+  bd.consensusBoost = Math.round(boostPts);
   total += bd.matchSign + bd.matchMargin;
 
   // ── B. Group placements (12 groups, tier scoring per group) ──

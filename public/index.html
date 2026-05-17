@@ -708,6 +708,90 @@ select.form-input {
 .leaderboard-table .rank-1 { color: var(--gold); font-size: 16px; }
 .leaderboard-table .rank-2 { color: #7a8a9a; font-size: 15px; }
 .leaderboard-table .rank-3 { color: #a0674a; font-size: 15px; }
+/* ══════ BOOST BADGE ══════ */
+.boost-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #1a7a3c, #0f5a2a);
+  color: #fff;
+  font-size: 11px; font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+}
+.boost-cell { font-size: 13px; }
+
+/* ══════ CONSENSUS BARS (Dagens matcher) ══════ */
+.dagensm-date-header {
+  font-size: 14px; font-weight: 700; color: var(--text2);
+  margin: 20px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.match-consensus-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.match-consensus-card .match-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.match-consensus-card .teams {
+  font-size: 14px; font-weight: 700;
+}
+.match-consensus-card .match-meta {
+  font-size: 12px; color: var(--text3);
+}
+.consensus-bars { display: flex; flex-direction: column; gap: 6px; }
+.consensus-bar-row {
+  display: grid;
+  grid-template-columns: 30px 1fr 42px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.consensus-bar-row .sign-label {
+  font-weight: 700; color: var(--text2); text-align: center;
+}
+.bar-outer {
+  background: var(--bg3);
+  border-radius: 4px;
+  height: 18px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.bar-inner {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+  display: flex; align-items: center; padding-left: 6px;
+  font-size: 10px; font-weight: 600; color: #fff;
+}
+.bar-mult {
+  font-size: 11px; font-weight: 700; text-align: right;
+  white-space: nowrap;
+}
+/* Multiplier color tiers */
+.mult-1  { color: var(--text3); }
+.mult-15 { color: #c8960c; }
+.mult-2  { color: #1a7a3c; font-weight: 800; }
+.mult-3  { color: #8b00d4; font-weight: 800; }
+.bar-mult-1  .bar-inner { background: #8898aa; }
+.bar-mult-15 .bar-inner { background: #c8960c; }
+.bar-mult-2  .bar-inner { background: #1a7a3c; }
+.bar-mult-3  .bar-inner { background: #8b00d4; }
+.dagensm-legend {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  font-size: 12px; margin-bottom: 16px; align-items: center;
+}
+.dagensm-legend span { display: flex; align-items: center; gap: 4px; }
+.leg-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  display: inline-block;
+}
+
 .leaderboard-table tr.expandable { cursor: pointer; }
 .leaderboard-table tr.expandable:hover { background: var(--bg3); }
 .leaderboard-table tr.breakdown-row td {
@@ -1110,6 +1194,15 @@ select.form-input {
       Topplista
     </div>
     <div id="leaderboardContent"><div class="loading-overlay"><div class="spinner"></div> Laddar...</div></div>
+  </div>
+
+  <!-- DAGENS MATCHER -->
+  <div class="view" id="view-dagensm">
+    <div class="section-title">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Dagens matcher
+    </div>
+    <div id="dagensmContent"><div class="loading-overlay"><div class="spinner"></div> Laddar...</div></div>
   </div>
 
   <!-- ALLA SVAR -->
@@ -1523,7 +1616,7 @@ function navigate(view) {
 
 function handleHash() {
   const hash = (window.location.hash || '#landing').slice(1);
-  const authed = ['tippa','resultat','leaderboard','alla','projektion','sidebets','admin','profil'];
+  const authed = ['tippa','resultat','leaderboard','dagensm','alla','projektion','sidebets','admin','profil'];
   if (authed.includes(hash) && !currentUser) {
     navigate('login');
     return;
@@ -1549,6 +1642,7 @@ function showView(view) {
   if (view === 'tippa') loadTippa();
   if (view === 'resultat') loadResultat();
   if (view === 'leaderboard') loadLeaderboard();
+  if (view === 'dagensm') loadDagensm();
   if (view === 'alla') loadAlla();
   if (view === 'projektion') loadProjektion();
   if (view === 'sidebets') loadSidebets();
@@ -1581,7 +1675,7 @@ function updateNav() {
     let html = '';
     const items = [
       ['tippa','Tippa'],['resultat','Resultat'],['leaderboard','Topplista'],
-      ['alla','Alla svar'],['projektion','Projektion'],['sidebets','Sidebets']
+      ['dagensm','Dagens matcher'],['alla','Alla svar'],['projektion','Projektion'],['sidebets','Sidebets']
     ];
     if (currentUser?.is_admin) items.push(['admin','Admin']);
     for (const [id, label] of items) {
@@ -1599,6 +1693,7 @@ function updateNav() {
       ['tippa','Tippa','<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>'],
       ['resultat','Resultat','<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'],
       ['leaderboard','Tabell','<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 7 17 7"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>'],
+      ['dagensm','Matcher','<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'],
       ['alla','Alla','<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>'],
       ['sidebets','Bets','<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>']
     ];
@@ -2631,8 +2726,9 @@ function renderLeaderboard(container, data) {
     snap.forEach((p, i) => { prevRanks[p.name] = i + 1; });
   }
 
+  const colCount = prevSnapshot ? 5 : 4;
   let html = '<div class="card" style="overflow-x:auto"><table class="leaderboard-table"><thead><tr>';
-  html += '<th>#</th><th>Namn</th><th>Poäng</th>';
+  html += '<th>#</th><th>Namn</th><th>Poäng</th><th title="Extra poäng från konsensus-multiplikator">Boost</th>';
   if (prevSnapshot) html += '<th>Förändring</th>';
   html += '</tr></thead><tbody>';
 
@@ -2650,34 +2746,45 @@ function renderLeaderboard(container, data) {
       changeHtml = '<span class="change-up">NY</span>';
     }
 
+    const boost = p.breakdown?.consensusBoost || 0;
+    const boostHtml = boost > 0
+      ? `<span class="boost-badge">+${boost}p</span>`
+      : '<span style="color:var(--text3)">-</span>';
+
     const lbRowClass = rank <= 3 ? 'lb-rank-' + rank : '';
     html += `<tr class="expandable ${lbRowClass}" onclick="toggleBreakdown(this)">
       <td class="rank ${rankClass}">${rank}</td>
       <td class="name-cell">${avatarHtml(p.avatar, p.name, 'sm')}<span>${escHtml(p.name)}</span></td>
-      <td class="points-cell">${p.points}</td>`;
+      <td class="points-cell">${p.points}</td>
+      <td class="boost-cell">${boostHtml}</td>`;
     if (prevSnapshot) html += `<td>${changeHtml}</td>`;
     html += '</tr>';
 
     // Breakdown row
-    html += `<tr class="breakdown-row"><td colspan="${prevSnapshot?4:3}">
+    html += `<tr class="breakdown-row"><td colspan="${colCount}">
       <div class="breakdown-content">
         <div class="breakdown-grid">`;
     const bdLabels = {
-      matchSign: '1X2', matchExact: 'Exakt resultat', matchSignBonus: '1X2-bonus',
-      matchExactBonus: 'Exakt-bonus', placements: 'Placeringar', placementsBonus: 'Placeringsbonus',
-      r32: 'R32-lag', r32Bonus: 'R32-bonus', r16: 'R16-lag', r16Bonus: 'R16-bonus',
-      qf: 'KF-lag', qfBonus: 'KF-bonus', sf: 'SF-lag', sfBonus: 'SF-bonus',
-      finalPlacements: 'Final 1-4', topScorers: 'Skytteliga',
-      firstScorer: 'Första mål', firstRedCard: 'Rött kort', firstPenalty: 'Straff'
+      matchSign:      '1X2-tecken',
+      matchMargin:    'Marginaltips',
+      consensusBoost: 'Konsensus-boost',
+      placements:     'Grupplaceringar',
+      r32:            '16-delsfinal',
+      r16:            '8-delsfinal',
+      qf:             'Kvartsfinal',
+      sf:             'Semifinal',
+      finalPlacements:'Final & pallplaceringar',
+      questions:      'Frågorna'
     };
     const bd = p.breakdown || {};
     for (const [key, label] of Object.entries(bdLabels)) {
       const val = bd[key] || 0;
       if (val > 0) {
-        html += `<div class="breakdown-item"><span class="label">${label}</span><span class="value">${val}p</span></div>`;
+        const extra = key === 'consensusBoost' ? ' style="color:var(--green);font-weight:700"' : '';
+        html += `<div class="breakdown-item"${extra}><span class="label">${label}</span><span class="value">${val}p</span></div>`;
       }
     }
-    if (Object.values(bd).every(v => !v)) {
+    if (Object.values(bd).filter(v => v > 0).length === 0) {
       html += '<div class="breakdown-item"><span class="label">Inga poäng ännu</span><span class="value">0p</span></div>';
     }
     html += '</div></div></td></tr>';
@@ -2693,6 +2800,112 @@ function toggleBreakdown(row) {
     const content = next.querySelector('.breakdown-content');
     content.classList.toggle('open');
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// DAGENS MATCHER VIEW
+// ══════════════════════════════════════════════════════════════════════
+
+async function loadDagensm() {
+  const c = document.getElementById('dagensmContent');
+  c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Laddar...</div>';
+  try {
+    const [tournData, consensusData] = await Promise.all([
+      loadTournament(),
+      api('/api/consensus')
+    ]);
+    renderDagensm(c, tournData, consensusData);
+  } catch (err) {
+    c.innerHTML = '<div class="empty-state">' + escHtml(err.message) + '</div>';
+  }
+}
+
+function multLabel(pct) {
+  if (pct > 0.50) return { text: '1x',   cls: 'mult-1' };
+  if (pct > 0.25) return { text: '1.5x', cls: 'mult-15' };
+  if (pct > 0.10) return { text: '2x',   cls: 'mult-2' };
+  return               { text: '3x',   cls: 'mult-3' };
+}
+
+function barCls(pct) {
+  if (pct > 0.50) return 'bar-mult-1';
+  if (pct > 0.25) return 'bar-mult-15';
+  if (pct > 0.10) return 'bar-mult-2';
+  return 'bar-mult-3';
+}
+
+function renderDagensm(container, tournData, consensusData) {
+  const { groupMatches } = tournData;
+  const { consensusMap, total } = consensusData;
+
+  // Group matches by date
+  const byDate = {};
+  for (const m of groupMatches) {
+    const [num, date, time, home, away, group] = m;
+    if (!byDate[date]) byDate[date] = [];
+    byDate[date].push({ num, date, time, home, away, group });
+  }
+
+  const months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+  function fmtDate(d) {
+    const dt = new Date(d + 'T12:00:00');
+    return dt.getDate() + ' ' + months[dt.getMonth()];
+  }
+
+  let html = `
+    <div class="card" style="margin-bottom:12px">
+      <p style="font-size:13px;color:var(--text2)">
+        Visar hur <strong>${total}</strong> deltagare har tippat varje match.
+        Konsensusmultiplikatorn tilldelas automatiskt vid rättning &mdash; ju mer du avviker från mängden och har rätt, desto fler poäng.
+      </p>
+      <div class="dagensm-legend" style="margin-top:12px;margin-bottom:0">
+        <span><span class="leg-dot" style="background:#8898aa"></span> 1x &gt;50% tippade rätt</span>
+        <span><span class="leg-dot" style="background:#c8960c"></span> 1.5x 25-50%</span>
+        <span><span class="leg-dot" style="background:#1a7a3c"></span> 2x 10-25%</span>
+        <span><span class="leg-dot" style="background:#8b00d4"></span> 3x &lt;10%</span>
+      </div>
+    </div>`;
+
+  for (const [date, matches] of Object.entries(byDate)) {
+    html += `<div class="dagensm-date-header">${fmtDate(date)}</div>`;
+    for (const m of matches) {
+      const mn = String(m.num);
+      const cons = consensusMap[mn];
+      html += `<div class="match-consensus-card">
+        <div class="match-header">
+          <span class="teams">${escHtml(m.home)} &ndash; ${escHtml(m.away)}</span>
+          <span class="match-meta">Grupp ${m.group} &middot; ${m.time} ET</span>
+        </div>`;
+
+      if (!cons) {
+        html += `<div style="font-size:12px;color:var(--text3)">Inga tips registrerade</div>`;
+      } else {
+        html += `<div class="consensus-bars">`;
+        for (const [sign, label] of [['1', m.home], ['X', 'Oavgjort'], ['2', m.away]]) {
+          const pct = cons[sign] || 0;
+          const pctPct = Math.round(pct * 100);
+          const { text: mText, cls: mCls } = multLabel(pct);
+          const bc = barCls(pct);
+          const barW = Math.max(pct * 100, pct > 0 ? 4 : 0);
+          html += `<div class="consensus-bar-row">
+            <span class="sign-label">${sign}</span>
+            <div class="bar-outer ${bc}">
+              <div class="bar-inner" style="width:${barW}%">${pctPct > 12 ? pctPct + '%' : ''}</div>
+            </div>
+            <span class="bar-mult ${mCls}">${mText}</span>
+          </div>`;
+        }
+        html += `</div>`;
+      }
+      html += `</div>`;
+    }
+  }
+
+  if (!Object.keys(byDate).length) {
+    html = '<div class="empty-state">Inga matcher hittades.</div>';
+  }
+
+  container.innerHTML = html;
 }
 
 // ══════════════════════════════════════════════════════════════════════
