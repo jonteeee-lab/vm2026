@@ -404,17 +404,23 @@ select.form-input {
 .group-card-body { padding: 12px; }
 
 /* Match row */
+.match-row-header {
+  display: grid; grid-template-columns: 1fr 94px 44px; gap: 8px;
+  font-size: 11px; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .5px;
+  padding: 2px 0 6px; border-bottom: 2px solid var(--border); margin-bottom: 2px;
+}
+.match-row-header > div:not(:first-child) { text-align: center; }
 .match-row {
-  display: flex; align-items: center; gap: 6px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 13px;
+  display: grid; grid-template-columns: 1fr 94px 44px;
+  align-items: center; gap: 8px;
+  padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px;
 }
 .match-row:last-of-type { border-bottom: none; }
-.match-row .date { color: var(--text3); font-size: 11px; min-width: 60px; }
-.match-row .team { flex: 1; text-align: right; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
-.match-row .team.away { text-align: left; }
-.match-tip { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.match-teams { font-weight: 600; overflow: hidden; }
+.match-date { display: block; font-size: 11px; font-weight: 400; color: var(--text3); margin-bottom: 2px; }
+.match-vs { color: var(--text3); font-weight: 400; margin: 0 3px; }
+.margin-cell { width: 44px; display: flex; justify-content: center; }
 .sign-btns { display: flex; gap: 2px; }
 .sign-btn {
   width: 30px; height: 34px;
@@ -2033,29 +2039,29 @@ function renderGroupCard(g) {
     </div>
     <div class="group-card-body">`;
 
+  // Match column headers
+  html += `<div class="match-row-header">
+    <div></div><div>Tecken</div><div>Marginal</div>
+  </div>`;
+
   // Matches
   for (const m of matches) {
     const mn = String(m[0]);
     const d = parseMatchDate(m[1], m[2]);
     const sign   = getMatchSign(mn);
     const margin = getMatchMargin(mn);
-    const isX    = sign === 'X';
-    html += `<div class="match-row" id="matchRow_${mn}">
-      <span class="date">${formatDate(d)} ${formatTime(d)}</span>
-      <span class="team">${teamFlag(m[3])} ${m[3]}</span>
-      <div class="match-tip">
-        <div class="sign-btns">
-          <button class="sign-btn${sign==='1'?' active':''}" onclick="setMatchTip('${mn}','1','${g}')">1</button>
-          <button class="sign-btn${sign==='X'?' active':''}" onclick="setMatchTip('${mn}','X','${g}')">X</button>
-          <button class="sign-btn${sign==='2'?' active':''}" onclick="setMatchTip('${mn}','2','${g}')">2</button>
-        </div>
-        <input type="number" class="margin-input" min="1" max="15"
-          value="${isX ? 0 : (margin !== '' ? margin : '')}"
-          ${isX ? 'disabled' : ''}
-          onchange="setMatchMarginUI('${mn}',this.value,'${g}')" onfocus="this.select()"
-          placeholder="${sign ? (isX ? '0' : 'mål') : ''}">
+    const showMargin = sign === '1' || sign === '2';
+    html += `<div class="match-row" id="matchRow_${mn}" data-group="${g}">
+      <span class="match-teams">
+        <span class="match-date">${formatDate(d)} ${formatTime(d)}</span>
+        ${teamFlag(m[3])} ${m[3]}<span class="match-vs">–</span>${teamFlag(m[4])} ${m[4]}
+      </span>
+      <div class="sign-btns">
+        <button class="sign-btn${sign==='1'?' active':''}" onclick="setMatchTip('${mn}','1','${g}')">1</button>
+        <button class="sign-btn${sign==='X'?' active':''}" onclick="setMatchTip('${mn}','X','${g}')">X</button>
+        <button class="sign-btn${sign==='2'?' active':''}" onclick="setMatchTip('${mn}','2','${g}')">2</button>
       </div>
-      <span class="team away">${teamFlag(m[4])} ${m[4]}</span>
+      <div class="margin-cell">${showMargin ? _marginInputHTML(mn, g, margin) : ''}</div>
     </div>`;
   }
 
@@ -2098,6 +2104,12 @@ function renderPlacementButtonsHTML(g, teams, placements) {
     html += `</div></div>`;
   }
   return html;
+}
+
+function _marginInputHTML(mn, group, margin) {
+  const val = margin !== '' ? margin : '';
+  return `<input type="number" class="margin-input" min="1" max="15" value="${val}"
+    onchange="setMatchMarginUI('${mn}',this.value,'${group}')" onfocus="this.select()">`;
 }
 
 function getMatchSign(mn) {
@@ -2176,17 +2188,17 @@ function _refreshGroupStandings(mn, group) {
     }
   }
 
-  // Refresh sign buttons for this match row so active state stays correct
+  // Refresh sign buttons and margin cell for this match row
   const row = document.getElementById('matchRow_' + mn);
   if (row) {
     const sign = getMatchSign(mn);
     row.querySelectorAll('.sign-btn').forEach((btn, i) => {
       btn.classList.toggle('active', ['1','X','2'][i] === sign);
     });
-    const mi = row.querySelector('.margin-input');
-    if (mi) {
-      mi.disabled = sign === 'X';
-      if (sign === 'X') mi.value = 0;
+    const cell = row.querySelector('.margin-cell');
+    if (cell) {
+      const g2 = row.dataset.group;
+      cell.innerHTML = (sign === '1' || sign === '2') ? _marginInputHTML(mn, g2, getMatchMargin(mn)) : '';
     }
   }
 
