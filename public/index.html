@@ -414,29 +414,31 @@ select.form-input {
 .match-row .date { color: var(--text3); font-size: 11px; min-width: 60px; }
 .match-row .team { flex: 1; text-align: right; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
 .match-row .team.away { text-align: left; }
-.match-row .score-inputs {
-  display: flex; align-items: center; gap: 3px;
-  flex-shrink: 0;
+.match-tip { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.sign-btns { display: flex; gap: 2px; }
+.sign-btn {
+  width: 30px; height: 34px;
+  border: 2px solid var(--border); border-radius: 6px;
+  background: var(--bg3); color: var(--text2);
+  font-family: inherit; font-size: 13px; font-weight: 700;
+  cursor: pointer; padding: 0;
+  transition: background .1s, border-color .1s, color .1s;
 }
-.match-row .score-input {
+.sign-btn.active { background: var(--primary); border-color: var(--accent); color: var(--accent); }
+.sign-btn:hover:not(.active) { border-color: var(--accent); }
+.margin-input {
   width: 38px; height: 34px;
-  text-align: center;
-  border: none;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 15px; font-weight: 900;
-  background: var(--primary);
-  color: var(--accent);
+  text-align: center; border: none; border-radius: 6px;
+  font-family: inherit; font-size: 15px; font-weight: 900;
+  background: var(--primary); color: var(--accent);
   -moz-appearance: textfield;
 }
-.match-row .score-input::-webkit-inner-spin-button,
-.match-row .score-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-.match-row .score-input:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-  background: #1a3460;
-}
-.match-row .score-dash { font-weight: 900; color: var(--primary); }
+.margin-input::-webkit-inner-spin-button,
+.margin-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.margin-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.margin-input:disabled { opacity: 0.35; cursor: not-allowed; }
+.ko-rank-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.ko-rank-label { font-size: 12px; font-weight: 700; min-width: 70px; color: var(--text3); }
 
 /* Group standings table */
 .group-table {
@@ -2024,7 +2026,7 @@ function renderGroupCard(g) {
   const placementsFilled = placements.length === 4 && placements.every(Boolean);
   const checkIcon = (allFilled && placementsFilled) ? ' &#10003;' : '';
 
-  let html = `<div class="group-card">
+  let html = `<div class="group-card" id="groupCard_${g}">
     <div class="group-card-header" data-group="${g}">
       <span>Grupp ${g}</span>
       <span class="check-icon">${checkIcon}</span>
@@ -2035,16 +2037,23 @@ function renderGroupCard(g) {
   for (const m of matches) {
     const mn = String(m[0]);
     const d = parseMatchDate(m[1], m[2]);
-    const score = pm[mn] || ['', ''];
-    html += `<div class="match-row">
+    const sign   = getMatchSign(mn);
+    const margin = getMatchMargin(mn);
+    const isX    = sign === 'X';
+    html += `<div class="match-row" id="matchRow_${mn}">
       <span class="date">${formatDate(d)} ${formatTime(d)}</span>
       <span class="team">${teamFlag(m[3])} ${m[3]}</span>
-      <div class="score-inputs">
-        <input type="number" class="score-input" min="0" max="20" value="${score[0]!==''&&score[0]!=null?score[0]:''}"
-          onchange="onMatchScore('${mn}', 0, this.value, '${g}')" onfocus="this.select()">
-        <span class="score-dash">-</span>
-        <input type="number" class="score-input" min="0" max="20" value="${score[1]!==''&&score[1]!=null?score[1]:''}"
-          onchange="onMatchScore('${mn}', 1, this.value, '${g}')" onfocus="this.select()">
+      <div class="match-tip">
+        <div class="sign-btns">
+          <button class="sign-btn${sign==='1'?' active':''}" onclick="setMatchTip('${mn}','1','${g}')">1</button>
+          <button class="sign-btn${sign==='X'?' active':''}" onclick="setMatchTip('${mn}','X','${g}')">X</button>
+          <button class="sign-btn${sign==='2'?' active':''}" onclick="setMatchTip('${mn}','2','${g}')">2</button>
+        </div>
+        <input type="number" class="margin-input" min="1" max="15"
+          value="${isX ? 0 : (margin !== '' ? margin : '')}"
+          ${isX ? 'disabled' : ''}
+          onchange="setMatchMarginUI('${mn}',this.value,'${g}')" onfocus="this.select()"
+          placeholder="${sign ? (isX ? '0' : 'mål') : ''}">
       </div>
       <span class="team away">${teamFlag(m[4])} ${m[4]}</span>
     </div>`;
@@ -2091,19 +2100,51 @@ function renderPlacementButtonsHTML(g, teams, placements) {
   return html;
 }
 
-function onMatchScore(matchNum, idx, value, group) {
-  if (!predictions.matches) predictions.matches = {};
-  if (!predictions.matches[matchNum]) predictions.matches[matchNum] = ['', ''];
-  predictions.matches[matchNum][idx] = value === '' ? '' : parseInt(value);
-  markDirty();
+function getMatchSign(mn) {
+  const s = predictions.matches?.[mn];
+  if (!s || s[0] === '' || s[0] == null || s[1] === '' || s[1] == null) return null;
+  const h = parseInt(s[0]), a = parseInt(s[1]);
+  if (isNaN(h) || isNaN(a)) return null;
+  return h > a ? '1' : h === a ? 'X' : '2';
+}
 
-  // Recompute standings for this group
+function getMatchMargin(mn) {
+  const s = predictions.matches?.[mn];
+  if (!s || s[0] === '' || s[0] == null) return '';
+  const h = parseInt(s[0]), a = parseInt(s[1]);
+  if (isNaN(h) || isNaN(a)) return '';
+  return Math.abs(h - a);
+}
+
+function setMatchTip(mn, sign, group) {
+  const curMargin = getMatchMargin(mn);
+  const margin = sign === 'X' ? 0 : (curMargin !== '' && curMargin > 0 ? curMargin : 1);
+  _applyMatchTip(mn, sign, margin, group);
+}
+
+function setMatchMarginUI(mn, val, group) {
+  const sign = getMatchSign(mn);
+  if (!sign || sign === 'X') return;
+  const margin = Math.max(1, parseInt(val) || 1);
+  _applyMatchTip(mn, sign, margin, group);
+}
+
+function _applyMatchTip(mn, sign, margin, group) {
+  if (!predictions.matches) predictions.matches = {};
+  if (sign === '1')      predictions.matches[mn] = [margin, 0];
+  else if (sign === 'X') predictions.matches[mn] = [0, 0];
+  else                   predictions.matches[mn] = [0, margin];
+  markDirty();
+  _refreshGroupStandings(mn, group);
+}
+
+function _refreshGroupStandings(mn, group) {
   const standings = computeGroupStandings(group);
   const table = document.getElementById('groupTable_' + group);
   if (table) {
     const rows = table.querySelectorAll('tr');
     standings.forEach((s, i) => {
-      const row = rows[i + 1]; // skip header
+      const row = rows[i + 1];
       if (!row) return;
       row.className = i < 2 ? 'qualified' : (i === 2 ? 'third-best' : '');
       const cells = row.querySelectorAll('td');
@@ -2119,26 +2160,46 @@ function onMatchScore(matchNum, idx, value, group) {
     });
   }
 
-  // Auto-set placements from computed standings if user hasn't manually set them
+  // Auto-set placements when all 6 group matches are filled
   const computedOrder = standings.map(s => s.team);
   if (!predictions.placements) predictions.placements = {};
-  // Only auto-set if all 6 matches in this group have scores
-  const matches = T.groupMatches.filter(m => m[5] === group);
-  let allFilled = true;
-  for (const m of matches) {
-    const s = predictions.matches[String(m[0])];
-    if (!s || s[0] === '' || s[0] == null || s[1] === '' || s[1] == null) { allFilled = false; break; }
-  }
+  const groupMatches = T.groupMatches.filter(m => m[5] === group);
+  const allFilled = groupMatches.every(m => {
+    const s = predictions.matches?.[String(m[0])];
+    return s && s[0] !== '' && s[0] != null && s[1] !== '' && s[1] != null;
+  });
   if (allFilled) {
     predictions.placements[group] = computedOrder;
-    // Update placement buttons for this group
-    const placementSectionAuto = document.getElementById('placement_' + group);
-    if (placementSectionAuto) {
-      const teamsAuto = T.groups[group];
-      placementSectionAuto.innerHTML = renderPlacementButtonsHTML(group, teamsAuto, computedOrder);
+    const placementEl = document.getElementById('placement_' + group);
+    if (placementEl) {
+      placementEl.innerHTML = renderPlacementButtonsHTML(group, T.groups[group], computedOrder);
     }
   }
+
+  // Refresh sign buttons for this match row so active state stays correct
+  const row = document.getElementById('matchRow_' + mn);
+  if (row) {
+    const sign = getMatchSign(mn);
+    row.querySelectorAll('.sign-btn').forEach((btn, i) => {
+      btn.classList.toggle('active', ['1','X','2'][i] === sign);
+    });
+    const mi = row.querySelector('.margin-input');
+    if (mi) {
+      mi.disabled = sign === 'X';
+      if (sign === 'X') mi.value = 0;
+    }
+  }
+
   updateProgress();
+}
+
+function onMatchScore(matchNum, idx, value, group) {
+  // Legacy — kept for any external callers; routes through new logic
+  if (!predictions.matches) predictions.matches = {};
+  if (!predictions.matches[matchNum]) predictions.matches[matchNum] = ['', ''];
+  predictions.matches[matchNum][idx] = value === '' ? '' : parseInt(value);
+  markDirty();
+  _refreshGroupStandings(matchNum, group);
 }
 
 function onPlacementChange(group, pos, team) {
@@ -2263,26 +2324,26 @@ function renderSlutspelDropdown(container) {
   if (locked5) {
     html += `<div class="ko-notice ko-notice-warn">Välj 4 semifinalister för att låsa upp.</div>`;
   } else {
-    html += `<div class="ko-notice" style="margin-bottom:10px">Välj slutplacering 1–4 bland dina semifinalister.</div><div class="ko-final-grid">`;
+    html += `<div class="ko-notice" style="margin-bottom:12px">Klicka på rätt lag för varje placering.</div>`;
     const positions = [
-      { k: '1', label: '1:a plats (Vinnare)' },
-      { k: '2', label: '2:a plats (Runner-up)' },
+      { k: '1', label: 'Vinnare' },
+      { k: '2', label: 'Runner-up' },
       { k: '3', label: '3:e plats' },
       { k: '4', label: '4:e plats' },
     ];
     for (const { k, label } of positions) {
-      const usedElsewhere = positions.filter(p => p.k !== k).map(p => fp[p.k]).filter(Boolean);
-      html += `<div class="ko-final-item">
-        <label style="display:block;font-size:13px;font-weight:700;margin-bottom:5px">${label}</label>
-        <select class="form-input" style="font-size:13px" onchange="setFinalPlacement('${k}',this.value)">
-          <option value="">— Välj lag —</option>`;
+      html += `<div class="ko-rank-row">
+        <div class="ko-rank-label">${label}</div>
+        <div class="ko-chips">`;
       for (const t of sfTeams) {
-        const dis = usedElsewhere.includes(t) ? ' disabled' : '';
-        html += `<option value="${escHtml(t)}"${fp[k] === t ? ' selected' : ''}${dis}>${escHtml(t)}</option>`;
+        const isThis  = fp[k] === t;
+        const isOther = !isThis && Object.values(fp).includes(t);
+        html += `<div class="ko-chip${isThis ? ' selected' : ''}${isOther ? ' locked' : ''}"
+          data-pos="${k}" data-team="${escHtml(t)}"
+          onclick="if(!this.classList.contains('locked'))setFinalPlacement(this.dataset.pos,this.dataset.team)">${teamWithFlag(t)}</div>`;
       }
-      html += `</select></div>`;
+      html += `</div></div>`;
     }
-    html += '</div>';
   }
   html += '</div>';
 
@@ -2351,6 +2412,8 @@ function setFinalPlacement(position, team) {
   if (!predictions.finalPlacements) predictions.finalPlacements = {};
   if (!team) {
     delete predictions.finalPlacements[position];
+  } else if (predictions.finalPlacements[position] === team) {
+    delete predictions.finalPlacements[position]; // toggle off
   } else {
     for (const k of Object.keys(predictions.finalPlacements)) {
       if (predictions.finalPlacements[k] === team && k !== position) delete predictions.finalPlacements[k];
