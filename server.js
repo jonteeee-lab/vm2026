@@ -294,17 +294,39 @@ function computeScore(pred, actual, consensusMap = {}) {
   bd.finalPlacements = finalPts;
   total += finalPts;
 
-  // ── H. Questions (up to 10, 4p each) ──
+  // ── H. Questions ──
   let questionPts = 0;
   const pQ = pred.questions || {};
   const aQ = actual.questions || {};
-  for (let i = 1; i <= 10; i++) {
-    const key = `q${i}`;
-    if (pQ[key] && aQ[key] &&
-        String(pQ[key]).toLowerCase().trim() === String(aQ[key]).toLowerCase().trim()) {
+
+  // Q1-Q3: skytteliga topp 3 — pool-based, order irrelevant
+  const actualPool = ['q1','q2','q3']
+    .map(k => String(aQ[k] || '').toLowerCase().trim())
+    .filter(Boolean);
+  const usedActual = new Set();
+  for (const key of ['q1','q2','q3']) {
+    const pVal = String(pQ[key] || '').toLowerCase().trim();
+    if (pVal && actualPool.includes(pVal) && !usedActual.has(pVal)) {
+      usedActual.add(pVal);
       questionPts += SCORING.question;
     }
   }
+
+  // Q4-Q6: comma-separated multi-correct answers
+  for (const key of ['q4','q5','q6']) {
+    const pVal = String(pQ[key] || '').toLowerCase().trim();
+    const accepted = String(aQ[key] || '').split(',')
+      .map(s => s.toLowerCase().trim()).filter(Boolean);
+    if (pVal && accepted.includes(pVal)) questionPts += SCORING.question;
+  }
+
+  // Q7-Q10: exact string match
+  for (const key of ['q7','q8','q9','q10']) {
+    const pVal = String(pQ[key] || '').toLowerCase().trim();
+    const aVal = String(aQ[key] || '').toLowerCase().trim();
+    if (pVal && aVal && pVal === aVal) questionPts += SCORING.question;
+  }
+
   bd.questions = questionPts;
   total += questionPts;
 
@@ -375,12 +397,12 @@ app.post('/api/auth/register', async (req, res) => {
     if (existing) return res.status(400).json({ error: 'E-postadressen är redan registrerad' });
     const hash = bcrypt.hashSync(password, 10);
     const isFirst = !(await get('SELECT id FROM users LIMIT 1'));
-    await run('INSERT INTO users (name, email, password_hash, is_admin) VALUES (?, ?, ?, ?)',
-      [name, email, hash, isFirst ? 1 : 0]);
-    const user = await get('SELECT id, name, email, is_admin, avatar FROM users WHERE email = ?', [email]);
+    await run('INSERT INTO users (name, email, password_hash, is_admin, approved) VALUES (?, ?, ?, ?, ?)',
+      [name, email, hash, isFirst ? 1 : 0, isFirst ? 1 : 0]);
+    const user = await get('SELECT id, name, email, is_admin, approved, avatar FROM users WHERE email = ?', [email]);
     const token = jwt.sign({ id: user.id, name: user.name, email: user.email, is_admin: user.is_admin }, JWT_SECRET, { expiresIn: '30d' });
     res.cookie('token', token, { httpOnly: true, maxAge: 30*24*60*60*1000 });
-    res.json({ user, token });
+    res.json({ user: { ...user, submitted: false }, token });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -390,19 +412,21 @@ app.post('/api/auth/login', async (req, res) => {
     const user = await get('SELECT * FROM users WHERE email = ?', [email]);
     if (!user || !bcrypt.compareSync(password, user.password_hash))
       return res.status(401).json({ error: 'Fel e-post eller lösenord' });
+    const pred = await get('SELECT submitted_at FROM predictions WHERE user_id = ?', [user.id]);
     const payload = { id: user.id, name: user.name, email: user.email, is_admin: user.is_admin };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' });
     res.cookie('token', token, { httpOnly: true, maxAge: 30*24*60*60*1000 });
-    res.json({ user: { ...payload, avatar: user.avatar }, token });
+    res.json({ user: { ...payload, avatar: user.avatar, approved: user.approved, submitted: !!pred?.submitted_at }, token });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/auth/logout', (req, res) => { res.clearCookie('token'); res.json({ ok: true }); });
 app.get('/api/auth/me', auth, async (req, res) => {
   try {
-    const u = await get('SELECT id, name, email, is_admin, avatar FROM users WHERE id = ?', [req.user.id]);
+    const u = await get('SELECT id, name, email, is_admin, approved, avatar FROM users WHERE id = ?', [req.user.id]);
     if (!u) return res.status(401).json({ error: 'Användare borttagen' });
-    res.json({ user: u });
+    const pred = await get('SELECT submitted_at FROM predictions WHERE user_id = ?', [req.user.id]);
+    res.json({ user: { ...u, submitted: !!pred?.submitted_at } });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -473,16 +497,21 @@ app.post('/api/predictions', auth, async (req, res) => {
     (await all('SELECT key, value FROM settings')).forEach(r => { settings[r.key] = r.value; });
     if (settings.locked === '1') return res.status(403).json({ error: 'Tipset är låst' });
     if (new Date(settings.deadline) < new Date()) return res.status(403).json({ error: 'Deadline har passerat' });
-    const { data } = req.body;
-    const existing = await get('SELECT id FROM predictions WHERE user_id = ?', [req.user.id]);
+    const { data, submit } = req.body;
+    const existing = await get('SELECT id, submitted_at FROM predictions WHERE user_id = ?', [req.user.id]);
     if (existing) {
-      await run('UPDATE predictions SET data = ?, updated_at = NOW() WHERE user_id = ?',
-        [JSON.stringify(data), req.user.id]);
+      if (submit && !existing.submitted_at) {
+        await run('UPDATE predictions SET data = ?, updated_at = NOW(), submitted_at = NOW() WHERE user_id = ?',
+          [JSON.stringify(data), req.user.id]);
+      } else {
+        await run('UPDATE predictions SET data = ?, updated_at = NOW() WHERE user_id = ?',
+          [JSON.stringify(data), req.user.id]);
+      }
     } else {
-      await run('INSERT INTO predictions (user_id, data) VALUES (?, ?)',
+      await run(`INSERT INTO predictions (user_id, data, submitted_at) VALUES (?, ?, ${submit ? 'NOW()' : 'NULL'})`,
         [req.user.id, JSON.stringify(data)]);
     }
-    res.json({ ok: true });
+    res.json({ ok: true, submitted: submit ? true : undefined });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -510,7 +539,7 @@ app.get('/api/results', auth, async (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 async function calcLeaderboard() {
-  const users = await all('SELECT id, name, avatar FROM users ORDER BY created_at');
+  const users = await all('SELECT id, name, avatar FROM users WHERE approved = 1 ORDER BY created_at');
   const preds = await all('SELECT user_id, data FROM predictions');
   const resRow = await get('SELECT data FROM results ORDER BY id LIMIT 1');
   const actualData = resRow ? resRow.data : {};
@@ -681,8 +710,24 @@ app.put('/api/admin/settings', adminAuth, async (req, res) => {
 });
 
 app.get('/api/admin/users', adminAuth, async (req, res) => {
-  try { res.json(await all('SELECT id, name, email, is_admin, created_at FROM users ORDER BY created_at')); }
-  catch (e) { res.status(500).json({ error: e.message }); }
+  try {
+    const users = await all('SELECT u.id, u.name, u.email, u.is_admin, u.approved, u.created_at, p.submitted_at FROM users u LEFT JOIN predictions p ON p.user_id = u.id ORDER BY u.created_at');
+    res.json(users);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/admin/pending', adminAuth, async (req, res) => {
+  try {
+    const users = await all(`SELECT u.id, u.name, u.email, u.created_at, p.submitted_at FROM users u JOIN predictions p ON p.user_id = u.id WHERE u.approved = 0 AND p.submitted_at IS NOT NULL ORDER BY p.submitted_at`);
+    res.json(users);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/admin/users/:id/approve', adminAuth, async (req, res) => {
+  try {
+    await run('UPDATE users SET approved = 1 WHERE id = ?', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/admin/users', adminAuth, async (req, res) => {

@@ -713,6 +713,80 @@ select.form-input {
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 16px;
 }
+.special-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.special-option-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  color: var(--text1);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.special-option-btn:hover { border-color: var(--primary); }
+.special-option-btn.selected {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ══════ WELCOME BANNER & PAYMENT ══════ */
+.welcome-banner {
+  background: linear-gradient(135deg, var(--primary), #1a6b3c);
+  color: #fff;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+.welcome-banner h2 { margin: 0 0 8px; font-size: 18px; }
+.welcome-banner p { margin: 4px 0; font-size: 14px; opacity: 0.92; }
+.payment-card {
+  background: var(--surface2);
+  border: 2px solid var(--green);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.payment-card .check-icon { font-size: 40px; margin-bottom: 12px; }
+.payment-card h2 { margin: 0 0 12px; color: var(--green); }
+.payment-card .swish-amount { font-size: 32px; font-weight: 800; color: var(--text1); margin: 16px 0 4px; }
+.payment-card .swish-number { font-size: 22px; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+.payment-card p { font-size: 13px; color: var(--text2); margin: 4px 0; }
+.payment-card .payment-note { margin-top: 16px; padding: 10px 14px; background: var(--gold-bg); border-radius: 8px; font-size: 12px; color: var(--text2); }
+.submit-btn-wrap { text-align: center; padding: 16px 0 8px; }
+.btn-submit-tip { font-size: 16px; padding: 14px 40px; border-radius: 12px; }
+/* Locked leaderboard blur */
+.lb-blur-wrap { position: relative; }
+.lb-blur-wrap .lb-blur-overlay {
+  position: absolute; inset: 0;
+  backdrop-filter: blur(6px);
+  background: rgba(0,0,0,0.18);
+  border-radius: 12px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 2;
+}
+.lb-blur-overlay .lb-count { font-size: 28px; font-weight: 800; color: var(--text1); }
+.lb-blur-overlay .lb-count-label { font-size: 13px; color: var(--text2); margin-top: 4px; }
+/* Nav lock icon */
+.nav-locked { opacity: 0.4; pointer-events: none; cursor: not-allowed; }
+/* Scoring info view */
+.scoring-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.scoring-table th { text-align: left; padding: 8px 10px; font-size: 12px; color: var(--text3); border-bottom: 2px solid var(--border); }
+.scoring-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.scoring-table tr:last-child td { border-bottom: none; }
+.scoring-table .pts { font-weight: 700; color: var(--accent); text-align: right; white-space: nowrap; }
+.mult-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+.mult-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.mult-table td:last-child { font-weight: 700; text-align: right; }
 
 /* ══════ SAVE BAR ══════ */
 .save-bar {
@@ -998,6 +1072,7 @@ select.form-input {
 .toast.show { transform: translateX(0); }
 .toast.error { background: var(--red); }
 .toast.success { background: var(--green); }
+.toast.info { background: var(--primary); }
 
 /* ══════ LOADING ══════ */
 .spinner {
@@ -1218,6 +1293,7 @@ select.form-input {
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       Tippa
     </div>
+    <div id="tippaBanner"></div>
     <div id="countdownBar" class="countdown-bar">
       <div>
         <div class="label">Deadline</div>
@@ -1239,6 +1315,10 @@ select.form-input {
       <button onclick="setTippaTab('special')">Specialtips</button>
     </div>
     <div id="tippaContent"></div>
+    <div class="submit-btn-wrap" id="submitBtnWrap" style="display:none">
+      <button class="btn btn-primary btn-submit-tip" onclick="submitTip()">Skicka in mitt tips ✓</button>
+      <p style="font-size:12px;color:var(--text3);margin-top:8px">Alla fält är ifyllda. Klicka för att skicka in och få betalningsinstruktioner.</p>
+    </div>
   </div>
 
   <!-- RESULTAT -->
@@ -1308,8 +1388,18 @@ select.form-input {
       <button onclick="setAdminTab('users')">Användare</button>
       <button onclick="setAdminTab('settings')">Inställningar</button>
       <button onclick="setAdminTab('snapshots')">Snapshots</button>
+      <button onclick="setAdminTab('godkann')" id="adminPendingBtn">Godkänn</button>
     </div>
     <div id="adminContent"></div>
+  </div>
+
+  <!-- INFO / POÄNGBERÄKNING -->
+  <div class="view" id="view-info">
+    <div class="section-title">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Poängberäkning &amp; regler
+    </div>
+    <div id="infoContent"></div>
   </div>
 
   <!-- PROFIL -->
@@ -1339,6 +1429,8 @@ let settings = {};
 let predictions = {};  // user's predictions
 let saveTimeout = null;
 let isDirty = false;
+let userApproved = false;
+let userSubmitted = false;
 let currentView = 'landing';
 let tippaTab = 'grupper';
 let adminTab = 'results-group';
@@ -1607,11 +1699,17 @@ async function api(url, opts = {}) {
 // AUTH
 // ══════════════════════════════════════════════════════════════════════
 
+function applyUserState(user) {
+  currentUser = user;
+  userApproved = !!(user?.approved);
+  userSubmitted = !!(user?.submitted);
+}
+
 async function checkAuth() {
   try {
     const { user } = await api('/api/auth/me');
-    currentUser = user;
-  } catch { currentUser = null; }
+    applyUserState(user);
+  } catch { currentUser = null; userApproved = false; userSubmitted = false; }
   updateNav();
 }
 
@@ -1627,7 +1725,7 @@ async function handleLogin(e) {
         password: document.getElementById('loginPassword').value
       })
     });
-    currentUser = user;
+    applyUserState(user);
     updateNav();
     navigate('tippa');
     showToast('Inloggad!', 'success');
@@ -1650,7 +1748,7 @@ async function handleRegister(e) {
         password: document.getElementById('regPassword').value
       })
     });
-    currentUser = user;
+    applyUserState(user);
     updateNav();
     navigate('tippa');
     showToast('Registrerad och inloggad!', 'success');
@@ -1663,6 +1761,8 @@ async function handleRegister(e) {
 async function logout() {
   await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
   currentUser = null;
+  userApproved = false;
+  userSubmitted = false;
   predictions = {};
   updateNav();
   navigate('landing');
@@ -1679,12 +1779,18 @@ function navigate(view) {
 
 function handleHash() {
   const hash = (window.location.hash || '#landing').slice(1);
-  const authed = ['tippa','resultat','leaderboard','dagensm','alla','projektion','sidebets','admin','profil'];
+  const authed = ['tippa','resultat','leaderboard','dagensm','alla','projektion','sidebets','admin','profil','info'];
   if (authed.includes(hash) && !currentUser) {
     navigate('login');
     return;
   }
   if (hash === 'admin' && !currentUser?.is_admin) {
+    navigate('tippa');
+    return;
+  }
+  const requiresApproval = ['resultat','dagensm','alla','projektion','sidebets'];
+  if (requiresApproval.includes(hash) && !userApproved) {
+    showToast('Tillgängligt när ditt tips är godkänt av admin.', 'info');
     navigate('tippa');
     return;
   }
@@ -1711,6 +1817,7 @@ function showView(view) {
   if (view === 'sidebets') loadSidebets();
   if (view === 'admin') loadAdmin();
   if (view === 'profil') renderProfile();
+  if (view === 'info') renderInfo();
 }
 
 function updateNav() {
@@ -1735,16 +1842,17 @@ function updateNav() {
   // Desktop nav
   const links = document.getElementById('navLinks');
   if (loggedIn) {
-    let html = '';
+    const locked = ['resultat','dagensm','alla','projektion','sidebets'];
     const items = [
       ['tippa','Tippa'],['resultat','Resultat'],['leaderboard','Topplista'],
-      ['dagensm','Dagens matcher'],['alla','Alla svar'],['projektion','Projektion'],['sidebets','Sidebets']
+      ['dagensm','Dagens matcher'],['alla','Alla svar'],['projektion','Projektion'],
+      ['sidebets','Sidebets'],['info','Regler']
     ];
     if (currentUser?.is_admin) items.push(['admin','Admin']);
-    for (const [id, label] of items) {
-      html += `<a href="#${id}" class="${currentView===id?'active':''}">${label}</a>`;
-    }
-    links.innerHTML = html;
+    links.innerHTML = items.map(([id, label]) => {
+      const isLocked = locked.includes(id) && !userApproved;
+      return `<a href="#${id}" class="${currentView===id?'active':''}${isLocked?' nav-locked':''}" title="${isLocked?'Kräver godkänt tips':''}">${label}</a>`;
+    }).join('');
   } else {
     links.innerHTML = '<a href="#login" class="' + (currentView==='login'?'active':'') + '">Logga in</a><a href="#register" class="' + (currentView==='register'?'active':'') + '">Registrera</a>';
   }
@@ -1752,18 +1860,19 @@ function updateNav() {
   // Bottom nav
   const bn = document.getElementById('bottomNav');
   if (loggedIn) {
+    const locked = ['resultat','dagensm','alla','sidebets'];
     const items = [
       ['tippa','Tippa','<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>'],
-      ['resultat','Resultat','<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'],
       ['leaderboard','Tabell','<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 7 17 7"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>'],
       ['dagensm','Matcher','<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'],
-      ['alla','Alla','<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>'],
-      ['sidebets','Bets','<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>']
+      ['info','Regler','<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'],
+      ['profil','Profil','<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>']
     ];
     if (currentUser?.is_admin) items.push(['admin','Admin','<circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>']);
-    bn.innerHTML = items.map(([id,label,icon]) =>
-      `<a href="#${id}" class="${currentView===id?'active':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${icon}</svg>${label}</a>`
-    ).join('');
+    bn.innerHTML = items.map(([id,label,icon]) => {
+      const isLocked = locked.includes(id) && !userApproved;
+      return `<a href="#${id}" class="${currentView===id?'active':''}${isLocked?' nav-locked':''}" title="${isLocked?'Kräver godkänt tips':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${icon}</svg>${label}</a>`;
+    }).join('');
   } else { bn.innerHTML = ''; }
 }
 
@@ -1958,13 +2067,10 @@ function computeProgress() {
   const fp0 = predictions.finalPlacements || {};
   for (const k of ['1','2','3','4']) { if (fp0[k]) filled++; }
 
-  // Special (firstScorer, topScorers x3, firstRedCard, firstPenalty = 6)
-  total += 6;
-  if (predictions.firstScorer) filled++;
-  if (predictions.firstRedCard) filled++;
-  if (predictions.firstPenalty) filled++;
-  const ts = predictions.topScorers || [];
-  for (let i = 0; i < 3; i++) { if (ts[i]) filled++; }
+  // Special (q1–q10)
+  total += 10;
+  const qs = predictions.questions || {};
+  for (let i = 1; i <= 10; i++) { if (qs['q'+i]) filled++; }
 
   return total > 0 ? Math.round((filled / total) * 100) : 0;
 }
@@ -1973,6 +2079,94 @@ function updateProgress() {
   const pct = computeProgress();
   document.getElementById('progressFill').style.width = pct + '%';
   document.getElementById('progressText').textContent = pct + '% klart';
+  const wrap = document.getElementById('submitBtnWrap');
+  if (wrap) wrap.style.display = (pct === 100 && !userSubmitted && !userApproved) ? '' : 'none';
+}
+
+async function submitTip() {
+  if (computeProgress() < 100) { showToast('Fyll i alla fält innan du skickar.', 'error'); return; }
+  try {
+    await api('/api/predictions', { method: 'POST', body: JSON.stringify({ data: predictions, submit: true }) });
+    userSubmitted = true;
+    isDirty = false;
+    document.getElementById('saveBar').classList.remove('visible');
+    document.getElementById('submitBtnWrap').style.display = 'none';
+    const banner = document.getElementById('tippaBanner');
+    if (banner) banner.innerHTML = `
+      <div class="payment-card">
+        <div class="check-icon">✅</div>
+        <h2>Tips inskickat!</h2>
+        <p>Ditt tips är registrerat och väntar på betalningsbekräftelse.</p>
+        <div class="swish-amount">330 kr</div>
+        <div class="swish-number">073 040 40 68</div>
+        <p><strong>Jonathan Lindqvist</strong></p>
+        <div class="payment-note">
+          300 kr går till prissumman &bull; 30 kr täcker hosting &amp; administration<br>
+          Märk gärna Swish-betalningen med ditt namn. Du får tillgång till alla funktioner när Jonathan eller Pelle bekräftat betalningen.
+        </div>
+      </div>`;
+    showToast('Tips inskickat!', 'success');
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+function renderInfo() {
+  const c = document.getElementById('infoContent');
+  c.innerHTML = `
+    <div class="card" style="margin-bottom:16px">
+      <h3>Hur tipset fungerar</h3>
+      <p style="font-size:14px;color:var(--text2);line-height:1.6">
+        Du tippar alla 72 gruppspelsmatcher, grupplaceringar, slutspelsträdet och 10 specialfrågor.
+        Poängen summeras och den med flest poäng vinner prissumman. Startavgiften är 330 kr — 300 kr
+        går till prissumman och 30 kr täcker hosting och administration.
+      </p>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h3>Poängöversikt</h3>
+      <table class="scoring-table">
+        <thead><tr><th>Kategori</th><th>Detalj</th><th class="pts">Poäng</th></tr></thead>
+        <tbody>
+          <tr><td>Rätt tecken (1/X/2)</td><td>× konsensus­multiplikator</td><td class="pts">3p</td></tr>
+          <tr><td>Rätt vinstmarginal</td><td>Enbart 1 och 2, ingen multiplikator</td><td class="pts">+2p</td></tr>
+          <tr><td>Grupplacering</td><td>0/1/2/4 rätt per grupp</td><td class="pts">0/5/10/20p</td></tr>
+          <tr><td>16-delsfinal — rätt lag</td><td>+ 15p om alla 32 rätt</td><td class="pts">1p/lag</td></tr>
+          <tr><td>8-delsfinal — rätt lag</td><td>+ 15p om alla 16 rätt</td><td class="pts">3p/lag</td></tr>
+          <tr><td>Kvartsfinal — rätt lag</td><td>+ 15p om alla 8 rätt</td><td class="pts">6p/lag</td></tr>
+          <tr><td>Semifinal — rätt lag</td><td>+ 15p om alla 4 rätt</td><td class="pts">12p/lag</td></tr>
+          <tr><td>Finalist (ordning­oberoende)</td><td>Per korrekt finalist</td><td class="pts">8p</td></tr>
+          <tr><td>Exakt VM-vinnare</td><td>Utöver finalist­poäng</td><td class="pts">+12p</td></tr>
+          <tr><td>Exakt runner-up</td><td>Utöver finalist­poäng</td><td class="pts">+8p</td></tr>
+          <tr><td>Exakt 3:e plats</td><td></td><td class="pts">8p</td></tr>
+          <tr><td>Exakt 4:e plats</td><td></td><td class="pts">8p</td></tr>
+          <tr><td>Specialfrågor</td><td>10 frågor × 4p</td><td class="pts">40p max</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h3>Konsensus­multiplikatorn</h3>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:10px">
+        Enbart på matchresultat (1X2) i gruppspelet. Ju färre som tippade rätt, desto mer är poängen värda.
+        Detta belönar modet att avvika från mängden — och straffar att följa AI-flockens tips.
+      </p>
+      <table class="mult-table">
+        <tr><td>Mer än 50 % tippade rätt</td><td style="color:var(--text3)">1×</td></tr>
+        <tr><td>26–50 % tippade rätt</td><td style="color:#c8960c">1,5×</td></tr>
+        <tr><td>11–25 % tippade rätt</td><td style="color:var(--green)">2×</td></tr>
+        <tr><td>10 % eller färre tippade rätt</td><td style="color:#8b00d4">3×</td></tr>
+      </table>
+      <p style="font-size:12px;color:var(--text3);margin-top:10px">
+        Multiplika­torn gäller <strong>inte</strong> på vinstmarginal, grupplaceringar, slutspel eller specialfrågor — alla sådana poäng är fasta.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>Betalning &amp; registrering</h3>
+      <p style="font-size:14px;color:var(--text2);line-height:1.6">
+        Swisha <strong>330 kr</strong> till <strong>073 040 40 68</strong> (Jonathan Lindqvist) när ditt tips är inskickat.
+        Märk betalningen med ditt namn. Jonathan eller Pelle bekräftar betalningen och aktiverar ditt konto.
+      </p>
+    </div>`;
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1984,13 +2178,41 @@ async function loadTippa() {
   await loadSettings();
   startCountdown();
 
-  // Load predictions
   try {
     const data = await api('/api/predictions');
     if (data && typeof data === 'object' && Object.keys(data).length > 0) {
       predictions = typeof data === 'string' ? JSON.parse(data) : data;
     }
   } catch {}
+
+  // Show payment pending card if submitted but not yet approved
+  const banner = document.getElementById('tippaBanner');
+  if (banner) {
+    if (userSubmitted && !userApproved) {
+      banner.innerHTML = `
+        <div class="payment-card">
+          <div class="check-icon">✅</div>
+          <h2>Tips inskickat!</h2>
+          <p>Ditt tips är registrerat och väntar på betalningsbekräftelse.</p>
+          <div class="swish-amount">330 kr</div>
+          <div class="swish-number">073 040 40 68</div>
+          <p><strong>Jonathan Lindqvist</strong></p>
+          <div class="payment-note">
+            300 kr går till prissumman &bull; 30 kr täcker hosting &amp; administration<br>
+            Märk gärna Swish-betalningen med ditt namn. Du får tillgång till alla funktioner när Jonathan eller Pelle bekräftat betalningen.
+          </div>
+        </div>`;
+    } else if (!userApproved) {
+      banner.innerHTML = `
+        <div class="welcome-banner">
+          <h2>Välkommen till VM-Bettet 2026! 🏆</h2>
+          <p>Fyll i ditt tips nedan — gruppspel, slutspel och specialfrågor.</p>
+          <p>När alla fält är ifyllda kan du skicka in ditt tips och betala anmälningsavgiften.</p>
+        </div>`;
+    } else {
+      banner.innerHTML = '';
+    }
+  }
 
   renderTippaTab();
   updateProgress();
@@ -2451,59 +2673,97 @@ function refreshSlutspel() {
 
 // ─── SPECIAL TIPS ───
 
+function setQ(key, val) {
+  if (!predictions.questions) predictions.questions = {};
+  predictions.questions[key] = val;
+  markDirty();
+  updateProgress();
+  renderSpecial(document.getElementById('tippaContent'));
+}
+
 function renderSpecial(container) {
-  const allTeams = T.allTeams;
-  const ts = predictions.topScorers || ['','',''];
-  const fs = predictions.firstScorer || '';
-  const frc = predictions.firstRedCard || '';
-  const fp = predictions.firstPenalty || '';
+  const q = predictions.questions || {};
+  const allTeams = T.allTeams.slice().sort((a,b) => a.localeCompare(b,'sv'));
 
   let html = '<div class="special-grid">';
 
-  // First goal scorer
+  // Q1-Q3: Skytteligan topp 3
   html += `<div class="card">
-    <h3>Turneringens första målskytt</h3>
-    <p class="text-muted" style="margin-bottom:10px">Sök på spelarens efternamn</p>
-    <div class="form-group">
-      ${makeAutocomplete('firstScorer', fs, (v) => { predictions.firstScorer = v; markDirty(); updateProgress(); })}
-    </div>
-  </div>`;
-
-  // Top 3 scorers
-  html += `<div class="card">
-    <h3>Skytteliga topp 3</h3>
-    <p class="text-muted" style="margin-bottom:10px">Sök på efternamn, rankad 1-3</p>`;
-  for (let i = 0; i < 3; i++) {
+    <h3>Skytteligan topp 3</h3>
+    <p class="text-muted" style="margin-bottom:10px">Namnge tre spelare du tror slutar i topp 3. Ordningen spelar ingen roll — du får 4p per spelare som faktiskt hamnar i topp 3.</p>`;
+  for (let i = 1; i <= 3; i++) {
     html += `<div class="form-group">
-      <label>${i+1}:a skyttekung</label>
-      ${makeAutocomplete('topScorer'+i, ts[i]||'', ((idx) => (v) => { if(!predictions.topScorers)predictions.topScorers=['','','']; predictions.topScorers[idx]=v; markDirty(); updateProgress(); })(i))}
+      <label>Spelare ${i}</label>
+      ${makeAutocomplete('qsp'+i, q['q'+i]||'', ((k) => (v) => {
+        if (!predictions.questions) predictions.questions = {};
+        predictions.questions[k] = v;
+        markDirty(); updateProgress();
+      })('q'+i))}
     </div>`;
   }
   html += '</div>';
 
-  // First red card team
+  // Q4: Flest assist
   html += `<div class="card">
-    <h3>Första röda kortet - lag</h3>
-    <p class="text-muted" style="margin-bottom:10px">Vilket lag får turneringens första röda kort?</p>
+    <h3>Flest assist i turneringen</h3>
+    <p class="text-muted" style="margin-bottom:10px">Om flera spelare delar rekordet räcker det att du namngett någon av dem.</p>
     <div class="form-group">
-      <select class="form-input" onchange="predictions.firstRedCard=this.value;markDirty();updateProgress()">
+      ${makeAutocomplete('qsp4', q.q4||'', (v) => {
+        if (!predictions.questions) predictions.questions = {};
+        predictions.questions.q4 = v;
+        markDirty(); updateProgress();
+      })}
+    </div>
+  </div>`;
+
+  // Q5: Mest mål i gruppspelet
+  html += `<div class="card">
+    <h3>Lag med flest mål i gruppspelet</h3>
+    <p class="text-muted" style="margin-bottom:10px">Om flera lag delar rekordet räcker det att du valt något av dem.</p>
+    <div class="form-group">
+      <select class="form-input" onchange="if(!predictions.questions)predictions.questions={};predictions.questions.q5=this.value;markDirty();updateProgress()">
         <option value="">Välj lag...</option>`;
-  for (const t of allTeams.sort((a,b) => a.localeCompare(b,'sv'))) {
-    html += `<option value="${t}" ${frc===t?'selected':''}>${t}</option>`;
+  for (const t of allTeams) {
+    html += `<option value="${escHtml(t)}" ${q.q5===t?'selected':''}>${escHtml(t)}</option>`;
   }
   html += `</select></div></div>`;
 
-  // First penalty team
+  // Q6: Flest insläppta mål
   html += `<div class="card">
-    <h3>Första straffen - lag</h3>
-    <p class="text-muted" style="margin-bottom:10px">Vilket lag får turneringens första straffspark?</p>
+    <h3>Lag som släpper in flest mål i gruppspelet</h3>
+    <p class="text-muted" style="margin-bottom:10px">Om flera lag delar rekordet räcker det att du valt något av dem.</p>
     <div class="form-group">
-      <select class="form-input" onchange="predictions.firstPenalty=this.value;markDirty();updateProgress()">
+      <select class="form-input" onchange="if(!predictions.questions)predictions.questions={};predictions.questions.q6=this.value;markDirty();updateProgress()">
         <option value="">Välj lag...</option>`;
-  for (const t of allTeams.sort((a,b) => a.localeCompare(b,'sv'))) {
-    html += `<option value="${t}" ${fp===t?'selected':''}>${t}</option>`;
+  for (const t of allTeams) {
+    html += `<option value="${escHtml(t)}" ${q.q6===t?'selected':''}>${escHtml(t)}</option>`;
   }
   html += `</select></div></div>`;
+
+  // Q7-Q10: flervalsfrågor
+  const mcQuestions = [
+    { key: 'q7', label: 'Antal lag utan mål i gruppspelet',
+      options: [['0','0 lag'],['1-2','1-2 lag'],['3-4','3-4 lag'],['5+','5 eller fler']] },
+    { key: 'q8', label: 'Snabbaste målet i omgång 1',
+      hint: 'I vilken minut faller det snabbaste målet under matchomgång 1?',
+      options: [['1-2','Inom 2 min'],['3-5','Minut 3-5'],['6-10','Minut 6-10'],['11+','Minut 11+']] },
+    { key: 'q9', label: 'Hattrick i omgång 3?',
+      hint: 'Kommer någon spelare göra hattrick i sista gruppspelsomgången?',
+      options: [['nej','Nej'],['ja-en','Ja, en spelare'],['ja-flera','Ja, flera']] },
+    { key: 'q10', label: 'VM-vinnarens land börjar på...',
+      options: [['a-d','A-D'],['e-k','E-K'],['l-s','L-S'],['t-ö','T-Ö']] }
+  ];
+
+  for (const { key, label, hint, options } of mcQuestions) {
+    html += `<div class="card"><h3>${label}</h3>`;
+    if (hint) html += `<p class="text-muted" style="margin-bottom:10px">${escHtml(hint)}</p>`;
+    html += '<div class="special-options">';
+    for (const [val, display] of options) {
+      const sel = q[key] === val;
+      html += `<button class="special-option-btn${sel?' selected':''}" onclick="setQ('${key}','${val}')">${escHtml(display)}</button>`;
+    }
+    html += '</div></div>';
+  }
 
   html += '</div>';
   container.innerHTML = html;
@@ -2548,10 +2808,7 @@ function renderResultat(container, data) {
     ['qf', 'qfBonus', 'KF'],
     ['sf', 'sfBonus', 'SF'],
     ['finalPlacements', null, 'Final 1-4'],
-    ['topScorers', null, 'Skytteliga'],
-    ['firstScorer', null, 'Första mål'],
-    ['firstRedCard', null, 'Rött kort'],
-    ['firstPenalty', null, 'Straff']
+    ['questions', null, 'Specialtips']
   ];
   for (const [key, bonusKey, label] of categories) {
     const pts = (bd[key] || 0) + (bonusKey ? (bd[bonusKey] || 0) : 0);
@@ -2616,35 +2873,41 @@ function renderResultat(container, data) {
 
   // Special tips results
   html += '<div class="card"><h3>Specialtips</h3>';
-  const specials = [
-    ['firstScorer', 'Första målskytt'],
-    ['firstRedCard', 'Första röda kort (lag)'],
-    ['firstPenalty', 'Första straff (lag)']
+  const qLabels = [
+    ['q1','Skytteligan topp 3 — spelare 1'],
+    ['q2','Skytteligan topp 3 — spelare 2'],
+    ['q3','Skytteligan topp 3 — spelare 3'],
+    ['q4','Flest assist'],
+    ['q5','Mest mål i gruppspelet (lag)'],
+    ['q6','Flest insläppta mål i gruppspelet (lag)'],
+    ['q7','Antal lag utan mål i gruppspelet'],
+    ['q8','Snabbaste målet i omgång 1'],
+    ['q9','Hattrick i omgång 3?'],
+    ['q10','VM-vinnarens land börjar på...']
   ];
-  for (const [key, label] of specials) {
-    const p = prediction?.[key] || '-';
-    const a = actual?.[key];
-    if (!a) {
-      html += `<div class="result-match-row pending"><span>${label}: ${p}</span><span class="pts">-</span></div>`;
+  const pQ2 = prediction?.questions || {};
+  const aQ2 = actual?.questions || {};
+  for (const [key, label] of qLabels) {
+    const pVal = pQ2[key] || '-';
+    const aVal = aQ2[key];
+    if (!aVal) {
+      html += `<div class="result-match-row pending"><span>${label}: ${escHtml(pVal)}</span><span class="pts">-</span></div>`;
     } else {
-      const ok = String(p).toLowerCase().trim() === String(a).toLowerCase().trim();
-      html += `<div class="result-match-row ${ok?'correct':'wrong'}"><span>${label}: Tips: ${p} | Facit: ${a}</span>
-        <span class="pts ${ok?'positive':'zero'}">${ok?'+'+bd[key]+'p':'0p'}</span></div>`;
-    }
-  }
-  // Top scorers
-  const pTs = prediction?.topScorers || [];
-  const aTs = actual?.topScorers || [];
-  if (aTs.length > 0) {
-    for (let i = 0; i < 3; i++) {
-      const p = pTs[i] || '-';
-      const a = aTs[i] || '-';
-      const ok = p && a && p.toLowerCase().trim() === a.toLowerCase().trim();
-      html += `<div class="result-match-row ${ok?'correct':'wrong'}"><span>Skyttekung #${i+1}: Tips: ${p} | Facit: ${a}</span></div>`;
-    }
-  } else {
-    for (let i = 0; i < 3; i++) {
-      html += `<div class="result-match-row pending"><span>Skyttekung #${i+1}: ${pTs[i]||'-'}</span><span class="pts">-</span></div>`;
+      // Q1-Q3: pool check; Q4-Q6: comma-split; Q7-Q10: exact
+      let ok = false;
+      if (['q1','q2','q3'].includes(key)) {
+        const pool = ['q1','q2','q3'].map(k => String(aQ2[k]||'').toLowerCase().trim()).filter(Boolean);
+        ok = pool.includes(String(pVal).toLowerCase().trim()) && pVal !== '-';
+      } else if (['q4','q5','q6'].includes(key)) {
+        const accepted = String(aVal).split(',').map(s => s.toLowerCase().trim()).filter(Boolean);
+        ok = accepted.includes(String(pVal).toLowerCase().trim()) && pVal !== '-';
+      } else {
+        ok = pVal !== '-' && String(pVal).toLowerCase().trim() === String(aVal).toLowerCase().trim();
+      }
+      const facit = ['q4','q5','q6'].includes(key) ? aVal : aVal;
+      html += `<div class="result-match-row ${ok?'correct':'wrong'}">
+        <span>${label}: Tips: ${escHtml(pVal)} | Facit: ${escHtml(facit)}</span>
+        <span class="pts ${ok?'positive':'zero'}">${ok?'+4p':'0p'}</span></div>`;
     }
   }
   html += '</div>';
@@ -2756,7 +3019,13 @@ function renderLeaderboard(container, data) {
   });
 
   html += '</tbody></table></div>';
-  container.innerHTML = html;
+
+  if (!userApproved) {
+    const count = board.length;
+    container.innerHTML = `<div class="lb-blur-wrap">${html}<div class="lb-blur-overlay"><div class="lb-count">${count}</div><div class="lb-count-label">deltagare anmälda</div><p style="font-size:12px;color:var(--text2);margin-top:8px">Topplistan låses upp när ditt tips är godkänt.</p></div></div>`;
+  } else {
+    container.innerHTML = html;
+  }
 }
 
 function toggleBreakdown(row) {
@@ -2955,12 +3224,22 @@ function renderAlla(container) {
 
   // Special
   html += '<div class="card"><h3>Specialtips</h3>';
-  html += `<div style="font-size:13px">
-    <p>Första målskytt: <strong>${escHtml(pred.firstScorer||'-')}</strong></p>
-    <p>Skytteliga: ${(pred.topScorers||[]).map((s,i)=>`${i+1}. ${escHtml(s||'-')}`).join(', ')}</p>
-    <p>Första röda kort: <strong>${escHtml(pred.firstRedCard||'-')}</strong></p>
-    <p>Första straff: <strong>${escHtml(pred.firstPenalty||'-')}</strong></p>
-  </div></div>`;
+  const allaPQ = pred.questions || {};
+  const allaQLabels = [
+    ['q1','Skytteligan topp 3'],['q2',''],['q3',''],
+    ['q4','Flest assist'],
+    ['q5','Mest mål gruppspel (lag)'],['q6','Flest insläppta (lag)'],
+    ['q7','Lag utan mål'],['q8','Snabbaste mål omg.1'],
+    ['q9','Hattrick omg.3'],['q10','VM-vinnare börjar på']
+  ];
+  html += '<div style="font-size:13px">';
+  // Q1-Q3 grouped
+  const top3 = [allaPQ.q1, allaPQ.q2, allaPQ.q3].filter(Boolean);
+  html += `<p>Skytteligan topp 3: <strong>${top3.length ? top3.map(escHtml).join(', ') : '-'}</strong></p>`;
+  for (const [key, label] of allaQLabels.slice(3)) {
+    if (allaPQ[key]) html += `<p>${label}: <strong>${escHtml(allaPQ[key])}</strong></p>`;
+  }
+  html += '</div></div>';
 
   container.innerHTML = html;
 }
@@ -3260,7 +3539,7 @@ async function loadAdmin() {
 function setAdminTab(tab) {
   adminTab = tab;
   document.querySelectorAll('#adminTabs button').forEach(b => {
-    const tabs = ['results-group','results-knockout','results-special','users','settings','snapshots'];
+    const tabs = ['results-group','results-knockout','results-special','users','settings','snapshots','godkann'];
     b.classList.toggle('active', tabs[Array.from(b.parentNode.children).indexOf(b)] === tab);
   });
   renderAdminTab();
@@ -3275,7 +3554,56 @@ function renderAdminTab() {
     case 'users': renderAdminUsers(c); break;
     case 'settings': renderAdminSettings(c); break;
     case 'snapshots': renderAdminSnapshots(c); break;
+    case 'godkann': renderAdminPending(c); break;
   }
+}
+
+async function renderAdminPending(container) {
+  container.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Laddar...</div>';
+  try {
+    const pending = await api('/api/admin/pending');
+    let html = '<div class="card"><h3>Väntande godkännanden</h3>';
+    if (pending.length === 0) {
+      html += '<div class="empty-state">Inga väntande betalningar.</div>';
+    } else {
+      html += '<p class="text-muted" style="font-size:13px;margin-bottom:12px">Dessa spelare har skickat in sitt tips och väntar på betalningsbekräftelse.</p>';
+      for (const u of pending) {
+        const sub = u.submitted_at ? new Date(u.submitted_at).toLocaleString('sv-SE') : '-';
+        html += `<div class="admin-user-row">
+          <div>
+            <span class="user-name">${escHtml(u.name)}</span>
+            <br><span class="user-email">${escHtml(u.email)}</span>
+            <br><span style="font-size:11px;color:var(--text3)">Inskickat: ${sub}</span>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary btn-sm" onclick="approveUser(${u.id})">Godkänn ✓</button>
+            <button class="btn btn-danger btn-sm" onclick="rejectUser(${u.id},'${escHtml(u.name)}')">Avvisa</button>
+          </div>
+        </div>`;
+      }
+    }
+    html += '</div>';
+    container.innerHTML = html;
+  } catch (err) {
+    container.innerHTML = '<div class="empty-state">' + escHtml(err.message) + '</div>';
+  }
+}
+
+async function approveUser(id) {
+  try {
+    await api('/api/admin/users/' + id + '/approve', { method: 'PUT' });
+    showToast('Användare godkänd!', 'success');
+    renderAdminPending(document.getElementById('adminContent'));
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function rejectUser(id, name) {
+  if (!confirm('Avvisa och ta bort ' + name + '? Tips och konto raderas.')) return;
+  try {
+    await api('/api/admin/users/' + id, { method: 'DELETE' });
+    showToast('Användare borttagen.', 'success');
+    renderAdminPending(document.getElementById('adminContent'));
+  } catch (err) { showToast(err.message, 'error'); }
 }
 
 function renderAdminGroupResults(container) {
@@ -3373,39 +3701,63 @@ function onAdminPlacement(group, pos, team) {
   adminResults.placements[group][pos] = team;
 }
 
+function setAdminQ(key, val) {
+  if (!adminResults.questions) adminResults.questions = {};
+  adminResults.questions[key] = val;
+}
+
 function renderAdminSpecialResults(container) {
+  const aQ = adminResults.questions || {};
+  const allTeams = T.allTeams.slice().sort((a,b) => a.localeCompare(b,'sv'));
   let html = '<div class="card"><h3>Faktiska resultat - Specialtips</h3>';
 
-  html += `<div class="form-group">
-    <label>Första målskytt</label>
-    ${makeAutocomplete('adminFirstScorer', adminResults.firstScorer||'', (v) => { adminResults.firstScorer = v; })}
-  </div>`;
-
-  const ts = adminResults.topScorers || ['','',''];
-  for (let i = 0; i < 3; i++) {
+  // Q1-Q3: skytteliga topp 3 (pool — ordning spelar ingen roll)
+  html += `<p class="text-muted" style="font-size:12px;margin-bottom:8px">Q1-Q3: Skytteliga topp 3 (ordning spelar ingen roll för rättning)</p>`;
+  for (let i = 1; i <= 3; i++) {
     html += `<div class="form-group">
-      <label>Skyttekung #${i+1}</label>
-      ${makeAutocomplete('adminTopScorer'+i, ts[i]||'', ((idx) => (v) => { if(!adminResults.topScorers)adminResults.topScorers=['','','']; adminResults.topScorers[idx]=v; })(i))}
+      <label>Topp 3 skyttekung #${i}</label>
+      ${makeAutocomplete('adminQ'+i, aQ['q'+i]||'', ((k) => (v) => { setAdminQ(k, v); })('q'+i))}
     </div>`;
   }
 
+  // Q4: flest assist (fritext, kommaseparerat om delning)
   html += `<div class="form-group">
-    <label>Första röda kort (lag)</label>
-    <select class="form-input" onchange="adminResults.firstRedCard=this.value">
-      <option value="">Välj lag...</option>`;
-  for (const t of T.allTeams.sort((a,b) => a.localeCompare(b,'sv'))) {
-    html += `<option value="${t}" ${adminResults.firstRedCard===t?'selected':''}>${t}</option>`;
-  }
-  html += `</select></div>`;
+    <label>Q4: Flest assist (kommaseparera vid delning, t.ex. "Mbappe,Messi")</label>
+    <input type="text" class="form-input" value="${escHtml(aQ.q4||'')}" oninput="setAdminQ('q4',this.value)" placeholder="Spelarnamn">
+  </div>`;
 
+  // Q5: mest mål gruppspelet (lag, kommaseparerat vid delning)
   html += `<div class="form-group">
-    <label>Första straff (lag)</label>
-    <select class="form-input" onchange="adminResults.firstPenalty=this.value">
-      <option value="">Välj lag...</option>`;
-  for (const t of T.allTeams.sort((a,b) => a.localeCompare(b,'sv'))) {
-    html += `<option value="${t}" ${adminResults.firstPenalty===t?'selected':''}>${t}</option>`;
+    <label>Q5: Mest mål i gruppspelet (kommaseparera vid delning)</label>
+    <input type="text" class="form-input" value="${escHtml(aQ.q5||'')}" oninput="setAdminQ('q5',this.value)" placeholder="Lagnamn, exakt stavning">
+  </div>`;
+
+  // Q6: flest insläppta (lag, kommaseparerat vid delning)
+  html += `<div class="form-group">
+    <label>Q6: Flest insläppta mål i gruppspelet (kommaseparera vid delning)</label>
+    <input type="text" class="form-input" value="${escHtml(aQ.q6||'')}" oninput="setAdminQ('q6',this.value)" placeholder="Lagnamn, exakt stavning">
+  </div>`;
+
+  // Q7-Q10: flerval
+  const adminMC = [
+    { key:'q7', label:'Q7: Antal lag utan mål i gruppspelet',
+      options:[['0','0'],['1-2','1-2'],['3-4','3-4'],['5+','5+']] },
+    { key:'q8', label:'Q8: Snabbaste målet i omgång 1',
+      options:[['1-2','Inom 2 min'],['3-5','Minut 3-5'],['6-10','Minut 6-10'],['11+','Minut 11+']] },
+    { key:'q9', label:'Q9: Hattrick i omgång 3?',
+      options:[['nej','Nej'],['ja-en','Ja, en'],['ja-flera','Ja, flera']] },
+    { key:'q10', label:'Q10: VM-vinnarens land börjar på',
+      options:[['a-d','A-D'],['e-k','E-K'],['l-s','L-S'],['t-ö','T-Ö']] }
+  ];
+  for (const { key, label, options } of adminMC) {
+    html += `<div class="form-group"><label>${label}</label>
+      <select class="form-input" onchange="setAdminQ('${key}',this.value)">
+        <option value="">Välj...</option>`;
+    for (const [val, display] of options) {
+      html += `<option value="${val}" ${aQ[key]===val?'selected':''}>${display}</option>`;
+    }
+    html += `</select></div>`;
   }
-  html += `</select></div>`;
 
   html += '<button class="btn btn-primary" style="margin-top:16px" onclick="saveAdminResults()">Spara resultat</button>';
   html += '</div>';

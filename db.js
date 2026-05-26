@@ -17,6 +17,9 @@ async function initDb() {
     )
   `);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS approved INTEGER DEFAULT 0`);
+  await pool.query(`UPDATE users SET approved = 1 WHERE is_admin = 1`);
+  await pool.query(`ALTER TABLE predictions ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMPTZ`);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS predictions (
       id SERIAL PRIMARY KEY,
