@@ -2237,7 +2237,14 @@ function renderTippaTab() {
 
 function renderGrupper(container) {
   const groups = Object.keys(T.groups);
-  let html = '<div class="groups-grid">';
+  let html = `<div class="card" style="margin-bottom:16px;font-size:13px;color:var(--text2);line-height:1.6">
+    <strong style="color:var(--text1)">Hur du tippar matcherna:</strong>
+    Välj tecken — <strong>1</strong> = hemmalag vinner, <strong>X</strong> = oavgjort, <strong>2</strong> = bortalag vinner.
+    Om du väljer 1 eller 2 anger du även vinstmarginal (antal mål skillnad).
+    <em>Exempel: du tror hemmalaget vinner med 2 mål → välj <strong>1</strong> och marginal <strong>2</strong>.</em>
+    Rätt tecken ger 3p × konsensus­multiplikator, rätt marginal ger ytterligare 2p.
+  </div>`;
+  html += '<div class="groups-grid">';
   for (const g of groups) {
     html += renderGroupCard(g);
   }
@@ -2271,7 +2278,7 @@ function renderGroupCard(g) {
 
   // Match column headers
   html += `<div class="match-row-header">
-    <div></div><div>Tecken</div><div>Marginal</div>
+    <div></div><div>Tecken</div><div>Vinstmarginal</div>
   </div>`;
 
   // Matches
