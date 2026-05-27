@@ -2702,9 +2702,7 @@ function renderSpecial(container) {
     html += `<div class="form-group">
       <label>Spelare ${i}</label>
       ${makeAutocomplete('qsp'+i, q['q'+i]||'', ((k) => (v) => {
-        if (!predictions.questions) predictions.questions = {};
-        predictions.questions[k] = v;
-        markDirty(); updateProgress();
+        setQ(k, v);
       })('q'+i))}
     </div>`;
   }
@@ -2715,11 +2713,7 @@ function renderSpecial(container) {
     <h3>Flest assist i turneringen</h3>
     <p class="text-muted" style="margin-bottom:10px">Om flera spelare delar rekordet räcker det att du namngett någon av dem.</p>
     <div class="form-group">
-      ${makeAutocomplete('qsp4', q.q4||'', (v) => {
-        if (!predictions.questions) predictions.questions = {};
-        predictions.questions.q4 = v;
-        markDirty(); updateProgress();
-      })}
+      ${makeAutocomplete('qsp4', q.q4||'', (v) => { setQ('q4', v); })}
     </div>
   </div>`;
 
@@ -2797,7 +2791,7 @@ async function loadResultat() {
 }
 
 function renderResultat(container, data) {
-  const { actual, prediction, score } = data;
+  const { actual, prediction, score, consensusMap } = data;
   const bd = score.breakdown || {};
 
   let html = '';
@@ -2807,18 +2801,19 @@ function renderResultat(container, data) {
   html += `<div class="stat-card"><div class="val">${score.total}</div><div class="lbl">Totalt</div></div>`;
 
   const categories = [
-    ['matchSign', 'matchSignBonus', '1X2'],
-    ['matchExact', 'matchExactBonus', 'Exakt'],
-    ['placements', 'placementsBonus', 'Placeringar'],
-    ['r32', 'r32Bonus', 'R32'],
-    ['r16', 'r16Bonus', 'R16'],
-    ['qf', 'qfBonus', 'KF'],
-    ['sf', 'sfBonus', 'SF'],
-    ['finalPlacements', null, 'Final 1-4'],
-    ['questions', null, 'Specialtips']
+    ['matchSign',      '1X2'],
+    ['consensusBoost', 'Boost'],
+    ['matchMargin',    'Marginal'],
+    ['placements',     'Placeringar'],
+    ['r32',            'R32'],
+    ['r16',            'R16'],
+    ['qf',             'KF'],
+    ['sf',             'SF'],
+    ['finalPlacements','Final 1-4'],
+    ['questions',      'Specialtips']
   ];
-  for (const [key, bonusKey, label] of categories) {
-    const pts = (bd[key] || 0) + (bonusKey ? (bd[bonusKey] || 0) : 0);
+  for (const [key, label] of categories) {
+    const pts = bd[key] || 0;
     if (pts > 0 || actual?.matches) {
       html += `<div class="stat-card"><div class="val">${pts}</div><div class="lbl">${label}</div></div>`;
     }
@@ -2847,12 +2842,19 @@ function renderResultat(container, data) {
           const pSign = p ? calcSignLocal(p[0], p[1]) : null;
           const aSign = calcSignLocal(a[0], a[1]);
           const signOk = pSign === aSign;
-          const exactOk = p && p[0] === a[0] && p[1] === a[1];
-          const pts = (signOk ? 10 : 0) + (exactOk ? 5 : 0);
-          const cls = exactOk ? 'correct' : (signOk ? 'correct' : 'wrong');
+          const pMargin = p ? Math.abs(Number(p[0]) - Number(p[1])) : null;
+          const aMargin = Math.abs(Number(a[0]) - Number(a[1]));
+          const marginOk = signOk && aSign !== 'X' && pMargin === aMargin;
+          // Multiplier from consensusMap
+          const cons = consensusMap?.[String(m[0])];
+          const winnerFrac = cons ? (cons[aSign] || 0) : 0.51;
+          const mult = winnerFrac > 0.50 ? 1 : winnerFrac > 0.25 ? 1.5 : winnerFrac > 0.10 ? 2 : 3;
+          const pts = (signOk ? Math.round(3 * mult) : 0) + (marginOk ? 2 : 0);
+          const cls = signOk ? 'correct' : 'wrong';
+          const multStr = signOk && mult > 1 ? ` ×${mult}` : '';
           html += `<div class="result-match-row ${cls}">
             <span style="min-width:100px">${m[3]} - ${m[4]}</span>
-            <span style="flex:1;text-align:center">Tips: ${p?p[0]+'-'+p[1]:'-'} | Facit: ${a[0]}-${a[1]}</span>
+            <span style="flex:1;text-align:center">Tips: ${p?p[0]+'-'+p[1]:'-'} | Facit: ${a[0]}-${a[1]}${multStr}</span>
             <span class="pts ${pts>0?'positive':'zero'}">${pts>0?'+'+pts:0}p</span>
           </div>`;
         }
@@ -2911,7 +2913,7 @@ function renderResultat(container, data) {
       } else {
         ok = pVal !== '-' && String(pVal).toLowerCase().trim() === String(aVal).toLowerCase().trim();
       }
-      const facit = ['q4','q5','q6'].includes(key) ? aVal : aVal;
+      const facit = aVal;
       html += `<div class="result-match-row ${ok?'correct':'wrong'}">
         <span>${label}: Tips: ${escHtml(pVal)} | Facit: ${escHtml(facit)}</span>
         <span class="pts ${ok?'positive':'zero'}">${ok?'+4p':'0p'}</span></div>`;
@@ -3206,27 +3208,28 @@ function renderAlla(container) {
     html += '</div>';
   }
 
-  // Bracket
-  const bracket = pred.bracket || {};
-  const rounds = [
-    ['32-delsfinal', T.r32Matches],
-    ['16-delsfinal', T.r16Matches],
-    ['Kvartsfinal', T.qfMatches],
-    ['Semifinal', T.sfMatches],
-    ['Bronsmatch', [T.bronzeMatch]],
-    ['Final', [T.finalMatch]]
+  // Slutspel
+  const koRounds = [
+    ['16-delsfinal (32 lag)', pred.r32Teams || []],
+    ['8-delsfinal (16 lag)',  pred.r16Teams || []],
+    ['Kvartsfinal (8 lag)',   pred.qfTeams  || []],
+    ['Semifinal (4 lag)',     pred.sfTeams  || []]
   ];
-  for (const [label, matches] of rounds) {
-    html += `<div class="card"><h3>${label}</h3>`;
-    for (const m of matches) {
-      const mn = String(m[0]);
-      const b = bracket[mn] || {};
-      html += `<div style="padding:4px 0;font-size:13px">
-        Match ${mn}: ${b.home||'?'} vs ${b.away||'?'}
-        ${b.winner ? '<strong style="color:var(--accent)"> &#10132; ' + b.winner + '</strong>' : ''}
-      </div>`;
+  for (const [label, teams] of koRounds) {
+    if (teams.length === 0) continue;
+    html += `<div class="card"><h3>${label}</h3><div style="display:flex;flex-wrap:wrap;gap:6px;font-size:13px">`;
+    for (const t of teams) {
+      html += `<span style="padding:3px 8px;background:var(--surface2);border-radius:6px">${escHtml(t)}</span>`;
     }
-    html += '</div>';
+    html += '</div></div>';
+  }
+  const fp = pred.finalPlacements || {};
+  if (fp['1'] || fp['2'] || fp['3'] || fp['4']) {
+    html += `<div class="card"><h3>Final &amp; pallplatser</h3><div style="font-size:13px">`;
+    for (const [pos, label] of [['1','🥇 Vinnare'],['2','🥈 Runner-up'],['3','🥉 3:e plats'],['4','4:e plats']]) {
+      if (fp[pos]) html += `<p style="margin:4px 0">${label}: <strong>${escHtml(fp[pos])}</strong></p>`;
+    }
+    html += '</div></div>';
   }
 
   // Special
@@ -3357,9 +3360,10 @@ function computeScoreLocal(predRaw, actual, scoring) {
   const pred = predRaw || {};
   const bd = {};
   let total = 0;
+  const S = scoring || {};
 
-  // Group matches
-  let matchSignPts = 0, matchExactPts = 0;
+  // Group matches (no consensus data available in projection → use 1× mult)
+  let matchSignPts = 0, matchMarginPts = 0;
   const pMatches = pred.matches || {};
   const aMatches = actual.matches || {};
   for (const mn of Object.keys(aMatches)) {
@@ -3369,23 +3373,30 @@ function computeScoreLocal(predRaw, actual, scoring) {
     if (!p || p[0] == null || p[1] == null) continue;
     const pSign = calcSignLocal(p[0], p[1]);
     const aSign = calcSignLocal(a[0], a[1]);
-    if (pSign === aSign) matchSignPts += (scoring?.matchSign || 10);
-    if (parseInt(p[0]) === parseInt(a[0]) && parseInt(p[1]) === parseInt(a[1])) matchExactPts += (scoring?.matchExact || 5);
+    if (pSign === aSign) {
+      matchSignPts += (S.matchSign || 3);
+      const pMargin = Math.abs(Number(p[0]) - Number(p[1]));
+      const aMargin = Math.abs(Number(a[0]) - Number(a[1]));
+      if (aSign !== 'X' && pMargin === aMargin) matchMarginPts += (S.matchMargin || 2);
+    }
   }
   bd.matchSign = matchSignPts;
-  bd.matchExact = matchExactPts;
-  total += matchSignPts + matchExactPts;
+  bd.matchMargin = matchMarginPts;
+  total += matchSignPts + matchMarginPts;
 
-  // Placements
+  // Placements — use tier system matching server
+  const tierPts = (S.placementTier && Array.isArray(S.placementTier))
+    ? S.placementTier
+    : [0, 5, 10, 0, 20];
   let placePts = 0;
   const pPl = pred.placements || {};
   const aPl = actual.placements || {};
   for (const g of Object.keys(aPl)) {
     const pArr = pPl[g] || [];
     const aArr = aPl[g] || [];
-    for (let i = 0; i < 4; i++) {
-      if (pArr[i] && aArr[i] && pArr[i] === aArr[i]) placePts += (scoring?.placement || 10);
-    }
+    let correct = 0;
+    for (let i = 0; i < 4; i++) { if (pArr[i] && aArr[i] && pArr[i] === aArr[i]) correct++; }
+    placePts += tierPts[correct] || 0;
   }
   bd.placements = placePts;
   total += placePts;
