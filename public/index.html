@@ -3103,9 +3103,9 @@ function renderDagensm(container, tournData, consensusData) {
       </p>
       <div class="dagensm-legend" style="margin-top:12px;margin-bottom:0">
         <span><span class="leg-dot" style="background:#8898aa"></span> 1x &gt;50% tippade rätt</span>
-        <span><span class="leg-dot" style="background:#c8960c"></span> 1.5x 25-50%</span>
-        <span><span class="leg-dot" style="background:#1a7a3c"></span> 2x 10-25%</span>
-        <span><span class="leg-dot" style="background:#8b00d4"></span> 3x &lt;10%</span>
+        <span><span class="leg-dot" style="background:#c8960c"></span> 1.5x 26-50%</span>
+        <span><span class="leg-dot" style="background:#1a7a3c"></span> 2x 11-25%</span>
+        <span><span class="leg-dot" style="background:#8b00d4"></span> 3x &le;10%</span>
       </div>
     </div>`;
 
@@ -3355,14 +3355,14 @@ function calcProjection() {
   document.getElementById('projectionResults').innerHTML = html;
 }
 
-// Local scoring engine (simplified, matches server logic)
+// Local scoring engine — mirrors server.js scoring logic
 function computeScoreLocal(predRaw, actual, scoring) {
   const pred = predRaw || {};
   const bd = {};
   let total = 0;
   const S = scoring || {};
 
-  // Group matches (no consensus data available in projection → use 1× mult)
+  // ── Group matches (no consensus data in projection → use 1× mult) ──
   let matchSignPts = 0, matchMarginPts = 0;
   const pMatches = pred.matches || {};
   const aMatches = actual.matches || {};
@@ -3384,7 +3384,7 @@ function computeScoreLocal(predRaw, actual, scoring) {
   bd.matchMargin = matchMarginPts;
   total += matchSignPts + matchMarginPts;
 
-  // Placements — use tier system matching server
+  // ── Group placements — tier system ──
   const tierPts = (S.placementTier && Array.isArray(S.placementTier))
     ? S.placementTier
     : [0, 5, 10, 0, 20];
@@ -3400,6 +3400,82 @@ function computeScoreLocal(predRaw, actual, scoring) {
   }
   bd.placements = placePts;
   total += placePts;
+
+  // ── Knockout rounds ──
+  function scoreRoundLocal(pTeams, aTeams, perTeam, allBonus, expectedCount) {
+    if (!aTeams || aTeams.length === 0) return 0;
+    let correct = 0;
+    for (const t of pTeams) { if (t && aTeams.includes(t)) correct++; }
+    return correct * perTeam +
+      (correct === expectedCount && expectedCount === aTeams.length ? allBonus : 0);
+  }
+
+  // r32Teams is NOT stored in pred — derive from placements + thirdPlaceQualifiers
+  // (mirrors server's buildScoreablePrediction)
+  const r32Derived = [];
+  for (const g of Object.keys(pPl)) {
+    const pl = pPl[g] || [];
+    if (pl[0]) r32Derived.push(pl[0]);
+    if (pl[1]) r32Derived.push(pl[1]);
+  }
+  for (const t of (pred.thirdPlaceQualifiers || [])) { if (t) r32Derived.push(t); }
+  const pR32 = [...new Set(r32Derived)];
+
+  bd.r32 = scoreRoundLocal(pR32,              actual.r32Teams || [], S.r32Team || 1,  S.r32AllBonus || 15, 32);
+  bd.r16 = scoreRoundLocal(pred.r16Teams || [], actual.r16Teams || [], S.r16Team || 3,  S.r16AllBonus || 15, 16);
+  bd.qf  = scoreRoundLocal(pred.qfTeams  || [], actual.qfTeams  || [], S.qfTeam  || 6,  S.qfAllBonus  || 15, 8);
+  bd.sf  = scoreRoundLocal(pred.sfTeams  || [], actual.sfTeams  || [], S.sfTeam  || 12, S.sfAllBonus  || 15, 4);
+  total += bd.r32 + bd.r16 + bd.qf + bd.sf;
+
+  // ── Final & bronze placements ──
+  let finalPts = 0;
+  const pFinal = pred.finalPlacements || {};
+  const aFinal = actual.finalPlacements || {};
+  if (aFinal['1']) {
+    const aFinalists = [aFinal['1'], aFinal['2']].filter(Boolean);
+    for (const pos of ['1', '2']) {
+      if (pFinal[pos] && aFinalists.includes(pFinal[pos])) finalPts += (S.finalistAdvance || 8);
+    }
+    if (pFinal['1'] && aFinal['1'] && pFinal['1'] === aFinal['1']) finalPts += (S.winnerBonus || 12);
+    if (pFinal['2'] && aFinal['2'] && pFinal['2'] === aFinal['2']) finalPts += (S.runnerUpBonus || 8);
+  }
+  if (pFinal['3'] && aFinal['3'] && pFinal['3'] === aFinal['3']) finalPts += (S.thirdPlace || 8);
+  if (pFinal['4'] && aFinal['4'] && pFinal['4'] === aFinal['4']) finalPts += (S.fourthPlace || 8);
+  bd.finalPlacements = finalPts;
+  total += finalPts;
+
+  // ── Specialfrågor ──
+  let questionPts = 0;
+  const pQ = pred.questions || {};
+  const aQ = actual.questions || {};
+  const qPts = S.question || 4;
+
+  // Q1-Q3: skytteliga topp 3 — pool-based, order irrelevant
+  const actualPool = ['q1','q2','q3']
+    .map(k => String(aQ[k] || '').toLowerCase().trim()).filter(Boolean);
+  const usedActual = new Set();
+  for (const key of ['q1','q2','q3']) {
+    const pVal = String(pQ[key] || '').toLowerCase().trim();
+    if (pVal && actualPool.includes(pVal) && !usedActual.has(pVal)) {
+      usedActual.add(pVal);
+      questionPts += qPts;
+    }
+  }
+  // Q4-Q6: comma-separated multi-correct
+  for (const key of ['q4','q5','q6']) {
+    const pVal = String(pQ[key] || '').toLowerCase().trim();
+    const accepted = String(aQ[key] || '').split(',')
+      .map(s => s.toLowerCase().trim()).filter(Boolean);
+    if (pVal && accepted.includes(pVal)) questionPts += qPts;
+  }
+  // Q7-Q10: exact match
+  for (const key of ['q7','q8','q9','q10']) {
+    const pVal = String(pQ[key] || '').toLowerCase().trim();
+    const aVal = String(aQ[key] || '').toLowerCase().trim();
+    if (pVal && aVal && pVal === aVal) questionPts += qPts;
+  }
+  bd.questions = questionPts;
+  total += questionPts;
 
   return { total, breakdown: bd };
 }

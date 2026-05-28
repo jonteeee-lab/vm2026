@@ -210,7 +210,10 @@ function buildConsensusMap(allPredData) {
         counts[calcSign(Number(p[0]), Number(p[1]))]++;
       }
     }
-    map[mn] = { '1': counts['1'] / total, 'X': counts['X'] / total, '2': counts['2'] / total };
+    const validCount = counts['1'] + counts['X'] + counts['2'];
+    map[mn] = validCount > 0
+      ? { '1': counts['1'] / validCount, 'X': counts['X'] / validCount, '2': counts['2'] / validCount }
+      : { '1': 0, 'X': 0, '2': 0 };
   }
   return map;
 }
