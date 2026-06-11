@@ -792,6 +792,57 @@ app.post('/api/admin/sidebets/:id/winner', adminAuth, async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
+// ADMIN EXPORT (full backup of users, predictions, results, settings)
+// Read-only. Returns a JSON snapshot sufficient to recompute the leaderboard
+// manually if the app or database is lost.
+// ══════════════════════════════════════════════════════════════════════════════
+
+app.get('/api/admin/export', adminAuth, async (req, res) => {
+  try {
+    const settingsRows = await all('SELECT key, value FROM settings');
+    const settings = {};
+    settingsRows.forEach(r => { settings[r.key] = r.value; });
+
+    const resultsRow = await get('SELECT data, updated_at FROM results ORDER BY id LIMIT 1');
+    const actualResults = resultsRow ? resultsRow.data : {};
+
+    const users = await all(`
+      SELECT u.id, u.name, u.email, u.is_admin, u.approved, u.created_at,
+             p.data AS prediction, p.submitted_at, p.updated_at AS prediction_updated_at
+      FROM users u
+      LEFT JOIN predictions p ON p.user_id = u.id
+      WHERE u.approved = 1
+      ORDER BY u.created_at
+    `);
+
+    const payload = {
+      exported_at: new Date().toISOString(),
+      exported_by: req.user.name,
+      note: 'Komplett backup av godkända användare, deras tips, faktiska resultat, inställningar och poängregler. Kan användas för att rättna manuellt om appen kraschar.',
+      scoring_rules: SCORING,
+      settings,
+      actual_results: actualResults,
+      users: users.map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        is_admin: !!u.is_admin,
+        approved: !!u.approved,
+        created_at: u.created_at,
+        submitted_at: u.submitted_at,
+        prediction_updated_at: u.prediction_updated_at,
+        prediction: u.prediction || null
+      }))
+    };
+
+    const filename = `vm-bettet-export-${new Date().toISOString().slice(0,10)}.json`;
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.send(JSON.stringify(payload, null, 2));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
 // CONSENSUS (match tip distribution -- requires login)
 // ══════════════════════════════════════════════════════════════════════════════
 
