@@ -4,7 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>VM-Bettet 2026</title>
-<link rel="icon" type="image/png" href="logo.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="VM-Bettet">
+<meta name="theme-color" content="#0c1f3f">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -404,39 +411,55 @@ select.form-input {
 .group-card-body { padding: 12px; }
 
 /* Match row */
+.match-row-header {
+  display: grid; grid-template-columns: 1fr 94px 66px; gap: 8px;
+  font-size: 11px; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .5px;
+  padding: 2px 0 6px; border-bottom: 2px solid var(--border); margin-bottom: 2px;
+}
+.match-row-header > div:not(:first-child) { text-align: center; }
 .match-row {
-  display: flex; align-items: center; gap: 6px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 13px;
+  display: grid; grid-template-columns: 1fr 94px 66px;
+  align-items: center; gap: 8px;
+  padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px;
 }
 .match-row:last-of-type { border-bottom: none; }
-.match-row .date { color: var(--text3); font-size: 11px; min-width: 60px; }
-.match-row .team { flex: 1; text-align: right; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
-.match-row .team.away { text-align: left; }
-.match-row .score-inputs {
-  display: flex; align-items: center; gap: 3px;
-  flex-shrink: 0;
+.match-teams { font-weight: 600; overflow: hidden; }
+.match-date { display: block; font-size: 11px; font-weight: 400; color: var(--text3); margin-bottom: 2px; }
+.match-vs { color: var(--text3); font-weight: 400; margin: 0 3px; }
+.margin-cell { width: 66px; display: flex; justify-content: center; }
+@media (max-width: 520px) {
+  .match-row-header { grid-template-columns: 1fr 94px 66px; }
+  .match-row { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; row-gap: 5px; }
+  .match-teams { grid-column: 1 / 3; white-space: normal; }
+  .sign-btns { grid-column: 1; }
+  .margin-cell { grid-column: 2; justify-content: flex-end; width: auto; }
+  .match-row-header { display: none; }
 }
-.match-row .score-input {
-  width: 38px; height: 34px;
-  text-align: center;
-  border: none;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 15px; font-weight: 900;
-  background: var(--primary);
-  color: var(--accent);
+.sign-btns { display: flex; gap: 2px; }
+.sign-btn {
+  width: 30px; height: 34px;
+  border: 2px solid var(--border); border-radius: 6px;
+  background: var(--bg3); color: var(--text2);
+  font-family: inherit; font-size: 13px; font-weight: 700;
+  cursor: pointer; padding: 0;
+  transition: background .1s, border-color .1s, color .1s;
+}
+.sign-btn.active { background: var(--primary); border-color: var(--accent); color: var(--accent); }
+.sign-btn:hover:not(.active) { border-color: var(--accent); }
+.margin-input {
+  width: 52px; height: 34px;
+  text-align: center; border: none; border-radius: 6px;
+  font-family: inherit; font-size: 15px; font-weight: 900;
+  background: var(--primary); color: var(--accent);
   -moz-appearance: textfield;
 }
-.match-row .score-input::-webkit-inner-spin-button,
-.match-row .score-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-.match-row .score-input:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-  background: #1a3460;
-}
-.match-row .score-dash { font-weight: 900; color: var(--primary); }
+.margin-input::-webkit-inner-spin-button,
+.margin-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.margin-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.margin-input:disabled { opacity: 0.35; cursor: not-allowed; }
+.ko-rank-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.ko-rank-label { font-size: 12px; font-weight: 700; min-width: 70px; color: var(--text3); }
 
 /* Group standings table */
 .group-table {
@@ -521,6 +544,53 @@ select.form-input {
   border-color: var(--accent);
   font-weight: 700;
 }
+
+/* ══════ KNOCKOUT DROPDOWN UI ══════ */
+.ko-section {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.ko-section-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+}
+.ko-round-name { font-size: 15px; font-weight: 700; }
+.ko-counter { font-size: 12px; color: var(--text3); font-weight: 600; }
+.ko-counter-done { color: var(--green) !important; }
+.ko-notice {
+  font-size: 13px; color: var(--text3);
+  padding: 10px 14px; background: var(--bg3); border-radius: 8px;
+}
+.ko-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 13px; border-radius: 20px;
+  border: 2px solid var(--border);
+  cursor: pointer; font-size: 13px; font-weight: 500;
+  background: var(--bg3);
+  transition: border-color 0.12s, background 0.12s, opacity 0.12s;
+  user-select: none;
+}
+.ko-chip:hover:not(.auto):not(.locked) { border-color: var(--accent); }
+.ko-chip.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
+.ko-chip.auto { cursor: default; border-style: dashed; opacity: 0.75; }
+.ko-chip.locked { opacity: 0.3; cursor: not-allowed; }
+.ko-chip-empty { opacity: 0.45; font-style: italic; cursor: default !important; }
+.ko-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ko-notice-warn { background: var(--red-bg, #fff0f0); color: var(--red, #c0392b); }
+.ko-auto-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  margin-bottom: 14px;
+}
+.ko-auto-col { display: flex; flex-direction: column; gap: 5px; }
+.ko-auto-label { font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+.ko-thirds-header { font-size: 13px; font-weight: 600; margin: 14px 0 8px; }
+.ko-thirds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 8px; }
+.ko-final-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.ko-final-item label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 5px; }
+@media (max-width: 600px) { .ko-auto-grid { grid-template-columns: 1fr; } }
 
 /* ══════ KNOCKOUT (legacy — used only for Bronze match card) ══════ */
 .knockout-round { margin-bottom: 24px; }
@@ -650,6 +720,80 @@ select.form-input {
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 16px;
 }
+.special-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.special-option-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  color: var(--text1);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.special-option-btn:hover { border-color: var(--primary); }
+.special-option-btn.selected {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ══════ WELCOME BANNER & PAYMENT ══════ */
+.welcome-banner {
+  background: linear-gradient(135deg, var(--primary), #1a6b3c);
+  color: #fff;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+.welcome-banner h2 { margin: 0 0 8px; font-size: 18px; }
+.welcome-banner p { margin: 4px 0; font-size: 14px; opacity: 0.92; }
+.payment-card {
+  background: var(--surface2);
+  border: 2px solid var(--green);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.payment-card .check-icon { font-size: 40px; margin-bottom: 12px; }
+.payment-card h2 { margin: 0 0 12px; color: var(--green); }
+.payment-card .swish-amount { font-size: 32px; font-weight: 800; color: var(--text1); margin: 16px 0 4px; }
+.payment-card .swish-number { font-size: 22px; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+.payment-card p { font-size: 13px; color: var(--text2); margin: 4px 0; }
+.payment-card .payment-note { margin-top: 16px; padding: 10px 14px; background: var(--gold-bg); border-radius: 8px; font-size: 12px; color: var(--text2); }
+.submit-btn-wrap { text-align: center; padding: 16px 0 8px; }
+.btn-submit-tip { font-size: 16px; padding: 14px 40px; border-radius: 12px; }
+/* Locked leaderboard blur */
+.lb-blur-wrap { position: relative; }
+.lb-blur-wrap .lb-blur-overlay {
+  position: absolute; inset: 0;
+  backdrop-filter: blur(6px);
+  background: rgba(0,0,0,0.18);
+  border-radius: 12px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 2;
+}
+.lb-blur-overlay .lb-count { font-size: 28px; font-weight: 800; color: var(--text1); }
+.lb-blur-overlay .lb-count-label { font-size: 13px; color: var(--text2); margin-top: 4px; }
+/* Nav lock icon */
+.nav-locked { opacity: 0.4; pointer-events: none; cursor: not-allowed; }
+/* Scoring info view */
+.scoring-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.scoring-table th { text-align: left; padding: 8px 10px; font-size: 12px; color: var(--text3); border-bottom: 2px solid var(--border); }
+.scoring-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.scoring-table tr:last-child td { border-bottom: none; }
+.scoring-table .pts { font-weight: 700; color: var(--accent); text-align: right; white-space: nowrap; }
+.mult-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+.mult-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.mult-table td:last-child { font-weight: 700; text-align: right; }
 
 /* ══════ SAVE BAR ══════ */
 .save-bar {
@@ -708,6 +852,99 @@ select.form-input {
 .leaderboard-table .rank-1 { color: var(--gold); font-size: 16px; }
 .leaderboard-table .rank-2 { color: #7a8a9a; font-size: 15px; }
 .leaderboard-table .rank-3 { color: #a0674a; font-size: 15px; }
+/* ══════ BOOST BADGE ══════ */
+.boost-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #1a7a3c, #0f5a2a);
+  color: #fff;
+  font-size: 11px; font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+}
+.boost-cell { font-size: 13px; }
+
+/* ══════ CONSENSUS BARS (Dagens matcher) ══════ */
+.dagensm-date-header {
+  font-size: 14px; font-weight: 700; color: var(--text2);
+  margin: 20px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.match-consensus-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.match-consensus-card .match-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.match-consensus-card .teams {
+  font-size: 14px; font-weight: 700;
+}
+.match-consensus-card .match-meta {
+  font-size: 12px; color: var(--text3);
+}
+.consensus-bars { display: flex; flex-direction: column; gap: 6px; }
+.consensus-bar-row {
+  display: grid;
+  grid-template-columns: 30px 1fr 42px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.consensus-bar-row .sign-label {
+  font-weight: 700; color: var(--text2); text-align: center;
+}
+.bar-outer {
+  background: var(--bg3);
+  border-radius: 4px;
+  height: 18px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.bar-inner {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+  display: flex; align-items: center; padding-left: 6px;
+  font-size: 10px; font-weight: 600; color: #fff;
+}
+.bar-mult {
+  font-size: 11px; font-weight: 700; text-align: right;
+  white-space: nowrap;
+}
+/* Multiplier color tiers */
+.mult-1  { color: var(--text3); }
+.mult-15 { color: #c8960c; }
+.mult-2  { color: #1a7a3c; font-weight: 800; }
+.mult-3  { color: #8b00d4; font-weight: 800; }
+.bar-mult-1  .bar-inner { background: #8898aa; }
+.bar-mult-15 .bar-inner { background: #c8960c; }
+.bar-mult-2  .bar-inner { background: #1a7a3c; }
+.bar-mult-3  .bar-inner { background: #8b00d4; }
+.dagensm-legend {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  font-size: 12px; margin-bottom: 16px; align-items: center;
+}
+.dagensm-legend span { display: flex; align-items: center; gap: 4px; }
+.leg-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  display: inline-block;
+}
+.tv-badge {
+  display: inline-block;
+  font-size: 10px; font-weight: 700;
+  padding: 1px 6px; border-radius: 4px;
+  color: #fff; letter-spacing: 0.3px;
+  vertical-align: 1px;
+}
+.tv-badge.tv-svt { background: #0066cc; }
+.tv-badge.tv-tv4 { background: #e30613; }
+
 .leaderboard-table tr.expandable { cursor: pointer; }
 .leaderboard-table tr.expandable:hover { background: var(--bg3); }
 .leaderboard-table tr.breakdown-row td {
@@ -851,6 +1088,7 @@ select.form-input {
 .toast.show { transform: translateX(0); }
 .toast.error { background: var(--red); }
 .toast.success { background: var(--green); }
+.toast.info { background: var(--primary); }
 
 /* ══════ LOADING ══════ */
 .spinner {
@@ -1071,6 +1309,7 @@ select.form-input {
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       Tippa
     </div>
+    <div id="tippaBanner"></div>
     <div id="countdownBar" class="countdown-bar">
       <div>
         <div class="label">Deadline</div>
@@ -1092,6 +1331,10 @@ select.form-input {
       <button onclick="setTippaTab('special')">Specialtips</button>
     </div>
     <div id="tippaContent"></div>
+    <div class="submit-btn-wrap" id="submitBtnWrap" style="display:none">
+      <button class="btn btn-primary btn-submit-tip" onclick="submitTip()">Skicka in mitt tips ✓</button>
+      <p style="font-size:12px;color:var(--text3);margin-top:8px">Alla fält är ifyllda. Klicka för att skicka in och få betalningsinstruktioner.</p>
+    </div>
   </div>
 
   <!-- RESULTAT -->
@@ -1110,6 +1353,15 @@ select.form-input {
       Topplista
     </div>
     <div id="leaderboardContent"><div class="loading-overlay"><div class="spinner"></div> Laddar...</div></div>
+  </div>
+
+  <!-- DAGENS MATCHER -->
+  <div class="view" id="view-dagensm">
+    <div class="section-title">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Dagens matcher
+    </div>
+    <div id="dagensmContent"><div class="loading-overlay"><div class="spinner"></div> Laddar...</div></div>
   </div>
 
   <!-- ALLA SVAR -->
@@ -1152,8 +1404,18 @@ select.form-input {
       <button onclick="setAdminTab('users')">Användare</button>
       <button onclick="setAdminTab('settings')">Inställningar</button>
       <button onclick="setAdminTab('snapshots')">Snapshots</button>
+      <button onclick="setAdminTab('godkann')" id="adminPendingBtn">Godkänn</button>
     </div>
     <div id="adminContent"></div>
+  </div>
+
+  <!-- INFO / POÄNGBERÄKNING -->
+  <div class="view" id="view-info">
+    <div class="section-title">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Poängberäkning &amp; regler
+    </div>
+    <div id="infoContent"></div>
   </div>
 
   <!-- PROFIL -->
@@ -1183,6 +1445,8 @@ let settings = {};
 let predictions = {};  // user's predictions
 let saveTimeout = null;
 let isDirty = false;
+let userApproved = false;
+let userSubmitted = false;
 let currentView = 'landing';
 let tippaTab = 'grupper';
 let adminTab = 'results-group';
@@ -1451,11 +1715,17 @@ async function api(url, opts = {}) {
 // AUTH
 // ══════════════════════════════════════════════════════════════════════
 
+function applyUserState(user) {
+  currentUser = user;
+  userApproved = !!(user?.approved);
+  userSubmitted = !!(user?.submitted);
+}
+
 async function checkAuth() {
   try {
     const { user } = await api('/api/auth/me');
-    currentUser = user;
-  } catch { currentUser = null; }
+    applyUserState(user);
+  } catch { currentUser = null; userApproved = false; userSubmitted = false; }
   updateNav();
 }
 
@@ -1471,7 +1741,7 @@ async function handleLogin(e) {
         password: document.getElementById('loginPassword').value
       })
     });
-    currentUser = user;
+    applyUserState(user);
     updateNav();
     navigate('tippa');
     showToast('Inloggad!', 'success');
@@ -1494,7 +1764,7 @@ async function handleRegister(e) {
         password: document.getElementById('regPassword').value
       })
     });
-    currentUser = user;
+    applyUserState(user);
     updateNav();
     navigate('tippa');
     showToast('Registrerad och inloggad!', 'success');
@@ -1507,6 +1777,8 @@ async function handleRegister(e) {
 async function logout() {
   await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
   currentUser = null;
+  userApproved = false;
+  userSubmitted = false;
   predictions = {};
   updateNav();
   navigate('landing');
@@ -1523,12 +1795,18 @@ function navigate(view) {
 
 function handleHash() {
   const hash = (window.location.hash || '#landing').slice(1);
-  const authed = ['tippa','resultat','leaderboard','alla','projektion','sidebets','admin','profil'];
+  const authed = ['tippa','resultat','leaderboard','dagensm','alla','projektion','sidebets','admin','profil','info'];
   if (authed.includes(hash) && !currentUser) {
     navigate('login');
     return;
   }
   if (hash === 'admin' && !currentUser?.is_admin) {
+    navigate('tippa');
+    return;
+  }
+  const requiresApproval = ['resultat','dagensm','alla','projektion','sidebets'];
+  if (requiresApproval.includes(hash) && !userApproved) {
+    showToast('Tillgängligt när ditt tips är godkänt av admin.', 'info');
     navigate('tippa');
     return;
   }
@@ -1549,11 +1827,13 @@ function showView(view) {
   if (view === 'tippa') loadTippa();
   if (view === 'resultat') loadResultat();
   if (view === 'leaderboard') loadLeaderboard();
+  if (view === 'dagensm') loadDagensm();
   if (view === 'alla') loadAlla();
   if (view === 'projektion') loadProjektion();
   if (view === 'sidebets') loadSidebets();
   if (view === 'admin') loadAdmin();
   if (view === 'profil') renderProfile();
+  if (view === 'info') renderInfo();
 }
 
 function updateNav() {
@@ -1578,16 +1858,17 @@ function updateNav() {
   // Desktop nav
   const links = document.getElementById('navLinks');
   if (loggedIn) {
-    let html = '';
+    const locked = ['resultat','dagensm','alla','projektion','sidebets'];
     const items = [
       ['tippa','Tippa'],['resultat','Resultat'],['leaderboard','Topplista'],
-      ['alla','Alla svar'],['projektion','Projektion'],['sidebets','Sidebets']
+      ['dagensm','Dagens matcher'],['alla','Alla svar'],['projektion','Projektion'],
+      ['sidebets','Sidebets'],['info','Regler']
     ];
     if (currentUser?.is_admin) items.push(['admin','Admin']);
-    for (const [id, label] of items) {
-      html += `<a href="#${id}" class="${currentView===id?'active':''}">${label}</a>`;
-    }
-    links.innerHTML = html;
+    links.innerHTML = items.map(([id, label]) => {
+      const isLocked = locked.includes(id) && !userApproved;
+      return `<a href="#${id}" class="${currentView===id?'active':''}${isLocked?' nav-locked':''}" title="${isLocked?'Kräver godkänt tips':''}">${label}</a>`;
+    }).join('');
   } else {
     links.innerHTML = '<a href="#login" class="' + (currentView==='login'?'active':'') + '">Logga in</a><a href="#register" class="' + (currentView==='register'?'active':'') + '">Registrera</a>';
   }
@@ -1595,17 +1876,19 @@ function updateNav() {
   // Bottom nav
   const bn = document.getElementById('bottomNav');
   if (loggedIn) {
+    const locked = ['resultat','dagensm','alla','sidebets'];
     const items = [
       ['tippa','Tippa','<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>'],
-      ['resultat','Resultat','<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'],
       ['leaderboard','Tabell','<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 7 17 7"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>'],
-      ['alla','Alla','<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>'],
-      ['sidebets','Bets','<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>']
+      ['dagensm','Matcher','<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'],
+      ['info','Regler','<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'],
+      ['profil','Profil','<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>']
     ];
     if (currentUser?.is_admin) items.push(['admin','Admin','<circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>']);
-    bn.innerHTML = items.map(([id,label,icon]) =>
-      `<a href="#${id}" class="${currentView===id?'active':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${icon}</svg>${label}</a>`
-    ).join('');
+    bn.innerHTML = items.map(([id,label,icon]) => {
+      const isLocked = locked.includes(id) && !userApproved;
+      return `<a href="#${id}" class="${currentView===id?'active':''}${isLocked?' nav-locked':''}" title="${isLocked?'Kräver godkänt tips':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${icon}</svg>${label}</a>`;
+    }).join('');
   } else { bn.innerHTML = ''; }
 }
 
@@ -1697,11 +1980,6 @@ function setPlacement(group, arr) {
   predictions.placements[group] = arr;
   markDirty();
 }
-function setBracketMatch(matchNum, data) {
-  if (!predictions.bracket) predictions.bracket = {};
-  predictions.bracket[String(matchNum)] = data;
-  markDirty();
-}
 
 function markDirty() {
   isDirty = true;
@@ -1770,110 +2048,6 @@ function computeGroupStandings(groupLetter) {
 // BEST THIRD PLACE COMPUTATION
 // ══════════════════════════════════════════════════════════════════════
 
-function computeBestThirds() {
-  const thirds = [];
-  const groups = Object.keys(T.groups);
-  for (const g of groups) {
-    const placements = predictions.placements?.[g];
-    if (placements && placements[2]) {
-      // Get the third-placed team's stats
-      const standings = computeGroupStandings(g);
-      const thirdTeam = placements[2];
-      const stat = standings.find(s => s.team === thirdTeam);
-      if (stat) {
-        thirds.push({ group: g, team: thirdTeam, pts: stat.pts, gd: stat.gd, gf: stat.gf });
-      }
-    }
-  }
-  // Rank thirds
-  thirds.sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
-  return thirds;
-}
-
-function getQualifyingThirds() {
-  const thirds = computeBestThirds();
-  return thirds.slice(0, 8); // Top 8 thirds qualify
-}
-
-function getThirdPlaceTeamForSlot(slot) {
-  // slot like "3ABCDF" - pick a qualifying third from those groups
-  const possibleGroups = slot.slice(1).split('');
-  const qualifying = getQualifyingThirds();
-  // Find a qualifying third from the possible groups that hasn't been assigned yet
-  // Simple approach: just find first match
-  for (const q of qualifying) {
-    if (possibleGroups.includes(q.group)) {
-      return q.team;
-    }
-  }
-  return null;
-}
-
-// More sophisticated allocation: assign all 8 third-place slots at once
-function allocateThirdPlaceTeams() {
-  const qualifying = getQualifyingThirds();
-  const qualGroups = qualifying.map(q => q.group).sort();
-  const qualGroupStr = qualGroups.join('');
-
-  // The R32 matches with third-place slots, in match number order
-  const thirdSlots = T.r32Matches.filter(m => String(m[3]).startsWith('3') || String(m[4]).startsWith('3'));
-  const allocation = {};
-
-  // For each slot, pick from the qualifying thirds
-  const assigned = new Set();
-  for (const m of thirdSlots) {
-    for (const side of [3, 4]) {
-      const slotStr = String(m[side]);
-      if (!slotStr.startsWith('3')) continue;
-      const possibleGroups = slotStr.slice(1).split('');
-      for (const q of qualifying) {
-        if (possibleGroups.includes(q.group) && !assigned.has(q.group)) {
-          allocation[String(m[0]) + '_' + (side === 3 ? 'home' : 'away')] = q.team;
-          assigned.add(q.group);
-          break;
-        }
-      }
-    }
-  }
-  return allocation;
-}
-
-// ══════════════════════════════════════════════════════════════════════
-// BRACKET TEAM RESOLUTION
-// ══════════════════════════════════════════════════════════════════════
-
-function resolveR32Team(slot, matchNum, side) {
-  if (!slot) return null;
-  const s = String(slot);
-  if (s.startsWith('3')) {
-    // Best third place
-    const alloc = allocateThirdPlaceTeams();
-    return alloc[matchNum + '_' + side] || null;
-  }
-  // e.g., "1A" = 1st in group A, "2B" = 2nd in group B
-  const pos = parseInt(s[0]) - 1; // 0-indexed
-  const group = s[1];
-  const placements = predictions.placements?.[group];
-  if (placements && placements[pos]) return placements[pos];
-  return null;
-}
-
-function resolveKnockoutTeam(source, matchNum, side) {
-  if (!source) return null;
-  const s = String(source);
-  // W73 = winner of match 73, L101 = loser of match 101
-  const isWinner = s[0] === 'W';
-  const isLoser = s[0] === 'L';
-  const srcMatch = s.slice(1);
-  const bracket = predictions.bracket || {};
-  const b = bracket[srcMatch];
-  if (!b || !b.winner) return null;
-  if (isWinner) return b.winner;
-  if (isLoser) {
-    return b.home === b.winner ? b.away : b.home;
-  }
-  return null;
-}
 
 // ══════════════════════════════════════════════════════════════════════
 // PROGRESS COMPUTATION
@@ -1899,23 +2073,20 @@ function computeProgress() {
     for (let i = 0; i < 4; i++) { if (arr[i]) filled++; }
   }
 
-  // Bracket winners (R32=16, R16=8, QF=4, SF=2, Bronze=1, Final=1 = 32)
-  total += 32;
-  const br = predictions.bracket || {};
-  const knockoutMatches = [...T.r32Matches, ...T.r16Matches, ...T.qfMatches, ...T.sfMatches,
-    [T.bronzeMatch[0]], [T.finalMatch[0]]];
-  for (const km of knockoutMatches) {
-    const mn = String(km[0]);
-    if (br[mn]?.winner) filled++;
-  }
+  // Knockout: 8 treor + 16 r16 + 8 qf + 4 sf + 4 final = 40
+  total += 40;
+  const thirds3 = predictions.thirdPlaceQualifiers || [];
+  for (let i = 0; i < 8; i++) { if (thirds3[i]) filled++; }
+  for (const t of (predictions.r16Teams || [])) if (t) filled++;
+  for (const t of (predictions.qfTeams  || [])) if (t) filled++;
+  for (const t of (predictions.sfTeams  || [])) if (t) filled++;
+  const fp0 = predictions.finalPlacements || {};
+  for (const k of ['1','2','3','4']) { if (fp0[k]) filled++; }
 
-  // Special (firstScorer, topScorers x3, firstRedCard, firstPenalty = 6)
-  total += 6;
-  if (predictions.firstScorer) filled++;
-  if (predictions.firstRedCard) filled++;
-  if (predictions.firstPenalty) filled++;
-  const ts = predictions.topScorers || [];
-  for (let i = 0; i < 3; i++) { if (ts[i]) filled++; }
+  // Special (q1–q10)
+  total += 10;
+  const qs = predictions.questions || {};
+  for (let i = 1; i <= 10; i++) { if (qs['q'+i]) filled++; }
 
   return total > 0 ? Math.round((filled / total) * 100) : 0;
 }
@@ -1924,6 +2095,104 @@ function updateProgress() {
   const pct = computeProgress();
   document.getElementById('progressFill').style.width = pct + '%';
   document.getElementById('progressText').textContent = pct + '% klart';
+  const wrap = document.getElementById('submitBtnWrap');
+  if (wrap) wrap.style.display = (pct === 100 && !userSubmitted && !userApproved) ? '' : 'none';
+}
+
+async function submitTip() {
+  if (computeProgress() < 100) { showToast('Fyll i alla fält innan du skickar.', 'error'); return; }
+  try {
+    await api('/api/predictions', { method: 'POST', body: JSON.stringify({ data: predictions, submit: true }) });
+    userSubmitted = true;
+    isDirty = false;
+    document.getElementById('saveBar').classList.remove('visible');
+    document.getElementById('submitBtnWrap').style.display = 'none';
+    const banner = document.getElementById('tippaBanner');
+    if (banner) banner.innerHTML = `
+      <div class="payment-card">
+        <div class="check-icon">✅</div>
+        <h2>Tips inskickat!</h2>
+        <p>Ditt tips är registrerat och väntar på betalningsbekräftelse.</p>
+        <div class="swish-amount">330 kr</div>
+        <div class="swish-number">073 040 40 68</div>
+        <p><strong>Jonathan Behr Mattsson</strong></p>
+        <div class="payment-note">
+          300 kr går till prissumman &bull; 30 kr täcker hosting &amp; administration<br>
+          Märk gärna Swish-betalningen med ditt namn. Du får tillgång till alla funktioner när Jonathan eller Pelle bekräftat betalningen.
+        </div>
+      </div>`;
+    showToast('Tips inskickat!', 'success');
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+function renderInfo() {
+  const c = document.getElementById('infoContent');
+  c.innerHTML = `
+    <div class="card" style="margin-bottom:16px">
+      <h3>Hur tipset fungerar</h3>
+      <p style="font-size:14px;color:var(--text2);line-height:1.6">
+        Du tippar alla 72 gruppspelsmatcher, grupplaceringar, slutspelsträdet och 10 specialfrågor.
+        Poängen summeras och den med flest poäng vinner prissumman. Startavgiften är 330 kr — 300 kr
+        går till prissumman och 30 kr täcker hosting och administration.
+      </p>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h3>Poängöversikt</h3>
+      <table class="scoring-table">
+        <thead><tr><th>Kategori</th><th>Detalj</th><th class="pts">Poäng</th></tr></thead>
+        <tbody>
+          <tr><td>Rätt tecken (1/X/2)</td><td>× konsensus­multiplikator</td><td class="pts">3p</td></tr>
+          <tr><td>Rätt vinstmarginal</td><td>Enbart 1 och 2, ingen multiplikator</td><td class="pts">+2p</td></tr>
+          <tr><td>Grupplacering</td><td>0/1/2/4 rätt per grupp</td><td class="pts">0/5/10/20p</td></tr>
+          <tr><td>16-delsfinal — rätt lag</td><td>+ 15p om alla 32 rätt</td><td class="pts">1p/lag</td></tr>
+          <tr><td>8-delsfinal — rätt lag</td><td>+ 15p om alla 16 rätt</td><td class="pts">3p/lag</td></tr>
+          <tr><td>Kvartsfinal — rätt lag</td><td>+ 15p om alla 8 rätt</td><td class="pts">6p/lag</td></tr>
+          <tr><td>Semifinal — rätt lag</td><td>+ 15p om alla 4 rätt</td><td class="pts">12p/lag</td></tr>
+          <tr><td>Finalist (ordning­oberoende)</td><td>Per korrekt finalist</td><td class="pts">8p</td></tr>
+          <tr><td>Exakt VM-vinnare</td><td>Utöver finalist­poäng</td><td class="pts">+12p</td></tr>
+          <tr><td>Exakt runner-up</td><td>Utöver finalist­poäng</td><td class="pts">+8p</td></tr>
+          <tr><td>Exakt 3:e plats</td><td></td><td class="pts">8p</td></tr>
+          <tr><td>Exakt 4:e plats</td><td></td><td class="pts">8p</td></tr>
+          <tr><td>Specialfrågor</td><td>10 frågor × 4p</td><td class="pts">40p max</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h3>Konsensus­multiplikatorn</h3>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:10px">
+        Enbart på matchresultat (1X2) i gruppspelet. Ju färre som tippade rätt, desto mer är poängen värda.
+        Detta belönar modet att avvika från mängden — och straffar att följa AI-flockens tips.
+      </p>
+      <table class="mult-table">
+        <tr><td>Mer än 50 % tippade rätt</td><td style="color:var(--text3)">1×</td></tr>
+        <tr><td>26–50 % tippade rätt</td><td style="color:#c8960c">1,5×</td></tr>
+        <tr><td>11–25 % tippade rätt</td><td style="color:var(--green)">2×</td></tr>
+        <tr><td>10 % eller färre tippade rätt</td><td style="color:#8b00d4">3×</td></tr>
+      </table>
+      <p style="font-size:12px;color:var(--text3);margin-top:10px">
+        Multiplika­torn gäller <strong>inte</strong> på vinstmarginal, grupplaceringar, slutspel eller specialfrågor — alla sådana poäng är fasta.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>Betalning &amp; registrering</h3>
+      <p style="font-size:14px;color:var(--text2);line-height:1.6">
+        Swisha <strong>330 kr</strong> till <strong>073 040 40 68</strong> (Jonathan Behr Mattsson) när ditt tips är inskickat.
+        Märk betalningen med ditt namn. Jonathan eller Pelle bekräftar betalningen och aktiverar ditt konto.
+      </p>
+      <p style="font-size:13px;color:var(--text3);margin-top:4px">
+        300 kr går till prispotten &mdash; 30 kr täcker hosting och administration.
+      </p>
+      <h4 style="margin:16px 0 8px;font-size:13px;color:var(--text2)">Prisfördelning (top 4)</h4>
+      <table style="font-size:13px;color:var(--text2);border-collapse:collapse;width:100%;max-width:260px">
+        <tr><td style="padding:3px 0">🥇 1:a plats</td><td style="padding:3px 0;text-align:right;font-weight:600">50%</td></tr>
+        <tr><td style="padding:3px 0">🥈 2:a plats</td><td style="padding:3px 0;text-align:right;font-weight:600">25%</td></tr>
+        <tr><td style="padding:3px 0">🥉 3:e plats</td><td style="padding:3px 0;text-align:right;font-weight:600">15%</td></tr>
+        <tr><td style="padding:3px 0">4:e plats</td><td style="padding:3px 0;text-align:right;font-weight:600">10%</td></tr>
+      </table>
+    </div>`;
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1935,13 +2204,41 @@ async function loadTippa() {
   await loadSettings();
   startCountdown();
 
-  // Load predictions
   try {
     const data = await api('/api/predictions');
     if (data && typeof data === 'object' && Object.keys(data).length > 0) {
       predictions = typeof data === 'string' ? JSON.parse(data) : data;
     }
   } catch {}
+
+  // Show payment pending card if submitted but not yet approved
+  const banner = document.getElementById('tippaBanner');
+  if (banner) {
+    if (userSubmitted && !userApproved) {
+      banner.innerHTML = `
+        <div class="payment-card">
+          <div class="check-icon">✅</div>
+          <h2>Tips inskickat!</h2>
+          <p>Ditt tips är registrerat och väntar på betalningsbekräftelse.</p>
+          <div class="swish-amount">330 kr</div>
+          <div class="swish-number">073 040 40 68</div>
+          <p><strong>Jonathan Behr Mattsson</strong></p>
+          <div class="payment-note">
+            300 kr går till prissumman &bull; 30 kr täcker hosting &amp; administration<br>
+            Märk gärna Swish-betalningen med ditt namn. Du får tillgång till alla funktioner när Jonathan eller Pelle bekräftat betalningen.
+          </div>
+        </div>`;
+    } else if (!userApproved) {
+      banner.innerHTML = `
+        <div class="welcome-banner">
+          <h2>Välkommen till VM-Bettet 2026! 🏆</h2>
+          <p>Fyll i ditt tips nedan — gruppspel, slutspel och specialfrågor.</p>
+          <p>När alla fält är ifyllda kan du skicka in ditt tips och betala anmälningsavgiften.</p>
+        </div>`;
+    } else {
+      banner.innerHTML = '';
+    }
+  }
 
   renderTippaTab();
   updateProgress();
@@ -1958,7 +2255,7 @@ function setTippaTab(tab) {
 function renderTippaTab() {
   const c = document.getElementById('tippaContent');
   if (tippaTab === 'grupper') renderGrupper(c);
-  else if (tippaTab === 'slutspel') renderSlutspel(c);
+  else if (tippaTab === 'slutspel') renderSlutspelDropdown(c);
   else if (tippaTab === 'special') renderSpecial(c);
 }
 
@@ -1966,7 +2263,14 @@ function renderTippaTab() {
 
 function renderGrupper(container) {
   const groups = Object.keys(T.groups);
-  let html = '<div class="groups-grid">';
+  let html = `<div class="card" style="margin-bottom:16px;font-size:13px;color:var(--text2);line-height:1.6">
+    <strong style="color:var(--text1)">Hur du tippar matcherna:</strong>
+    Välj tecken — <strong>1</strong> = hemmalag vinner, <strong>X</strong> = oavgjort, <strong>2</strong> = bortalag vinner.
+    Om du väljer 1 eller 2 anger du även vinstmarginal (antal mål skillnad).
+    <em>Exempel: du tror hemmalaget vinner med 2 mål → välj <strong>1</strong> och marginal <strong>2</strong>.</em>
+    Rätt tecken ger 3p × konsensus­multiplikator, rätt marginal ger ytterligare 2p.
+  </div>`;
+  html += '<div class="groups-grid">';
   for (const g of groups) {
     html += renderGroupCard(g);
   }
@@ -1991,29 +2295,36 @@ function renderGroupCard(g) {
   const placementsFilled = placements.length === 4 && placements.every(Boolean);
   const checkIcon = (allFilled && placementsFilled) ? ' &#10003;' : '';
 
-  let html = `<div class="group-card">
+  let html = `<div class="group-card" id="groupCard_${g}">
     <div class="group-card-header" data-group="${g}">
       <span>Grupp ${g}</span>
       <span class="check-icon">${checkIcon}</span>
     </div>
     <div class="group-card-body">`;
 
+  // Match column headers
+  html += `<div class="match-row-header">
+    <div></div><div>Tecken</div><div>Vinstmarginal</div>
+  </div>`;
+
   // Matches
   for (const m of matches) {
     const mn = String(m[0]);
     const d = parseMatchDate(m[1], m[2]);
-    const score = pm[mn] || ['', ''];
-    html += `<div class="match-row">
-      <span class="date">${formatDate(d)} ${formatTime(d)}</span>
-      <span class="team">${teamFlag(m[3])} ${m[3]}</span>
-      <div class="score-inputs">
-        <input type="number" class="score-input" min="0" max="20" value="${score[0]!==''&&score[0]!=null?score[0]:''}"
-          onchange="onMatchScore('${mn}', 0, this.value, '${g}')" onfocus="this.select()">
-        <span class="score-dash">-</span>
-        <input type="number" class="score-input" min="0" max="20" value="${score[1]!==''&&score[1]!=null?score[1]:''}"
-          onchange="onMatchScore('${mn}', 1, this.value, '${g}')" onfocus="this.select()">
+    const sign   = getMatchSign(mn);
+    const margin = getMatchMargin(mn);
+    const showMargin = sign === '1' || sign === '2';
+    html += `<div class="match-row" id="matchRow_${mn}" data-group="${g}">
+      <span class="match-teams">
+        <span class="match-date">${formatDate(d)} ${formatTime(d)}</span>
+        ${teamFlag(m[3])} ${m[3]}<span class="match-vs">–</span>${teamFlag(m[4])} ${m[4]}
+      </span>
+      <div class="sign-btns">
+        <button class="sign-btn${sign==='1'?' active':''}" onclick="setMatchTip('${mn}','1','${g}')">1</button>
+        <button class="sign-btn${sign==='X'?' active':''}" onclick="setMatchTip('${mn}','X','${g}')">X</button>
+        <button class="sign-btn${sign==='2'?' active':''}" onclick="setMatchTip('${mn}','2','${g}')">2</button>
       </div>
-      <span class="team away">${teamFlag(m[4])} ${m[4]}</span>
+      <div class="margin-cell">${showMargin ? _marginInputHTML(mn, g, margin) : ''}</div>
     </div>`;
   }
 
@@ -2058,19 +2369,57 @@ function renderPlacementButtonsHTML(g, teams, placements) {
   return html;
 }
 
-function onMatchScore(matchNum, idx, value, group) {
-  if (!predictions.matches) predictions.matches = {};
-  if (!predictions.matches[matchNum]) predictions.matches[matchNum] = ['', ''];
-  predictions.matches[matchNum][idx] = value === '' ? '' : parseInt(value);
-  markDirty();
+function _marginInputHTML(mn, group, margin) {
+  const val = margin !== '' ? margin : '';
+  return `<input type="number" class="margin-input" min="1" max="15" value="${val}"
+    onchange="setMatchMarginUI('${mn}',this.value,'${group}')" onfocus="this.select()">`;
+}
 
-  // Recompute standings for this group
+function getMatchSign(mn) {
+  const s = predictions.matches?.[mn];
+  if (!s || s[0] === '' || s[0] == null || s[1] === '' || s[1] == null) return null;
+  const h = parseInt(s[0]), a = parseInt(s[1]);
+  if (isNaN(h) || isNaN(a)) return null;
+  return h > a ? '1' : h === a ? 'X' : '2';
+}
+
+function getMatchMargin(mn) {
+  const s = predictions.matches?.[mn];
+  if (!s || s[0] === '' || s[0] == null) return '';
+  const h = parseInt(s[0]), a = parseInt(s[1]);
+  if (isNaN(h) || isNaN(a)) return '';
+  return Math.abs(h - a);
+}
+
+function setMatchTip(mn, sign, group) {
+  const curMargin = getMatchMargin(mn);
+  const margin = sign === 'X' ? 0 : (curMargin !== '' && curMargin > 0 ? curMargin : 1);
+  _applyMatchTip(mn, sign, margin, group);
+}
+
+function setMatchMarginUI(mn, val, group) {
+  const sign = getMatchSign(mn);
+  if (!sign || sign === 'X') return;
+  const margin = Math.max(1, parseInt(val) || 1);
+  _applyMatchTip(mn, sign, margin, group);
+}
+
+function _applyMatchTip(mn, sign, margin, group) {
+  if (!predictions.matches) predictions.matches = {};
+  if (sign === '1')      predictions.matches[mn] = [margin, 0];
+  else if (sign === 'X') predictions.matches[mn] = [0, 0];
+  else                   predictions.matches[mn] = [0, margin];
+  markDirty();
+  _refreshGroupStandings(mn, group);
+}
+
+function _refreshGroupStandings(mn, group) {
   const standings = computeGroupStandings(group);
   const table = document.getElementById('groupTable_' + group);
   if (table) {
     const rows = table.querySelectorAll('tr');
     standings.forEach((s, i) => {
-      const row = rows[i + 1]; // skip header
+      const row = rows[i + 1];
       if (!row) return;
       row.className = i < 2 ? 'qualified' : (i === 2 ? 'third-best' : '');
       const cells = row.querySelectorAll('td');
@@ -2086,26 +2435,46 @@ function onMatchScore(matchNum, idx, value, group) {
     });
   }
 
-  // Auto-set placements from computed standings if user hasn't manually set them
+  // Auto-set placements when all 6 group matches are filled
   const computedOrder = standings.map(s => s.team);
   if (!predictions.placements) predictions.placements = {};
-  // Only auto-set if all 6 matches in this group have scores
-  const matches = T.groupMatches.filter(m => m[5] === group);
-  let allFilled = true;
-  for (const m of matches) {
-    const s = predictions.matches[String(m[0])];
-    if (!s || s[0] === '' || s[0] == null || s[1] === '' || s[1] == null) { allFilled = false; break; }
-  }
+  const groupMatches = T.groupMatches.filter(m => m[5] === group);
+  const allFilled = groupMatches.every(m => {
+    const s = predictions.matches?.[String(m[0])];
+    return s && s[0] !== '' && s[0] != null && s[1] !== '' && s[1] != null;
+  });
   if (allFilled) {
     predictions.placements[group] = computedOrder;
-    // Update placement buttons for this group
-    const placementSectionAuto = document.getElementById('placement_' + group);
-    if (placementSectionAuto) {
-      const teamsAuto = T.groups[group];
-      placementSectionAuto.innerHTML = renderPlacementButtonsHTML(group, teamsAuto, computedOrder);
+    const placementEl = document.getElementById('placement_' + group);
+    if (placementEl) {
+      placementEl.innerHTML = renderPlacementButtonsHTML(group, T.groups[group], computedOrder);
     }
   }
+
+  // Refresh sign buttons and margin cell for this match row
+  const row = document.getElementById('matchRow_' + mn);
+  if (row) {
+    const sign = getMatchSign(mn);
+    row.querySelectorAll('.sign-btn').forEach((btn, i) => {
+      btn.classList.toggle('active', ['1','X','2'][i] === sign);
+    });
+    const cell = row.querySelector('.margin-cell');
+    if (cell) {
+      const g2 = row.dataset.group;
+      cell.innerHTML = (sign === '1' || sign === '2') ? _marginInputHTML(mn, g2, getMatchMargin(mn)) : '';
+    }
+  }
+
   updateProgress();
+}
+
+function onMatchScore(matchNum, idx, value, group) {
+  // Legacy — kept for any external callers; routes through new logic
+  if (!predictions.matches) predictions.matches = {};
+  if (!predictions.matches[matchNum]) predictions.matches[matchNum] = ['', ''];
+  predictions.matches[matchNum][idx] = value === '' ? '' : parseInt(value);
+  markDirty();
+  _refreshGroupStandings(matchNum, group);
 }
 
 function onPlacementChange(group, pos, team) {
@@ -2137,313 +2506,291 @@ function onPlacementChange(group, pos, team) {
   // If we're on slutspel tab, we'd need to refresh. For now, bracket resolves dynamically.
 }
 
-// ─── SLUTSPEL — classic left-to-right bracket ───
+// ─── SLUTSPEL — dropdown per runda ───
 
-function renderSlutspel(container) {
-  // ── Layout constants ──────────────────────────────────────────────
-  const SLOT   = 60;   // px allocated per R32 match (height)
-  const MW     = 175;  // match box width
-  const MH     = 51;   // match box height (25 + 1 + 25)
-  const COL_W  = 205;  // column width including connector gap
-  const PAD    = 12;   // left padding inside column for match box
-  const TOTAL_H = 16 * SLOT;   // 960px
-  const TOTAL_W = 5 * COL_W;   // 1025px
+function renderSlutspelDropdown(container) {
+  if (!predictions.thirdPlaceQualifiers) predictions.thirdPlaceQualifiers = Array(8).fill('');
+  if (!predictions.r16Teams) predictions.r16Teams = [];
+  if (!predictions.qfTeams) predictions.qfTeams = [];
+  if (!predictions.sfTeams) predictions.sfTeams = [];
+  if (!predictions.finalPlacements) predictions.finalPlacements = {};
 
-  // ── Bracket order (top → bottom) for each round ──────────────────
-  // Derived from match data: each consecutive pair feeds the next round
-  const ORDER = [
-    [74,77, 73,75, 83,84, 81,82, 76,78, 79,80, 86,88, 85,87], // R32
-    [89, 90, 93, 94, 91, 92, 95, 96],                          // R16
-    [97, 98, 99, 100],                                          // QF
-    [101, 102],                                                 // SF
-    [104]                                                       // Final
+  const groups = Object.keys(T.groups).sort();
+
+  const autoWinners = groups.map(g => predictions.placements?.[g]?.[0] || null);
+  const autoRunners = groups.map(g => predictions.placements?.[g]?.[1] || null);
+  const thirds = predictions.thirdPlaceQualifiers;
+  const r32Flat = [...autoWinners, ...autoRunners, ...thirds].filter(Boolean);
+
+  const allThirdPossible = groups.map(g => predictions.placements?.[g]?.[2] || null).filter(Boolean);
+
+  const r32Count = autoWinners.filter(Boolean).length + autoRunners.filter(Boolean).length + thirds.filter(Boolean).length;
+  const r32Done  = r32Count === 32;
+
+  // ── Sextondelsfinal ──
+  let html = `<div class="ko-section">
+    <div class="ko-round-name">Sextondelsfinal <span class="ko-counter${r32Done ? ' ko-counter-done' : ''}">${r32Count}/32 lag</span></div>
+    <div class="ko-notice" style="margin-bottom:10px">24 lag fylls automatiskt från din grupptippning. Välj 8 bästa treor.</div>`;
+
+  html += `<div class="ko-auto-label" style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 5px">Vinnare grupp (automatisk)</div>
+    <div class="ko-chips" style="margin-bottom:10px">`;
+  for (let i = 0; i < groups.length; i++) {
+    const t = autoWinners[i];
+    html += `<div class="ko-chip auto${t ? '' : ' ko-chip-empty'}">${t ? teamWithFlag(t) : `Grupp ${groups[i]} 1:a`}</div>`;
+  }
+  html += `</div>
+    <div class="ko-auto-label" style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 5px">Tvåor grupp (automatisk)</div>
+    <div class="ko-chips" style="margin-bottom:10px">`;
+  for (let i = 0; i < groups.length; i++) {
+    const t = autoRunners[i];
+    html += `<div class="ko-chip auto${t ? '' : ' ko-chip-empty'}">${t ? teamWithFlag(t) : `Grupp ${groups[i]} 2:a`}</div>`;
+  }
+  html += `</div>
+    <div class="ko-auto-label" style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 5px">Bästa treor — välj 8</div>
+    <div class="ko-thirds-grid">`;
+  for (let i = 0; i < 8; i++) {
+    const cur = thirds[i] || '';
+    const otherUsed = thirds.filter((t, j) => j !== i && t);
+    const opts = allThirdPossible.filter(t => !otherUsed.includes(t) || t === cur);
+    if (cur && !opts.includes(cur)) opts.push(cur);
+    html += `<div><select class="form-input" style="font-size:13px" onchange="setThirdQualifier(${i},this.value)">
+      <option value="">— 3:a plats ${i + 1} —</option>`;
+    for (const t of opts) {
+      html += `<option value="${escHtml(t)}"${cur === t ? ' selected' : ''}>${escHtml(t)}</option>`;
+    }
+    html += `</select></div>`;
+  }
+  html += '</div></div>';
+
+  // ── Åttondelsfinal / Kvartsfinal / Semifinal ──
+  const koRounds = [
+    { key: 'r16Teams', name: 'Åttondelsfinal', source: r32Flat,                  pick: 16 },
+    { key: 'qfTeams',  name: 'Kvartsfinal',    source: predictions.r16Teams || [], pick: 8 },
+    { key: 'sfTeams',  name: 'Semifinal',       source: predictions.qfTeams  || [], pick: 4 },
   ];
-  const ROUND_KEY = ['r32','r16','qf','sf','final'];
-
-  // ── Match lookup ─────────────────────────────────────────────────
-  const matchMap = {};
-  [...T.r32Matches, ...T.r16Matches, ...T.qfMatches,
-   ...T.sfMatches, T.bronzeMatch, T.finalMatch]
-    .forEach(m => { matchMap[String(m[0])] = m; });
-
-  // ── Center Y for round n, position i ─────────────────────────────
-  function cY(n, i) {
-    const step = Math.pow(2, n) * SLOT;
-    return step * i + step / 2;
-  }
-
-  // ── SVG connector lines ──────────────────────────────────────────
-  const lines = [];
-  for (let n = 0; n < 4; n++) {
-    const rx  = n * COL_W + PAD + MW;        // right edge of this round's match
-    const lx  = (n + 1) * COL_W + PAD;       // left edge of next round's match
-    const mx  = Math.round((rx + lx) / 2);   // midpoint x for vertical bracket
-    const pairs = ORDER[n].length / 2;
-    for (let j = 0; j < pairs; j++) {
-      const ay = cY(n, j * 2);        // top sibling center y
-      const by = cY(n, j * 2 + 1);    // bottom sibling center y
-      const ny = cY(n + 1, j);        // parent match center y
-      lines.push(
-        `<line x1="${rx}" y1="${ay}" x2="${mx}" y2="${ay}"/>`,
-        `<line x1="${rx}" y1="${by}" x2="${mx}" y2="${by}"/>`,
-        `<line x1="${mx}" y1="${ay}" x2="${mx}" y2="${by}"/>`,
-        `<line x1="${mx}" y1="${ny}" x2="${lx}" y2="${ny}"/>`
-      );
-    }
-  }
-
-  // ── Render one match box ─────────────────────────────────────────
-  function bmHTML(matchNum, n, i) {
-    const mn = String(matchNum);
-    const m  = matchMap[mn];
-    if (!m) return '';
-    const d = parseMatchDate(m[1], m[2]);
-    const round = ROUND_KEY[n];
-
-    let homeTeam, awayTeam, homeLabel, awayLabel;
-    if (round === 'r32') {
-      homeTeam  = resolveR32Team(m[3], mn, 'home');
-      awayTeam  = resolveR32Team(m[4], mn, 'away');
-      homeLabel = formatSlotLabel(m[3]);
-      awayLabel = formatSlotLabel(m[4]);
+  for (const { key, name, source, pick } of koRounds) {
+    const sel = predictions[key] || [];
+    const cnt = sel.length;
+    const locked = source.length === 0;
+    html += `<div class="ko-section">
+      <div class="ko-round-name">${name} <span class="ko-counter${cnt === pick ? ' ko-counter-done' : ''}">${cnt}/${pick} valda</span></div>`;
+    if (locked) {
+      html += `<div class="ko-notice ko-notice-warn">Fyll i föregående runda för att låsa upp.</div>`;
     } else {
-      homeTeam  = resolveKnockoutTeam(m[3], mn, 'home');
-      awayTeam  = resolveKnockoutTeam(m[4], mn, 'away');
-      homeLabel = formatSourceLabel(m[3]);
-      awayLabel = formatSourceLabel(m[4]);
+      html += `<div class="ko-notice" style="margin-bottom:10px">Klicka på lagen som går vidare (${pick} st)</div><div class="ko-chips">`;
+      for (const team of source) {
+        const on   = sel.includes(team);
+        const full = !on && cnt >= pick;
+        html += `<div class="ko-chip${on ? ' selected' : ''}${full ? ' locked' : ''}"
+          data-round="${key}" data-team="${escHtml(team)}"
+          onclick="if(!this.classList.contains('locked'))toggleKoTeam(this.dataset.round,this.dataset.team)">${teamWithFlag(team)}</div>`;
+      }
+      html += '</div>';
     }
-
-    // Silently update bracket home/away so selectWinner can read them
-    if (!predictions.bracket) predictions.bracket = {};
-    if (!predictions.bracket[mn]) predictions.bracket[mn] = {};
-    predictions.bracket[mn].home = homeTeam || null;
-    predictions.bracket[mn].away = awayTeam || null;
-
-    const winner = predictions.bracket[mn].winner;
-    const left = n * COL_W + PAD;
-    const top  = cY(n, i) - Math.floor(MH / 2);
-
-    function teamRow(team, label, side) {
-      const empty   = !team;
-      const win     = !!(team && winner === team);
-      const cls     = `bm-team${empty ? ' bm-empty' : ''}${win ? ' bm-win' : ''}`;
-      const onclick = empty ? '' : `onclick="selectWinner('${mn}','${side}')"`;
-      const content = team
-        ? teamWithFlag(team)
-        : `<span class="bm-slot">${escHtml(label)}</span>`;
-      return `<div class="${cls}" ${onclick}>${content}</div>`;
-    }
-
-    return `<div class="bm-box" style="left:${left}px;top:${top}px;width:${MW}px;"
-      data-match="${mn}" title="Match ${mn} · ${formatDate(d)} ${formatTime(d)}">
-      ${teamRow(homeTeam, homeLabel, 'home')}
-      <div class="bm-divider"></div>
-      ${teamRow(awayTeam, awayLabel, 'away')}
-    </div>`;
+    html += '</div>';
   }
 
-  // ── Build all match boxes ─────────────────────────────────────────
-  let boxes = '';
-  ORDER.forEach((order, n) => {
-    order.forEach((mn, i) => { boxes += bmHTML(mn, n, i); });
-  });
-
-  // ── Column headers ────────────────────────────────────────────────
-  const HEADERS = ['32-delsfinal','16-delsfinal','Kvartsfinal','Semifinal','Final'];
-  const hdrHtml = HEADERS.map(h =>
-    `<div style="width:${COL_W}px">${h}</div>`
-  ).join('');
-
-  container.innerHTML = `
-    <div class="bracket-outer">
-      <div class="bracket-scroll">
-        <div class="bracket-col-headers" style="width:${TOTAL_W}px">${hdrHtml}</div>
-        <div class="bracket-field" style="width:${TOTAL_W}px;height:${TOTAL_H}px;">
-          <svg width="${TOTAL_W}" height="${TOTAL_H}" class="bracket-svg">
-            <g stroke="var(--border)" stroke-width="1.5" fill="none">${lines.join('')}</g>
-          </svg>
-          ${boxes}
-        </div>
-      </div>
-      <div class="bracket-bronze">
-        <div class="bracket-bronze-title">Bronsmatch</div>
-        <div class="knockout-matches">${renderKnockoutMatch(T.bronzeMatch, 'bronze')}</div>
-      </div>
-    </div>`;
-}
-
-function renderKnockoutMatch(m, round) {
-  const mn = String(m[0]);
-  const d = parseMatchDate(m[1], m[2]);
-  let homeTeam = null, awayTeam = null;
-  let homeSlot = m[3], awaySlot = m[4];
-  let homeLabel = String(m[3] || ''), awayLabel = String(m[4] || '');
-
-  if (round === 'r32') {
-    homeTeam = resolveR32Team(homeSlot, mn, 'home');
-    awayTeam = resolveR32Team(awaySlot, mn, 'away');
-    // Format labels
-    homeLabel = formatSlotLabel(homeSlot);
-    awayLabel = formatSlotLabel(awaySlot);
+  // ── Final & pallplatser ──
+  const sfTeams = predictions.sfTeams || [];
+  const fp = predictions.finalPlacements || {};
+  const locked5 = sfTeams.length < 4;
+  html += `<div class="ko-section">
+    <div class="ko-round-name">Final &amp; pallplatser</div>`;
+  if (locked5) {
+    html += `<div class="ko-notice ko-notice-warn">Välj 4 semifinalister för att låsa upp.</div>`;
   } else {
-    homeTeam = resolveKnockoutTeam(homeSlot, mn, 'home');
-    awayTeam = resolveKnockoutTeam(awaySlot, mn, 'away');
-    homeLabel = formatSourceLabel(homeSlot);
-    awayLabel = formatSourceLabel(awaySlot);
+    html += `<div class="ko-notice" style="margin-bottom:12px">Klicka på rätt lag för varje placering.</div>`;
+    const positions = [
+      { k: '1', label: 'Vinnare' },
+      { k: '2', label: 'Runner-up' },
+      { k: '3', label: '3:e plats' },
+      { k: '4', label: '4:e plats' },
+    ];
+    for (const { k, label } of positions) {
+      html += `<div class="ko-rank-row">
+        <div class="ko-rank-label">${label}</div>
+        <div class="ko-chips">`;
+      for (const t of sfTeams) {
+        const isThis  = fp[k] === t;
+        const isOther = !isThis && Object.values(fp).includes(t);
+        html += `<div class="ko-chip${isThis ? ' selected' : ''}${isOther ? ' locked' : ''}"
+          data-pos="${k}" data-team="${escHtml(t)}"
+          onclick="setFinalPlacement(this.dataset.pos,this.dataset.team)">${teamWithFlag(t)}</div>`;
+      }
+      html += `</div></div>`;
+    }
   }
+  html += '</div>';
 
-  const bracket = predictions.bracket || {};
-  const current = bracket[mn] || {};
-  const winner = current.winner;
-
-  // Update bracket home/away silently
-  if (homeTeam || awayTeam) {
-    if (!predictions.bracket) predictions.bracket = {};
-    if (!predictions.bracket[mn]) predictions.bracket[mn] = {};
-    predictions.bracket[mn].home = homeTeam;
-    predictions.bracket[mn].away = awayTeam;
-  }
-
-  const homeEmpty = !homeTeam;
-  const awayEmpty = !awayTeam;
-
-  const homeOnclick = homeEmpty ? '' : `selectWinner(&quot;${mn}&quot;,&quot;home&quot;)`;
-  const awayOnclick = awayEmpty ? '' : `selectWinner(&quot;${mn}&quot;,&quot;away&quot;)`;
-  let html = `<div class="knockout-match" data-match="${mn}">
-    <div class="match-label">Match ${mn} &middot; ${formatDate(d)} ${formatTime(d)}</div>
-    <div class="teams">
-      <div class="team-option ${homeEmpty?'empty':''} ${winner===homeTeam&&homeTeam?'selected':''}"
-        onclick="${homeOnclick}" title="${escHtml(homeLabel)}">
-        <span class="name">${homeTeam ? teamWithFlag(homeTeam) : homeLabel}</span>
-        ${winner===homeTeam&&homeTeam?'<span class="check">&#10003;</span>':''}
-      </div>
-      <div class="team-option ${awayEmpty?'empty':''} ${winner===awayTeam&&awayTeam?'selected':''}"
-        onclick="${awayOnclick}" title="${escHtml(awayLabel)}">
-        <span class="name">${awayTeam ? teamWithFlag(awayTeam) : awayLabel}</span>
-        ${winner===awayTeam&&awayTeam?'<span class="check">&#10003;</span>':''}
-      </div>
-    </div>
-  </div>`;
-  return html;
+  container.innerHTML = html;
 }
 
-function formatSlotLabel(slot) {
-  const s = String(slot);
-  if (s.startsWith('3')) {
-    return 'Bästa 3:a (' + s.slice(1).split('').join('/') + ')';
+function getAutoR32TeamsFlat() {
+  return Object.keys(T.groups).sort().flatMap(g => {
+    const pl = predictions.placements?.[g] || [];
+    return [pl[0], pl[1]].filter(Boolean);
+  });
+}
+
+function setThirdQualifier(idx, team) {
+  if (!predictions.thirdPlaceQualifiers) predictions.thirdPlaceQualifiers = Array(8).fill('');
+  predictions.thirdPlaceQualifiers[idx] = team;
+  _cascadeKoTrim();
+  markDirty(); updateProgress();
+  refreshSlutspel();
+}
+
+function toggleKoTeam(roundKey, team) {
+  if (!predictions[roundKey]) predictions[roundKey] = [];
+  const maxPick = { r16Teams: 16, qfTeams: 8, sfTeams: 4 }[roundKey];
+  const idx = predictions[roundKey].indexOf(team);
+  if (idx >= 0) {
+    predictions[roundKey].splice(idx, 1);
+    _cascadeKoRemoval(team, roundKey);
+  } else {
+    if (predictions[roundKey].length >= maxPick) return;
+    predictions[roundKey].push(team);
   }
-  const pos = s[0];
-  const group = s[1];
-  return (pos === '1' ? '1:a' : '2:a') + ' Grupp ' + group;
+  markDirty(); updateProgress();
+  refreshSlutspel();
 }
 
-function formatSourceLabel(source) {
-  const s = String(source);
-  if (s.startsWith('W')) return 'Vinnare match ' + s.slice(1);
-  if (s.startsWith('L')) return 'Förlorare match ' + s.slice(1);
-  return s;
-}
-
-function selectWinner(matchNum, side) {
-  if (!predictions.bracket) predictions.bracket = {};
-  if (!predictions.bracket[matchNum]) predictions.bracket[matchNum] = {};
-  const b = predictions.bracket[matchNum];
-  const winner = side === 'home' ? b.home : b.away;
-  if (!winner) return;
-
-  // Check if winner changed
-  const oldWinner = b.winner;
-  b.winner = winner;
-
-  // Clear downstream picks if winner changed
-  if (oldWinner && oldWinner !== winner) {
-    clearDownstream(matchNum);
+function _cascadeKoRemoval(team, fromRound) {
+  const order = ['r16Teams', 'qfTeams', 'sfTeams'];
+  const fromIdx = order.indexOf(fromRound);
+  for (let i = fromIdx + 1; i < order.length; i++) {
+    if (!predictions[order[i]]) continue;
+    predictions[order[i]] = predictions[order[i]].filter(t => t !== team);
   }
-
-  markDirty();
-  updateProgress();
-
-  // Re-render the entire knockout view to cascade changes
-  renderSlutspel(document.getElementById('tippaContent'));
+  if (predictions.finalPlacements) {
+    for (const k of Object.keys(predictions.finalPlacements)) {
+      if (predictions.finalPlacements[k] === team) delete predictions.finalPlacements[k];
+    }
+  }
 }
 
-function clearDownstream(matchNum) {
-  // Find any match that references this match's winner
-  const wRef = 'W' + matchNum;
-  const lRef = 'L' + matchNum;
-  const allMatches = [...T.r16Matches, ...T.qfMatches, ...T.sfMatches,
-    T.bronzeMatch, T.finalMatch];
-
-  for (const m of allMatches) {
-    const mn = String(m[0]);
-    if (String(m[3]) === wRef || String(m[4]) === wRef ||
-        String(m[3]) === lRef || String(m[4]) === lRef) {
-      if (predictions.bracket?.[mn]?.winner) {
-        const oldW = predictions.bracket[mn].winner;
-        delete predictions.bracket[mn].winner;
-        predictions.bracket[mn].home = null;
-        predictions.bracket[mn].away = null;
-        clearDownstream(mn);
+function _cascadeKoTrim() {
+  const r32All = [...getAutoR32TeamsFlat(), ...(predictions.thirdPlaceQualifiers || []).filter(Boolean)];
+  predictions.r16Teams = (predictions.r16Teams || []).filter(t => r32All.includes(t));
+  predictions.qfTeams  = (predictions.qfTeams  || []).filter(t => (predictions.r16Teams || []).includes(t));
+  predictions.sfTeams  = (predictions.sfTeams  || []).filter(t => (predictions.qfTeams  || []).includes(t));
+  if (predictions.finalPlacements) {
+    for (const k of Object.keys(predictions.finalPlacements)) {
+      if (!(predictions.sfTeams || []).includes(predictions.finalPlacements[k])) {
+        delete predictions.finalPlacements[k];
       }
     }
   }
 }
 
+function setFinalPlacement(position, team) {
+  if (!predictions.finalPlacements) predictions.finalPlacements = {};
+  if (!team) {
+    delete predictions.finalPlacements[position];
+  } else if (predictions.finalPlacements[position] === team) {
+    delete predictions.finalPlacements[position]; // toggle off
+  } else {
+    for (const k of Object.keys(predictions.finalPlacements)) {
+      if (predictions.finalPlacements[k] === team && k !== position) delete predictions.finalPlacements[k];
+    }
+    predictions.finalPlacements[position] = team;
+  }
+  markDirty(); updateProgress();
+  refreshSlutspel();
+}
+
+function refreshSlutspel() {
+  const c = document.getElementById('tippaContent');
+  if (c && tippaTab === 'slutspel') renderSlutspelDropdown(c);
+}
+
 // ─── SPECIAL TIPS ───
 
+function setQ(key, val) {
+  if (!predictions.questions) predictions.questions = {};
+  predictions.questions[key] = val;
+  markDirty();
+  updateProgress();
+  renderSpecial(document.getElementById('tippaContent'));
+}
+
 function renderSpecial(container) {
-  const allTeams = T.allTeams;
-  const ts = predictions.topScorers || ['','',''];
-  const fs = predictions.firstScorer || '';
-  const frc = predictions.firstRedCard || '';
-  const fp = predictions.firstPenalty || '';
+  const q = predictions.questions || {};
+  const allTeams = T.allTeams.slice().sort((a,b) => a.localeCompare(b,'sv'));
 
   let html = '<div class="special-grid">';
 
-  // First goal scorer
+  // Q1-Q3: Skytteligan topp 3
   html += `<div class="card">
-    <h3>Turneringens första målskytt</h3>
-    <p class="text-muted" style="margin-bottom:10px">Sök på spelarens efternamn</p>
-    <div class="form-group">
-      ${makeAutocomplete('firstScorer', fs, (v) => { predictions.firstScorer = v; markDirty(); updateProgress(); })}
-    </div>
-  </div>`;
-
-  // Top 3 scorers
-  html += `<div class="card">
-    <h3>Skytteliga topp 3</h3>
-    <p class="text-muted" style="margin-bottom:10px">Sök på efternamn, rankad 1-3</p>`;
-  for (let i = 0; i < 3; i++) {
+    <h3>Skytteligan topp 3</h3>
+    <p class="text-muted" style="margin-bottom:10px">Namnge tre spelare du tror slutar i topp 3. Ordningen spelar ingen roll — du får 4p per spelare som faktiskt hamnar i topp 3.</p>`;
+  for (let i = 1; i <= 3; i++) {
     html += `<div class="form-group">
-      <label>${i+1}:a skyttekung</label>
-      ${makeAutocomplete('topScorer'+i, ts[i]||'', ((idx) => (v) => { if(!predictions.topScorers)predictions.topScorers=['','','']; predictions.topScorers[idx]=v; markDirty(); updateProgress(); })(i))}
+      <label>Spelare ${i}</label>
+      ${makeAutocomplete('qsp'+i, q['q'+i]||'', ((k) => (v) => {
+        setQ(k, v);
+      })('q'+i))}
     </div>`;
   }
   html += '</div>';
 
-  // First red card team
+  // Q4: Flest assist
   html += `<div class="card">
-    <h3>Första röda kortet - lag</h3>
-    <p class="text-muted" style="margin-bottom:10px">Vilket lag får turneringens första röda kort?</p>
+    <h3>Flest assist i turneringen</h3>
+    <p class="text-muted" style="margin-bottom:10px">Om flera spelare delar rekordet räcker det att du namngett någon av dem.</p>
     <div class="form-group">
-      <select class="form-input" onchange="predictions.firstRedCard=this.value;markDirty();updateProgress()">
+      ${makeAutocomplete('qsp4', q.q4||'', (v) => { setQ('q4', v); })}
+    </div>
+  </div>`;
+
+  // Q5: Mest mål i gruppspelet
+  html += `<div class="card">
+    <h3>Lag med flest mål i gruppspelet</h3>
+    <p class="text-muted" style="margin-bottom:10px">Om flera lag delar rekordet räcker det att du valt något av dem.</p>
+    <div class="form-group">
+      <select class="form-input" onchange="if(!predictions.questions)predictions.questions={};predictions.questions.q5=this.value;markDirty();updateProgress()">
         <option value="">Välj lag...</option>`;
-  for (const t of allTeams.sort((a,b) => a.localeCompare(b,'sv'))) {
-    html += `<option value="${t}" ${frc===t?'selected':''}>${t}</option>`;
+  for (const t of allTeams) {
+    html += `<option value="${escHtml(t)}" ${q.q5===t?'selected':''}>${escHtml(t)}</option>`;
   }
   html += `</select></div></div>`;
 
-  // First penalty team
+  // Q6: Flest insläppta mål
   html += `<div class="card">
-    <h3>Första straffen - lag</h3>
-    <p class="text-muted" style="margin-bottom:10px">Vilket lag får turneringens första straffspark?</p>
+    <h3>Lag som släpper in flest mål i gruppspelet</h3>
+    <p class="text-muted" style="margin-bottom:10px">Om flera lag delar rekordet räcker det att du valt något av dem.</p>
     <div class="form-group">
-      <select class="form-input" onchange="predictions.firstPenalty=this.value;markDirty();updateProgress()">
+      <select class="form-input" onchange="if(!predictions.questions)predictions.questions={};predictions.questions.q6=this.value;markDirty();updateProgress()">
         <option value="">Välj lag...</option>`;
-  for (const t of allTeams.sort((a,b) => a.localeCompare(b,'sv'))) {
-    html += `<option value="${t}" ${fp===t?'selected':''}>${t}</option>`;
+  for (const t of allTeams) {
+    html += `<option value="${escHtml(t)}" ${q.q6===t?'selected':''}>${escHtml(t)}</option>`;
   }
   html += `</select></div></div>`;
+
+  // Q7-Q10: flervalsfrågor
+  const mcQuestions = [
+    { key: 'q7', label: 'Antal lag utan mål i gruppspelet',
+      options: [['0','0 lag'],['1-2','1-2 lag'],['3-4','3-4 lag'],['5+','5 eller fler']] },
+    { key: 'q8', label: 'Snabbaste målet i omgång 1',
+      hint: 'I vilken minut faller det snabbaste målet under matchomgång 1?',
+      options: [['1-2','Inom 2 min'],['3-5','Minut 3-5'],['6-10','Minut 6-10'],['11+','Minut 11+']] },
+    { key: 'q9', label: 'Hattrick i omgång 3?',
+      hint: 'Kommer någon spelare göra hattrick i sista gruppspelsomgången?',
+      options: [['nej','Nej'],['ja-en','Ja, en spelare'],['ja-flera','Ja, flera']] },
+    { key: 'q10', label: 'VM-vinnarens land börjar på...',
+      options: [['a-d','A-D'],['e-k','E-K'],['l-s','L-S'],['t-ö','T-Ö']] }
+  ];
+
+  for (const { key, label, hint, options } of mcQuestions) {
+    html += `<div class="card"><h3>${label}</h3>`;
+    if (hint) html += `<p class="text-muted" style="margin-bottom:10px">${escHtml(hint)}</p>`;
+    html += '<div class="special-options">';
+    for (const [val, display] of options) {
+      const sel = q[key] === val;
+      html += `<button class="special-option-btn${sel?' selected':''}" onclick="setQ('${key}','${val}')">${escHtml(display)}</button>`;
+    }
+    html += '</div></div>';
+  }
 
   html += '</div>';
   container.innerHTML = html;
@@ -2470,7 +2817,7 @@ async function loadResultat() {
 }
 
 function renderResultat(container, data) {
-  const { actual, prediction, score } = data;
+  const { actual, prediction, score, consensusMap } = data;
   const bd = score.breakdown || {};
 
   let html = '';
@@ -2480,21 +2827,19 @@ function renderResultat(container, data) {
   html += `<div class="stat-card"><div class="val">${score.total}</div><div class="lbl">Totalt</div></div>`;
 
   const categories = [
-    ['matchSign', 'matchSignBonus', '1X2'],
-    ['matchExact', 'matchExactBonus', 'Exakt'],
-    ['placements', 'placementsBonus', 'Placeringar'],
-    ['r32', 'r32Bonus', 'R32'],
-    ['r16', 'r16Bonus', 'R16'],
-    ['qf', 'qfBonus', 'KF'],
-    ['sf', 'sfBonus', 'SF'],
-    ['finalPlacements', null, 'Final 1-4'],
-    ['topScorers', null, 'Skytteliga'],
-    ['firstScorer', null, 'Första mål'],
-    ['firstRedCard', null, 'Rött kort'],
-    ['firstPenalty', null, 'Straff']
+    ['matchSign',      '1X2'],
+    ['consensusBoost', 'Boost'],
+    ['matchMargin',    'Marginal'],
+    ['placements',     'Placeringar'],
+    ['r32',            'R32'],
+    ['r16',            'R16'],
+    ['qf',             'KF'],
+    ['sf',             'SF'],
+    ['finalPlacements','Final 1-4'],
+    ['questions',      'Specialtips']
   ];
-  for (const [key, bonusKey, label] of categories) {
-    const pts = (bd[key] || 0) + (bonusKey ? (bd[bonusKey] || 0) : 0);
+  for (const [key, label] of categories) {
+    const pts = bd[key] || 0;
     if (pts > 0 || actual?.matches) {
       html += `<div class="stat-card"><div class="val">${pts}</div><div class="lbl">${label}</div></div>`;
     }
@@ -2523,12 +2868,19 @@ function renderResultat(container, data) {
           const pSign = p ? calcSignLocal(p[0], p[1]) : null;
           const aSign = calcSignLocal(a[0], a[1]);
           const signOk = pSign === aSign;
-          const exactOk = p && p[0] === a[0] && p[1] === a[1];
-          const pts = (signOk ? 10 : 0) + (exactOk ? 5 : 0);
-          const cls = exactOk ? 'correct' : (signOk ? 'correct' : 'wrong');
+          const pMargin = p ? Math.abs(Number(p[0]) - Number(p[1])) : null;
+          const aMargin = Math.abs(Number(a[0]) - Number(a[1]));
+          const marginOk = signOk && aSign !== 'X' && pMargin === aMargin;
+          // Multiplier from consensusMap
+          const cons = consensusMap?.[String(m[0])];
+          const winnerFrac = cons ? (cons[aSign] || 0) : 0.51;
+          const mult = winnerFrac > 0.50 ? 1 : winnerFrac > 0.25 ? 1.5 : winnerFrac > 0.10 ? 2 : 3;
+          const pts = (signOk ? Math.round(3 * mult) : 0) + (marginOk ? 2 : 0);
+          const cls = signOk ? 'correct' : 'wrong';
+          const multStr = signOk && mult > 1 ? ` ×${mult}` : '';
           html += `<div class="result-match-row ${cls}">
             <span style="min-width:100px">${m[3]} - ${m[4]}</span>
-            <span style="flex:1;text-align:center">Tips: ${p?p[0]+'-'+p[1]:'-'} | Facit: ${a[0]}-${a[1]}</span>
+            <span style="flex:1;text-align:center">Tips: ${p?p[0]+'-'+p[1]:'-'} | Facit: ${a[0]}-${a[1]}${multStr}</span>
             <span class="pts ${pts>0?'positive':'zero'}">${pts>0?'+'+pts:0}p</span>
           </div>`;
         }
@@ -2556,35 +2908,41 @@ function renderResultat(container, data) {
 
   // Special tips results
   html += '<div class="card"><h3>Specialtips</h3>';
-  const specials = [
-    ['firstScorer', 'Första målskytt'],
-    ['firstRedCard', 'Första röda kort (lag)'],
-    ['firstPenalty', 'Första straff (lag)']
+  const qLabels = [
+    ['q1','Skytteligan topp 3 — spelare 1'],
+    ['q2','Skytteligan topp 3 — spelare 2'],
+    ['q3','Skytteligan topp 3 — spelare 3'],
+    ['q4','Flest assist'],
+    ['q5','Mest mål i gruppspelet (lag)'],
+    ['q6','Flest insläppta mål i gruppspelet (lag)'],
+    ['q7','Antal lag utan mål i gruppspelet'],
+    ['q8','Snabbaste målet i omgång 1'],
+    ['q9','Hattrick i omgång 3?'],
+    ['q10','VM-vinnarens land börjar på...']
   ];
-  for (const [key, label] of specials) {
-    const p = prediction?.[key] || '-';
-    const a = actual?.[key];
-    if (!a) {
-      html += `<div class="result-match-row pending"><span>${label}: ${p}</span><span class="pts">-</span></div>`;
+  const pQ2 = prediction?.questions || {};
+  const aQ2 = actual?.questions || {};
+  for (const [key, label] of qLabels) {
+    const pVal = pQ2[key] || '-';
+    const aVal = aQ2[key];
+    if (!aVal) {
+      html += `<div class="result-match-row pending"><span>${label}: ${escHtml(pVal)}</span><span class="pts">-</span></div>`;
     } else {
-      const ok = String(p).toLowerCase().trim() === String(a).toLowerCase().trim();
-      html += `<div class="result-match-row ${ok?'correct':'wrong'}"><span>${label}: Tips: ${p} | Facit: ${a}</span>
-        <span class="pts ${ok?'positive':'zero'}">${ok?'+'+bd[key]+'p':'0p'}</span></div>`;
-    }
-  }
-  // Top scorers
-  const pTs = prediction?.topScorers || [];
-  const aTs = actual?.topScorers || [];
-  if (aTs.length > 0) {
-    for (let i = 0; i < 3; i++) {
-      const p = pTs[i] || '-';
-      const a = aTs[i] || '-';
-      const ok = p && a && p.toLowerCase().trim() === a.toLowerCase().trim();
-      html += `<div class="result-match-row ${ok?'correct':'wrong'}"><span>Skyttekung #${i+1}: Tips: ${p} | Facit: ${a}</span></div>`;
-    }
-  } else {
-    for (let i = 0; i < 3; i++) {
-      html += `<div class="result-match-row pending"><span>Skyttekung #${i+1}: ${pTs[i]||'-'}</span><span class="pts">-</span></div>`;
+      // Q1-Q3: pool check; Q4-Q6: comma-split; Q7-Q10: exact
+      let ok = false;
+      if (['q1','q2','q3'].includes(key)) {
+        const pool = ['q1','q2','q3'].map(k => String(aQ2[k]||'').toLowerCase().trim()).filter(Boolean);
+        ok = pool.includes(String(pVal).toLowerCase().trim()) && pVal !== '-';
+      } else if (['q4','q5','q6'].includes(key)) {
+        const accepted = String(aVal).split(',').map(s => s.toLowerCase().trim()).filter(Boolean);
+        ok = accepted.includes(String(pVal).toLowerCase().trim()) && pVal !== '-';
+      } else {
+        ok = pVal !== '-' && String(pVal).toLowerCase().trim() === String(aVal).toLowerCase().trim();
+      }
+      const facit = aVal;
+      html += `<div class="result-match-row ${ok?'correct':'wrong'}">
+        <span>${label}: Tips: ${escHtml(pVal)} | Facit: ${escHtml(facit)}</span>
+        <span class="pts ${ok?'positive':'zero'}">${ok?'+4p':'0p'}</span></div>`;
     }
   }
   html += '</div>';
@@ -2631,8 +2989,9 @@ function renderLeaderboard(container, data) {
     snap.forEach((p, i) => { prevRanks[p.name] = i + 1; });
   }
 
+  const colCount = prevSnapshot ? 5 : 4;
   let html = '<div class="card" style="overflow-x:auto"><table class="leaderboard-table"><thead><tr>';
-  html += '<th>#</th><th>Namn</th><th>Poäng</th>';
+  html += '<th>#</th><th>Namn</th><th>Poäng</th><th title="Extra poäng från konsensus-multiplikator">Boost</th>';
   if (prevSnapshot) html += '<th>Förändring</th>';
   html += '</tr></thead><tbody>';
 
@@ -2650,41 +3009,58 @@ function renderLeaderboard(container, data) {
       changeHtml = '<span class="change-up">NY</span>';
     }
 
+    const boost = p.breakdown?.consensusBoost || 0;
+    const boostHtml = boost > 0
+      ? `<span class="boost-badge">+${boost}p</span>`
+      : '<span style="color:var(--text3)">-</span>';
+
     const lbRowClass = rank <= 3 ? 'lb-rank-' + rank : '';
     html += `<tr class="expandable ${lbRowClass}" onclick="toggleBreakdown(this)">
       <td class="rank ${rankClass}">${rank}</td>
       <td class="name-cell">${avatarHtml(p.avatar, p.name, 'sm')}<span>${escHtml(p.name)}</span></td>
-      <td class="points-cell">${p.points}</td>`;
+      <td class="points-cell">${p.points}</td>
+      <td class="boost-cell">${boostHtml}</td>`;
     if (prevSnapshot) html += `<td>${changeHtml}</td>`;
     html += '</tr>';
 
     // Breakdown row
-    html += `<tr class="breakdown-row"><td colspan="${prevSnapshot?4:3}">
+    html += `<tr class="breakdown-row"><td colspan="${colCount}">
       <div class="breakdown-content">
         <div class="breakdown-grid">`;
     const bdLabels = {
-      matchSign: '1X2', matchExact: 'Exakt resultat', matchSignBonus: '1X2-bonus',
-      matchExactBonus: 'Exakt-bonus', placements: 'Placeringar', placementsBonus: 'Placeringsbonus',
-      r32: 'R32-lag', r32Bonus: 'R32-bonus', r16: 'R16-lag', r16Bonus: 'R16-bonus',
-      qf: 'KF-lag', qfBonus: 'KF-bonus', sf: 'SF-lag', sfBonus: 'SF-bonus',
-      finalPlacements: 'Final 1-4', topScorers: 'Skytteliga',
-      firstScorer: 'Första mål', firstRedCard: 'Rött kort', firstPenalty: 'Straff'
+      matchSign:      '1X2-tecken',
+      matchMargin:    'Marginaltips',
+      consensusBoost: 'Konsensus-boost',
+      placements:     'Grupplaceringar',
+      r32:            '16-delsfinal',
+      r16:            '8-delsfinal',
+      qf:             'Kvartsfinal',
+      sf:             'Semifinal',
+      finalPlacements:'Final & pallplaceringar',
+      questions:      'Frågorna'
     };
     const bd = p.breakdown || {};
     for (const [key, label] of Object.entries(bdLabels)) {
       const val = bd[key] || 0;
       if (val > 0) {
-        html += `<div class="breakdown-item"><span class="label">${label}</span><span class="value">${val}p</span></div>`;
+        const extra = key === 'consensusBoost' ? ' style="color:var(--green);font-weight:700"' : '';
+        html += `<div class="breakdown-item"${extra}><span class="label">${label}</span><span class="value">${val}p</span></div>`;
       }
     }
-    if (Object.values(bd).every(v => !v)) {
+    if (Object.values(bd).filter(v => v > 0).length === 0) {
       html += '<div class="breakdown-item"><span class="label">Inga poäng ännu</span><span class="value">0p</span></div>';
     }
     html += '</div></div></td></tr>';
   });
 
   html += '</tbody></table></div>';
-  container.innerHTML = html;
+
+  if (!userApproved) {
+    const count = board.length;
+    container.innerHTML = `<div class="lb-blur-wrap">${html}<div class="lb-blur-overlay"><div class="lb-count">${count}</div><div class="lb-count-label">deltagare anmälda</div><p style="font-size:12px;color:var(--text2);margin-top:8px">Topplistan låses upp när ditt tips är godkänt.</p></div></div>`;
+  } else {
+    container.innerHTML = html;
+  }
 }
 
 function toggleBreakdown(row) {
@@ -2693,6 +3069,117 @@ function toggleBreakdown(row) {
     const content = next.querySelector('.breakdown-content');
     content.classList.toggle('open');
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// DAGENS MATCHER VIEW
+// ══════════════════════════════════════════════════════════════════════
+
+async function loadDagensm() {
+  const c = document.getElementById('dagensmContent');
+  c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Laddar...</div>';
+  try {
+    const [tournData, consensusData] = await Promise.all([
+      loadTournament(),
+      api('/api/consensus')
+    ]);
+    renderDagensm(c, tournData, consensusData);
+  } catch (err) {
+    c.innerHTML = '<div class="empty-state">' + escHtml(err.message) + '</div>';
+  }
+}
+
+function multLabel(pct) {
+  if (pct > 0.50) return { text: '1x',   cls: 'mult-1' };
+  if (pct > 0.25) return { text: '1.5x', cls: 'mult-15' };
+  if (pct > 0.10) return { text: '2x',   cls: 'mult-2' };
+  return               { text: '3x',   cls: 'mult-3' };
+}
+
+function barCls(pct) {
+  if (pct > 0.50) return 'bar-mult-1';
+  if (pct > 0.25) return 'bar-mult-15';
+  if (pct > 0.10) return 'bar-mult-2';
+  return 'bar-mult-3';
+}
+
+function renderDagensm(container, tournData, consensusData) {
+  const { groupMatches } = tournData;
+  const { consensusMap, total } = consensusData;
+
+  // Group matches by Swedish date (convert ET → local/Swedish time)
+  const byDate = {};
+  for (const m of groupMatches) {
+    const [num, date, time, home, away, group, channel] = m;
+    const dt = parseMatchDate(date, time);
+    const swDate = dt.getFullYear() + '-' +
+      String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+      String(dt.getDate()).padStart(2, '0');
+    const swTime = formatTime(dt);
+    if (!byDate[swDate]) byDate[swDate] = [];
+    byDate[swDate].push({ num, date: swDate, time: swTime, home, away, group, channel });
+  }
+
+  const months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+  function fmtDate(d) {
+    const dt = new Date(d + 'T12:00:00');
+    return dt.getDate() + ' ' + months[dt.getMonth()];
+  }
+
+  let html = `
+    <div class="card" style="margin-bottom:12px">
+      <p style="font-size:13px;color:var(--text2)">
+        Visar hur <strong>${total}</strong> deltagare har tippat varje match.
+        Konsensusmultiplikatorn tilldelas automatiskt vid rättning &mdash; ju mer du avviker från mängden och har rätt, desto fler poäng.
+      </p>
+      <div class="dagensm-legend" style="margin-top:12px;margin-bottom:0">
+        <span><span class="leg-dot" style="background:#8898aa"></span> 1x &gt;50% tippade rätt</span>
+        <span><span class="leg-dot" style="background:#c8960c"></span> 1.5x 26-50%</span>
+        <span><span class="leg-dot" style="background:#1a7a3c"></span> 2x 11-25%</span>
+        <span><span class="leg-dot" style="background:#8b00d4"></span> 3x &le;10%</span>
+      </div>
+    </div>`;
+
+  for (const [date, matches] of Object.entries(byDate)) {
+    html += `<div class="dagensm-date-header">${fmtDate(date)}</div>`;
+    for (const m of matches) {
+      const mn = String(m.num);
+      const cons = consensusMap[mn];
+      html += `<div class="match-consensus-card">
+        <div class="match-header">
+          <span class="teams">${escHtml(m.home)} &ndash; ${escHtml(m.away)}</span>
+          <span class="match-meta">Grupp ${m.group} &middot; ${m.time}${m.channel ? ' &middot; <span class="tv-badge tv-' + m.channel.toLowerCase() + '">' + escHtml(m.channel) + '</span>' : ''}</span>
+        </div>`;
+
+      if (!cons) {
+        html += `<div style="font-size:12px;color:var(--text3)">Inga tips registrerade</div>`;
+      } else {
+        html += `<div class="consensus-bars">`;
+        for (const [sign, label] of [['1', m.home], ['X', 'Oavgjort'], ['2', m.away]]) {
+          const pct = cons[sign] || 0;
+          const pctPct = Math.round(pct * 100);
+          const { text: mText, cls: mCls } = multLabel(pct);
+          const bc = barCls(pct);
+          const barW = Math.max(pct * 100, pct > 0 ? 4 : 0);
+          html += `<div class="consensus-bar-row">
+            <span class="sign-label">${sign}</span>
+            <div class="bar-outer ${bc}">
+              <div class="bar-inner" style="width:${barW}%">${pctPct > 12 ? pctPct + '%' : ''}</div>
+            </div>
+            <span class="bar-mult ${mCls}">${mText}</span>
+          </div>`;
+        }
+        html += `</div>`;
+      }
+      html += `</div>`;
+    }
+  }
+
+  if (!Object.keys(byDate).length) {
+    html = '<div class="empty-state">Inga matcher hittades.</div>';
+  }
+
+  container.innerHTML = html;
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -2752,37 +3239,48 @@ function renderAlla(container) {
     html += '</div>';
   }
 
-  // Bracket
-  const bracket = pred.bracket || {};
-  const rounds = [
-    ['32-delsfinal', T.r32Matches],
-    ['16-delsfinal', T.r16Matches],
-    ['Kvartsfinal', T.qfMatches],
-    ['Semifinal', T.sfMatches],
-    ['Bronsmatch', [T.bronzeMatch]],
-    ['Final', [T.finalMatch]]
+  // Slutspel
+  const koRounds = [
+    ['16-delsfinal (32 lag)', pred.r32Teams || []],
+    ['8-delsfinal (16 lag)',  pred.r16Teams || []],
+    ['Kvartsfinal (8 lag)',   pred.qfTeams  || []],
+    ['Semifinal (4 lag)',     pred.sfTeams  || []]
   ];
-  for (const [label, matches] of rounds) {
-    html += `<div class="card"><h3>${label}</h3>`;
-    for (const m of matches) {
-      const mn = String(m[0]);
-      const b = bracket[mn] || {};
-      html += `<div style="padding:4px 0;font-size:13px">
-        Match ${mn}: ${b.home||'?'} vs ${b.away||'?'}
-        ${b.winner ? '<strong style="color:var(--accent)"> &#10132; ' + b.winner + '</strong>' : ''}
-      </div>`;
+  for (const [label, teams] of koRounds) {
+    if (teams.length === 0) continue;
+    html += `<div class="card"><h3>${label}</h3><div style="display:flex;flex-wrap:wrap;gap:6px;font-size:13px">`;
+    for (const t of teams) {
+      html += `<span style="padding:3px 8px;background:var(--surface2);border-radius:6px">${escHtml(t)}</span>`;
     }
-    html += '</div>';
+    html += '</div></div>';
+  }
+  const fp = pred.finalPlacements || {};
+  if (fp['1'] || fp['2'] || fp['3'] || fp['4']) {
+    html += `<div class="card"><h3>Final &amp; pallplatser</h3><div style="font-size:13px">`;
+    for (const [pos, label] of [['1','🥇 Vinnare'],['2','🥈 Runner-up'],['3','🥉 3:e plats'],['4','4:e plats']]) {
+      if (fp[pos]) html += `<p style="margin:4px 0">${label}: <strong>${escHtml(fp[pos])}</strong></p>`;
+    }
+    html += '</div></div>';
   }
 
   // Special
   html += '<div class="card"><h3>Specialtips</h3>';
-  html += `<div style="font-size:13px">
-    <p>Första målskytt: <strong>${escHtml(pred.firstScorer||'-')}</strong></p>
-    <p>Skytteliga: ${(pred.topScorers||[]).map((s,i)=>`${i+1}. ${escHtml(s||'-')}`).join(', ')}</p>
-    <p>Första röda kort: <strong>${escHtml(pred.firstRedCard||'-')}</strong></p>
-    <p>Första straff: <strong>${escHtml(pred.firstPenalty||'-')}</strong></p>
-  </div></div>`;
+  const allaPQ = pred.questions || {};
+  const allaQLabels = [
+    ['q1','Skytteligan topp 3'],['q2',''],['q3',''],
+    ['q4','Flest assist'],
+    ['q5','Mest mål gruppspel (lag)'],['q6','Flest insläppta (lag)'],
+    ['q7','Lag utan mål'],['q8','Snabbaste mål omg.1'],
+    ['q9','Hattrick omg.3'],['q10','VM-vinnare börjar på']
+  ];
+  html += '<div style="font-size:13px">';
+  // Q1-Q3 grouped
+  const top3 = [allaPQ.q1, allaPQ.q2, allaPQ.q3].filter(Boolean);
+  html += `<p>Skytteligan topp 3: <strong>${top3.length ? top3.map(escHtml).join(', ') : '-'}</strong></p>`;
+  for (const [key, label] of allaQLabels.slice(3)) {
+    if (allaPQ[key]) html += `<p>${label}: <strong>${escHtml(allaPQ[key])}</strong></p>`;
+  }
+  html += '</div></div>';
 
   container.innerHTML = html;
 }
@@ -2888,14 +3386,15 @@ function calcProjection() {
   document.getElementById('projectionResults').innerHTML = html;
 }
 
-// Local scoring engine (simplified, matches server logic)
+// Local scoring engine — mirrors server.js scoring logic
 function computeScoreLocal(predRaw, actual, scoring) {
   const pred = predRaw || {};
   const bd = {};
   let total = 0;
+  const S = scoring || {};
 
-  // Group matches
-  let matchSignPts = 0, matchExactPts = 0;
+  // ── Group matches (no consensus data in projection → use 1× mult) ──
+  let matchSignPts = 0, matchMarginPts = 0;
   const pMatches = pred.matches || {};
   const aMatches = actual.matches || {};
   for (const mn of Object.keys(aMatches)) {
@@ -2905,26 +3404,109 @@ function computeScoreLocal(predRaw, actual, scoring) {
     if (!p || p[0] == null || p[1] == null) continue;
     const pSign = calcSignLocal(p[0], p[1]);
     const aSign = calcSignLocal(a[0], a[1]);
-    if (pSign === aSign) matchSignPts += (scoring?.matchSign || 10);
-    if (parseInt(p[0]) === parseInt(a[0]) && parseInt(p[1]) === parseInt(a[1])) matchExactPts += (scoring?.matchExact || 5);
+    if (pSign === aSign) {
+      matchSignPts += (S.matchSign || 3);
+      const pMargin = Math.abs(Number(p[0]) - Number(p[1]));
+      const aMargin = Math.abs(Number(a[0]) - Number(a[1]));
+      if (aSign !== 'X' && pMargin === aMargin) matchMarginPts += (S.matchMargin || 2);
+    }
   }
   bd.matchSign = matchSignPts;
-  bd.matchExact = matchExactPts;
-  total += matchSignPts + matchExactPts;
+  bd.matchMargin = matchMarginPts;
+  total += matchSignPts + matchMarginPts;
 
-  // Placements
+  // ── Group placements — tier system ──
+  const tierPts = (S.placementTier && Array.isArray(S.placementTier))
+    ? S.placementTier
+    : [0, 5, 10, 0, 20];
   let placePts = 0;
   const pPl = pred.placements || {};
   const aPl = actual.placements || {};
   for (const g of Object.keys(aPl)) {
     const pArr = pPl[g] || [];
     const aArr = aPl[g] || [];
-    for (let i = 0; i < 4; i++) {
-      if (pArr[i] && aArr[i] && pArr[i] === aArr[i]) placePts += (scoring?.placement || 10);
-    }
+    let correct = 0;
+    for (let i = 0; i < 4; i++) { if (pArr[i] && aArr[i] && pArr[i] === aArr[i]) correct++; }
+    placePts += tierPts[correct] || 0;
   }
   bd.placements = placePts;
   total += placePts;
+
+  // ── Knockout rounds ──
+  function scoreRoundLocal(pTeams, aTeams, perTeam, allBonus, expectedCount) {
+    if (!aTeams || aTeams.length === 0) return 0;
+    let correct = 0;
+    for (const t of pTeams) { if (t && aTeams.includes(t)) correct++; }
+    return correct * perTeam +
+      (correct === expectedCount && expectedCount === aTeams.length ? allBonus : 0);
+  }
+
+  // r32Teams is NOT stored in pred — derive from placements + thirdPlaceQualifiers
+  // (mirrors server's buildScoreablePrediction)
+  const r32Derived = [];
+  for (const g of Object.keys(pPl)) {
+    const pl = pPl[g] || [];
+    if (pl[0]) r32Derived.push(pl[0]);
+    if (pl[1]) r32Derived.push(pl[1]);
+  }
+  for (const t of (pred.thirdPlaceQualifiers || [])) { if (t) r32Derived.push(t); }
+  const pR32 = [...new Set(r32Derived)];
+
+  bd.r32 = scoreRoundLocal(pR32,              actual.r32Teams || [], S.r32Team || 1,  S.r32AllBonus || 15, 32);
+  bd.r16 = scoreRoundLocal(pred.r16Teams || [], actual.r16Teams || [], S.r16Team || 3,  S.r16AllBonus || 15, 16);
+  bd.qf  = scoreRoundLocal(pred.qfTeams  || [], actual.qfTeams  || [], S.qfTeam  || 6,  S.qfAllBonus  || 15, 8);
+  bd.sf  = scoreRoundLocal(pred.sfTeams  || [], actual.sfTeams  || [], S.sfTeam  || 12, S.sfAllBonus  || 15, 4);
+  total += bd.r32 + bd.r16 + bd.qf + bd.sf;
+
+  // ── Final & bronze placements ──
+  let finalPts = 0;
+  const pFinal = pred.finalPlacements || {};
+  const aFinal = actual.finalPlacements || {};
+  if (aFinal['1']) {
+    const aFinalists = [aFinal['1'], aFinal['2']].filter(Boolean);
+    for (const pos of ['1', '2']) {
+      if (pFinal[pos] && aFinalists.includes(pFinal[pos])) finalPts += (S.finalistAdvance || 8);
+    }
+    if (pFinal['1'] && aFinal['1'] && pFinal['1'] === aFinal['1']) finalPts += (S.winnerBonus || 12);
+    if (pFinal['2'] && aFinal['2'] && pFinal['2'] === aFinal['2']) finalPts += (S.runnerUpBonus || 8);
+  }
+  if (pFinal['3'] && aFinal['3'] && pFinal['3'] === aFinal['3']) finalPts += (S.thirdPlace || 8);
+  if (pFinal['4'] && aFinal['4'] && pFinal['4'] === aFinal['4']) finalPts += (S.fourthPlace || 8);
+  bd.finalPlacements = finalPts;
+  total += finalPts;
+
+  // ── Specialfrågor ──
+  let questionPts = 0;
+  const pQ = pred.questions || {};
+  const aQ = actual.questions || {};
+  const qPts = S.question || 4;
+
+  // Q1-Q3: skytteliga topp 3 — pool-based, order irrelevant
+  const actualPool = ['q1','q2','q3']
+    .map(k => String(aQ[k] || '').toLowerCase().trim()).filter(Boolean);
+  const usedActual = new Set();
+  for (const key of ['q1','q2','q3']) {
+    const pVal = String(pQ[key] || '').toLowerCase().trim();
+    if (pVal && actualPool.includes(pVal) && !usedActual.has(pVal)) {
+      usedActual.add(pVal);
+      questionPts += qPts;
+    }
+  }
+  // Q4-Q6: comma-separated multi-correct
+  for (const key of ['q4','q5','q6']) {
+    const pVal = String(pQ[key] || '').toLowerCase().trim();
+    const accepted = String(aQ[key] || '').split(',')
+      .map(s => s.toLowerCase().trim()).filter(Boolean);
+    if (pVal && accepted.includes(pVal)) questionPts += qPts;
+  }
+  // Q7-Q10: exact match
+  for (const key of ['q7','q8','q9','q10']) {
+    const pVal = String(pQ[key] || '').toLowerCase().trim();
+    const aVal = String(aQ[key] || '').toLowerCase().trim();
+    if (pVal && aVal && pVal === aVal) questionPts += qPts;
+  }
+  bd.questions = questionPts;
+  total += questionPts;
 
   return { total, breakdown: bd };
 }
@@ -3082,7 +3664,7 @@ async function loadAdmin() {
 function setAdminTab(tab) {
   adminTab = tab;
   document.querySelectorAll('#adminTabs button').forEach(b => {
-    const tabs = ['results-group','results-knockout','results-special','users','settings','snapshots'];
+    const tabs = ['results-group','results-knockout','results-special','users','settings','snapshots','godkann'];
     b.classList.toggle('active', tabs[Array.from(b.parentNode.children).indexOf(b)] === tab);
   });
   renderAdminTab();
@@ -3097,7 +3679,56 @@ function renderAdminTab() {
     case 'users': renderAdminUsers(c); break;
     case 'settings': renderAdminSettings(c); break;
     case 'snapshots': renderAdminSnapshots(c); break;
+    case 'godkann': renderAdminPending(c); break;
   }
+}
+
+async function renderAdminPending(container) {
+  container.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Laddar...</div>';
+  try {
+    const pending = await api('/api/admin/pending');
+    let html = '<div class="card"><h3>Väntande godkännanden</h3>';
+    if (pending.length === 0) {
+      html += '<div class="empty-state">Inga väntande betalningar.</div>';
+    } else {
+      html += '<p class="text-muted" style="font-size:13px;margin-bottom:12px">Dessa spelare har skickat in sitt tips och väntar på betalningsbekräftelse.</p>';
+      for (const u of pending) {
+        const sub = u.submitted_at ? new Date(u.submitted_at).toLocaleString('sv-SE') : '-';
+        html += `<div class="admin-user-row">
+          <div>
+            <span class="user-name">${escHtml(u.name)}</span>
+            <br><span class="user-email">${escHtml(u.email)}</span>
+            <br><span style="font-size:11px;color:var(--text3)">Inskickat: ${sub}</span>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary btn-sm" onclick="approveUser(${u.id})">Godkänn ✓</button>
+            <button class="btn btn-danger btn-sm" onclick="rejectUser(${u.id},'${escHtml(u.name)}')">Avvisa</button>
+          </div>
+        </div>`;
+      }
+    }
+    html += '</div>';
+    container.innerHTML = html;
+  } catch (err) {
+    container.innerHTML = '<div class="empty-state">' + escHtml(err.message) + '</div>';
+  }
+}
+
+async function approveUser(id) {
+  try {
+    await api('/api/admin/users/' + id + '/approve', { method: 'PUT' });
+    showToast('Användare godkänd!', 'success');
+    renderAdminPending(document.getElementById('adminContent'));
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function rejectUser(id, name) {
+  if (!confirm('Avvisa och ta bort ' + name + '? Tips och konto raderas.')) return;
+  try {
+    await api('/api/admin/users/' + id, { method: 'DELETE' });
+    showToast('Användare borttagen.', 'success');
+    renderAdminPending(document.getElementById('adminContent'));
+  } catch (err) { showToast(err.message, 'error'); }
 }
 
 function renderAdminGroupResults(container) {
@@ -3195,39 +3826,63 @@ function onAdminPlacement(group, pos, team) {
   adminResults.placements[group][pos] = team;
 }
 
+function setAdminQ(key, val) {
+  if (!adminResults.questions) adminResults.questions = {};
+  adminResults.questions[key] = val;
+}
+
 function renderAdminSpecialResults(container) {
+  const aQ = adminResults.questions || {};
+  const allTeams = T.allTeams.slice().sort((a,b) => a.localeCompare(b,'sv'));
   let html = '<div class="card"><h3>Faktiska resultat - Specialtips</h3>';
 
-  html += `<div class="form-group">
-    <label>Första målskytt</label>
-    ${makeAutocomplete('adminFirstScorer', adminResults.firstScorer||'', (v) => { adminResults.firstScorer = v; })}
-  </div>`;
-
-  const ts = adminResults.topScorers || ['','',''];
-  for (let i = 0; i < 3; i++) {
+  // Q1-Q3: skytteliga topp 3 (pool — ordning spelar ingen roll)
+  html += `<p class="text-muted" style="font-size:12px;margin-bottom:8px">Q1-Q3: Skytteliga topp 3 (ordning spelar ingen roll för rättning)</p>`;
+  for (let i = 1; i <= 3; i++) {
     html += `<div class="form-group">
-      <label>Skyttekung #${i+1}</label>
-      ${makeAutocomplete('adminTopScorer'+i, ts[i]||'', ((idx) => (v) => { if(!adminResults.topScorers)adminResults.topScorers=['','','']; adminResults.topScorers[idx]=v; })(i))}
+      <label>Topp 3 skyttekung #${i}</label>
+      ${makeAutocomplete('adminQ'+i, aQ['q'+i]||'', ((k) => (v) => { setAdminQ(k, v); })('q'+i))}
     </div>`;
   }
 
+  // Q4: flest assist (fritext, kommaseparerat om delning)
   html += `<div class="form-group">
-    <label>Första röda kort (lag)</label>
-    <select class="form-input" onchange="adminResults.firstRedCard=this.value">
-      <option value="">Välj lag...</option>`;
-  for (const t of T.allTeams.sort((a,b) => a.localeCompare(b,'sv'))) {
-    html += `<option value="${t}" ${adminResults.firstRedCard===t?'selected':''}>${t}</option>`;
-  }
-  html += `</select></div>`;
+    <label>Q4: Flest assist (kommaseparera vid delning, t.ex. "Mbappe,Messi")</label>
+    <input type="text" class="form-input" value="${escHtml(aQ.q4||'')}" oninput="setAdminQ('q4',this.value)" placeholder="Spelarnamn">
+  </div>`;
 
+  // Q5: mest mål gruppspelet (lag, kommaseparerat vid delning)
   html += `<div class="form-group">
-    <label>Första straff (lag)</label>
-    <select class="form-input" onchange="adminResults.firstPenalty=this.value">
-      <option value="">Välj lag...</option>`;
-  for (const t of T.allTeams.sort((a,b) => a.localeCompare(b,'sv'))) {
-    html += `<option value="${t}" ${adminResults.firstPenalty===t?'selected':''}>${t}</option>`;
+    <label>Q5: Mest mål i gruppspelet (kommaseparera vid delning)</label>
+    <input type="text" class="form-input" value="${escHtml(aQ.q5||'')}" oninput="setAdminQ('q5',this.value)" placeholder="Lagnamn, exakt stavning">
+  </div>`;
+
+  // Q6: flest insläppta (lag, kommaseparerat vid delning)
+  html += `<div class="form-group">
+    <label>Q6: Flest insläppta mål i gruppspelet (kommaseparera vid delning)</label>
+    <input type="text" class="form-input" value="${escHtml(aQ.q6||'')}" oninput="setAdminQ('q6',this.value)" placeholder="Lagnamn, exakt stavning">
+  </div>`;
+
+  // Q7-Q10: flerval
+  const adminMC = [
+    { key:'q7', label:'Q7: Antal lag utan mål i gruppspelet',
+      options:[['0','0'],['1-2','1-2'],['3-4','3-4'],['5+','5+']] },
+    { key:'q8', label:'Q8: Snabbaste målet i omgång 1',
+      options:[['1-2','Inom 2 min'],['3-5','Minut 3-5'],['6-10','Minut 6-10'],['11+','Minut 11+']] },
+    { key:'q9', label:'Q9: Hattrick i omgång 3?',
+      options:[['nej','Nej'],['ja-en','Ja, en'],['ja-flera','Ja, flera']] },
+    { key:'q10', label:'Q10: VM-vinnarens land börjar på',
+      options:[['a-d','A-D'],['e-k','E-K'],['l-s','L-S'],['t-ö','T-Ö']] }
+  ];
+  for (const { key, label, options } of adminMC) {
+    html += `<div class="form-group"><label>${label}</label>
+      <select class="form-input" onchange="setAdminQ('${key}',this.value)">
+        <option value="">Välj...</option>`;
+    for (const [val, display] of options) {
+      html += `<option value="${val}" ${aQ[key]===val?'selected':''}>${display}</option>`;
+    }
+    html += `</select></div>`;
   }
-  html += `</select></div>`;
 
   html += '<button class="btn btn-primary" style="margin-top:16px" onclick="saveAdminResults()">Spara resultat</button>';
   html += '</div>';
@@ -3355,7 +4010,33 @@ function renderAdminSnapshots(container) {
     <button class="btn btn-danger btn-sm" onclick="clearSnapshot()">Rensa snapshots</button>
   </div>`;
   html += '</div>';
+
+  html += '<div class="card" style="margin-top:16px"><h3>Exportera alla tips (backup)</h3>';
+  html += '<p class="text-muted" style="margin-bottom:12px">Ladda ner en komplett JSON-fil med alla godkända användares tips, faktiska resultat, inställningar och poängregler. Använd för disaster recovery — om appen kraschar går det att rättna manuellt utifrån filen.</p>';
+  html += '<button class="btn btn-primary btn-sm" onclick="exportAllPredictions()">Ladda ner JSON-export</button>';
+  html += '</div>';
+
   container.innerHTML = html;
+}
+
+async function exportAllPredictions() {
+  try {
+    const res = await fetch('/api/admin/export', { credentials: 'include' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Export misslyckades');
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vm-bettet-export-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast('Export nedladdad', 'success');
+  } catch (err) { showToast(err.message, 'error'); }
 }
 
 async function saveSnapshot() {
