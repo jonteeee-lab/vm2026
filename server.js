@@ -165,21 +165,28 @@ const FINAL_MATCH = [104,'2026-07-19','15:00','W101','W102'];
 // ══════════════════════════════════════════════════════════════════════════════
 
 const SCORING = {
-  matchSign: 3,         // correct 1X2 (× consensus multiplier)
-  matchMargin: 2,       // correct goal-margin — 1/2 only, flat (no multiplier)
-  // Group placement per group: points for 0/1/2/3/4 correct positions
-  // (3 correct is impossible in a 4-team permutation, so index 3 is never reached)
-  placementTier: [0, 5, 10, 0, 20],
-  r32Team: 1,  r32AllBonus: 15,
-  r16Team: 3,  r16AllBonus: 15,
-  qfTeam:  6,  qfAllBonus:  15,
-  sfTeam:  12, sfAllBonus:  15,
-  finalistAdvance: 8,  // per team correctly placed in final (order-independent)
-  winnerBonus: 12,     // additional for exact 1st place
-  runnerUpBonus: 8,    // additional for exact 2nd place
-  thirdPlace: 8,       // exact 3rd place
-  fourthPlace: 8,      // exact 4th place
-  question: 4,         // per correct answer (10 questions total)
+  matchSign: 10,       // correct 1X2
+  matchExact: 5,       // correct exact score
+  signGroupBonus: 30,  // all 6 signs correct in a group
+  exactGroupBonus: 50, // all 6 exact scores correct in a group
+  placement: 10,       // correct group placement
+  placementGroupBonus: 20, // all 4 correct in a group
+  r32Team: 3,          // correct team in R32
+  r32Bonus: 100,       // all 32 correct
+  r16Team: 5,          // correct team in R16
+  r16Bonus: 100,       // all 16 correct
+  qfTeam: 20,          // correct team in QF
+  qfBonus: 50,         // all 8 correct
+  sfTeam: 20,          // correct team in SF
+  sfBonus: 50,         // all 4 correct
+  finalAdvance: 20,    // team in correct final/bronze match
+  finalExact: 30,      // team on exact position
+  finalBonus: 100,     // all 4 exact
+  topScorerInList: 10, // correct player in top 3
+  topScorerExact: 20,  // correct position
+  firstScorer: 30,
+  firstRedCard: 20,
+  firstPenalty: 20
 };
 
 function calcSign(h, a) {
@@ -188,190 +195,240 @@ function calcSign(h, a) {
   return '2';
 }
 
-function consensusMult(pct) {
-  if (pct > 0.50) return 1.0;
-  if (pct > 0.25) return 1.5;
-  if (pct > 0.10) return 2.0;
-  return 3.0;
-}
-
-// Build a per-match sign-distribution map from all stored prediction objects.
-// Returns: { [matchNum]: { '1': fraction, 'X': fraction, '2': fraction } }
-function buildConsensusMap(allPredData) {
-  const map = {};
-  const total = allPredData.length;
-  if (total === 0) return map;
-  for (const m of GROUP_MATCHES) {
-    const mn = String(m[0]);
-    const counts = { '1': 0, 'X': 0, '2': 0 };
-    for (const pred of allPredData) {
-      const p = pred.matches?.[mn];
-      if (p && p[0] != null && p[1] != null) {
-        counts[calcSign(Number(p[0]), Number(p[1]))]++;
-      }
-    }
-    const validCount = counts['1'] + counts['X'] + counts['2'];
-    map[mn] = validCount > 0
-      ? { '1': counts['1'] / validCount, 'X': counts['X'] / validCount, '2': counts['2'] / validCount }
-      : { '1': 0, 'X': 0, '2': 0 };
-  }
-  return map;
-}
-
-function computeScore(pred, actual, consensusMap = {}) {
+function computeScore(pred, actual) {
   if (!pred || !actual) return { total: 0, breakdown: {} };
   const bd = {};
   let total = 0;
 
-  // ── A. Group matches (72 matches) ──
-  let signPts = 0, marginPts = 0, boostPts = 0;
-  for (const m of GROUP_MATCHES) {
-    const mn = String(m[0]);
-    const p = pred.matches?.[mn];
-    const a = actual.matches?.[mn];
-    if (!p || !a || a[0] == null || a[1] == null) continue;
-    const pSign = calcSign(Number(p[0]), Number(p[1]));
-    const aSign = calcSign(Number(a[0]), Number(a[1]));
-    const pct   = consensusMap[mn]?.[aSign] ?? null;
-    const mult  = pct !== null ? consensusMult(pct) : 1;
-    if (pSign === aSign) {
-      signPts += SCORING.matchSign * mult;
-      if (mult > 1) boostPts += SCORING.matchSign * (mult - 1);
-      if (pSign !== 'X') {
-        const pMargin = Math.abs(Number(p[0]) - Number(p[1]));
-        const aMargin = Math.abs(Number(a[0]) - Number(a[1]));
-        if (pMargin === aMargin) marginPts += SCORING.matchMargin; // flat, no mult
-      }
+  // ── A. Group matches ──
+  let matchSignPts = 0, matchExactPts = 0, matchSignBonus = 0, matchExactBonus = 0;
+  const groupLetters = Object.keys(GROUPS);
+  for (const g of groupLetters) {
+    const gMatches = GROUP_MATCHES.filter(m => m[5] === g);
+    let signCorrect = 0, exactCorrect = 0, signTotal = 0, exactTotal = 0;
+    for (const m of gMatches) {
+      const mn = String(m[0]);
+      const p = pred.matches?.[mn];
+      const a = actual.matches?.[mn];
+      if (!p || !a || a[0] == null || a[1] == null) continue;
+      signTotal++;
+      exactTotal++;
+      const pSign = calcSign(p[0], p[1]);
+      const aSign = calcSign(a[0], a[1]);
+      if (pSign === aSign) { matchSignPts += SCORING.matchSign; signCorrect++; }
+      if (p[0] === a[0] && p[1] === a[1]) { matchExactPts += SCORING.matchExact; exactCorrect++; }
     }
+    if (signTotal === 6 && signCorrect === 6) matchSignBonus += SCORING.signGroupBonus;
+    if (exactTotal === 6 && exactCorrect === 6) matchExactBonus += SCORING.exactGroupBonus;
   }
-  bd.matchSign      = Math.round(signPts);
-  bd.matchMargin    = Math.round(marginPts);
-  bd.consensusBoost = Math.round(boostPts);
-  total += bd.matchSign + bd.matchMargin;
+  bd.matchSign = matchSignPts;
+  bd.matchExact = matchExactPts;
+  bd.matchSignBonus = matchSignBonus;
+  bd.matchExactBonus = matchExactBonus;
+  total += matchSignPts + matchExactPts + matchSignBonus + matchExactBonus;
 
-  // ── B. Group placements (12 groups, tier scoring per group) ──
-  let placePts = 0;
-  for (const g of Object.keys(GROUPS)) {
+  // ── B. Group placements ──
+  let placePts = 0, placeBonus = 0;
+  for (const g of groupLetters) {
     const pArr = pred.placements?.[g];
     const aArr = actual.placements?.[g];
     if (!pArr || !aArr || aArr.length < 4) continue;
     let correct = 0;
     for (let i = 0; i < 4; i++) {
-      if (pArr[i] && aArr[i] && pArr[i] === aArr[i]) correct++;
+      if (pArr[i] && aArr[i] && pArr[i] === aArr[i]) { placePts += SCORING.placement; correct++; }
     }
-    placePts += SCORING.placementTier[correct] || 0;
+    if (correct === 4) placeBonus += SCORING.placementGroupBonus;
   }
   bd.placements = placePts;
-  total += placePts;
+  bd.placementsBonus = placeBonus;
+  total += placePts + placeBonus;
 
-  // ── C-F. Knockout teams ──
-  function scoreRound(predKey, actualKey, perTeam, allBonus, expectedCount) {
+  // ── C-F. Knockout round teams ──
+  function scoreRoundTeams(predKey, actualKey, perTeam, bonus, expectedCount) {
     const pTeams = pred[predKey] || [];
     const aTeams = actual[actualKey] || [];
-    if (aTeams.length === 0) return 0;
+    if (aTeams.length === 0) return { pts: 0, bonus: 0 };
     let correct = 0;
-    for (const t of pTeams) { if (t && aTeams.includes(t)) correct++; }
-    return correct * perTeam + (correct === expectedCount && expectedCount === aTeams.length ? allBonus : 0);
+    for (const t of pTeams) {
+      if (t && aTeams.includes(t)) correct++;
+    }
+    const pts = correct * perTeam;
+    const b = (correct === expectedCount && expectedCount === aTeams.length) ? bonus : 0;
+    return { pts, bonus: b };
   }
-  bd.r32 = scoreRound('r32Teams', 'r32Teams', SCORING.r32Team, SCORING.r32AllBonus, 32); total += bd.r32;
-  bd.r16 = scoreRound('r16Teams', 'r16Teams', SCORING.r16Team, SCORING.r16AllBonus, 16); total += bd.r16;
-  bd.qf  = scoreRound('qfTeams',  'qfTeams',  SCORING.qfTeam,  SCORING.qfAllBonus,  8);  total += bd.qf;
-  bd.sf  = scoreRound('sfTeams',  'sfTeams',  SCORING.sfTeam,  SCORING.sfAllBonus,  4);  total += bd.sf;
 
-  // ── G. Final & bronze placements ──
+  const r32 = scoreRoundTeams('r32Teams', 'r32Teams', SCORING.r32Team, SCORING.r32Bonus, 32);
+  bd.r32 = r32.pts; bd.r32Bonus = r32.bonus; total += r32.pts + r32.bonus;
+
+  const r16 = scoreRoundTeams('r16Teams', 'r16Teams', SCORING.r16Team, SCORING.r16Bonus, 16);
+  bd.r16 = r16.pts; bd.r16Bonus = r16.bonus; total += r16.pts + r16.bonus;
+
+  const qf = scoreRoundTeams('qfTeams', 'qfTeams', SCORING.qfTeam, SCORING.qfBonus, 8);
+  bd.qf = qf.pts; bd.qfBonus = qf.bonus; total += qf.pts + qf.bonus;
+
+  const sf = scoreRoundTeams('sfTeams', 'sfTeams', SCORING.sfTeam, SCORING.sfBonus, 4);
+  bd.sf = sf.pts; bd.sfBonus = sf.bonus; total += sf.pts + sf.bonus;
+
+  // ── G. Placements 1-4 ──
   let finalPts = 0;
   const pFinal = pred.finalPlacements || {};
   const aFinal = actual.finalPlacements || {};
   if (aFinal['1']) {
+    // Check finalists (1&2) and bronze match (3&4) separately
+    const pFinalists = [pFinal['1'], pFinal['2']].filter(Boolean);
     const aFinalists = [aFinal['1'], aFinal['2']].filter(Boolean);
-    // 8p per finalist correctly identified (order-independent)
-    for (const pos of ['1', '2']) {
-      if (pFinal[pos] && aFinalists.includes(pFinal[pos])) finalPts += SCORING.finalistAdvance;
+    const pBronze = [pFinal['3'], pFinal['4']].filter(Boolean);
+    const aBronze = [aFinal['3'], aFinal['4']].filter(Boolean);
+    for (const t of pFinalists) { if (aFinalists.includes(t)) finalPts += SCORING.finalAdvance; }
+    for (const t of pBronze) { if (aBronze.includes(t)) finalPts += SCORING.finalAdvance; }
+    let exactCount = 0;
+    for (const pos of ['1','2','3','4']) {
+      if (pFinal[pos] && aFinal[pos] && pFinal[pos] === aFinal[pos]) {
+        finalPts += SCORING.finalExact;
+        exactCount++;
+      }
     }
-    // Position bonuses (on top of advance points)
-    if (pFinal['1'] && aFinal['1'] && pFinal['1'] === aFinal['1']) finalPts += SCORING.winnerBonus;
-    if (pFinal['2'] && aFinal['2'] && pFinal['2'] === aFinal['2']) finalPts += SCORING.runnerUpBonus;
+    if (exactCount === 4) finalPts += SCORING.finalBonus;
   }
-  if (pFinal['3'] && aFinal['3'] && pFinal['3'] === aFinal['3']) finalPts += SCORING.thirdPlace;
-  if (pFinal['4'] && aFinal['4'] && pFinal['4'] === aFinal['4']) finalPts += SCORING.fourthPlace;
   bd.finalPlacements = finalPts;
   total += finalPts;
 
-  // ── H. Questions ──
-  let questionPts = 0;
-  const pQ = pred.questions || {};
-  const aQ = actual.questions || {};
-
-  // Q1-Q3: skytteliga topp 3 — pool-based, order irrelevant
-  const actualPool = ['q1','q2','q3']
-    .map(k => String(aQ[k] || '').toLowerCase().trim())
-    .filter(Boolean);
-  const usedActual = new Set();
-  for (const key of ['q1','q2','q3']) {
-    const pVal = String(pQ[key] || '').toLowerCase().trim();
-    if (pVal && actualPool.includes(pVal) && !usedActual.has(pVal)) {
-      usedActual.add(pVal);
-      questionPts += SCORING.question;
+  // ── H. Top 3 scorers ──
+  let scorerPts = 0;
+  const pScorers = pred.topScorers || [];
+  const aScorers = actual.topScorers || [];
+  if (aScorers.length > 0) {
+    for (let i = 0; i < 3; i++) {
+      if (!pScorers[i]) continue;
+      const pName = pScorers[i].toLowerCase().trim();
+      const inList = aScorers.some(s => s && s.toLowerCase().trim() === pName);
+      if (inList) scorerPts += SCORING.topScorerInList;
+      if (aScorers[i] && aScorers[i].toLowerCase().trim() === pName) scorerPts += SCORING.topScorerExact;
     }
   }
+  bd.topScorers = scorerPts;
+  total += scorerPts;
 
-  // Q4-Q6: comma-separated multi-correct answers
-  for (const key of ['q4','q5','q6']) {
-    const pVal = String(pQ[key] || '').toLowerCase().trim();
-    const accepted = String(aQ[key] || '').split(',')
-      .map(s => s.toLowerCase().trim()).filter(Boolean);
-    if (pVal && accepted.includes(pVal)) questionPts += SCORING.question;
+  // ── I. First scorer ──
+  let firstScorerPts = 0;
+  if (pred.firstScorer && actual.firstScorer &&
+      pred.firstScorer.toLowerCase().trim() === actual.firstScorer.toLowerCase().trim()) {
+    firstScorerPts = SCORING.firstScorer;
   }
+  bd.firstScorer = firstScorerPts;
+  total += firstScorerPts;
 
-  // Q7-Q10: exact string match
-  for (const key of ['q7','q8','q9','q10']) {
-    const pVal = String(pQ[key] || '').toLowerCase().trim();
-    const aVal = String(aQ[key] || '').toLowerCase().trim();
-    if (pVal && aVal && pVal === aVal) questionPts += SCORING.question;
+  // ── J. First red card ──
+  let redPts = 0;
+  if (pred.firstRedCard && actual.firstRedCard && pred.firstRedCard === actual.firstRedCard) {
+    redPts = SCORING.firstRedCard;
   }
+  bd.firstRedCard = redPts;
+  total += redPts;
 
-  bd.questions = questionPts;
-  total += questionPts;
+  // ── K. First penalty ──
+  let penPts = 0;
+  if (pred.firstPenalty && actual.firstPenalty && pred.firstPenalty === actual.firstPenalty) {
+    penPts = SCORING.firstPenalty;
+  }
+  bd.firstPenalty = penPts;
+  total += penPts;
 
   return { total, breakdown: bd };
 }
 
-// Build a scoreable prediction from stored data.
-// r32Teams is derived from group placements (24 auto) + thirdPlaceQualifiers (8 manual).
-function buildScoreablePrediction(predData) {
-  const r32Teams = [];
-  for (const g of Object.keys(GROUPS)) {
-    const pl = predData.placements?.[g];
-    if (pl) {
-      if (pl[0]) r32Teams.push(pl[0]); // group winner
-      if (pl[1]) r32Teams.push(pl[1]); // runner-up
+// Derive knockout teams from prediction bracket
+function deriveKnockoutTeams(pred) {
+  const bracket = pred.bracket || {};
+  const r32Teams = [], r16Teams = [], qfTeams = [], sfTeams = [];
+  // R32: teams in each match
+  for (const m of R32_MATCHES) {
+    const mn = String(m[0]);
+    const b = bracket[mn];
+    if (b) {
+      if (b.home) r32Teams.push(b.home);
+      if (b.away) r32Teams.push(b.away);
     }
   }
-  for (const t of (predData.thirdPlaceQualifiers || [])) {
-    if (t) r32Teams.push(t);
+  // R16: winners of R32
+  for (const m of R16_MATCHES) {
+    const mn = String(m[0]);
+    const b = bracket[mn];
+    if (b) {
+      if (b.home) r16Teams.push(b.home);
+      if (b.away) r16Teams.push(b.away);
+    }
+  }
+  // QF: winners of R16
+  for (const m of QF_MATCHES) {
+    const mn = String(m[0]);
+    const b = bracket[mn];
+    if (b) {
+      if (b.home) qfTeams.push(b.home);
+      if (b.away) qfTeams.push(b.away);
+    }
+  }
+  // SF: winners of QF
+  for (const m of SF_MATCHES) {
+    const mn = String(m[0]);
+    const b = bracket[mn];
+    if (b) {
+      if (b.home) sfTeams.push(b.home);
+      if (b.away) sfTeams.push(b.away);
+    }
   }
   return {
-    matches:         predData.matches         || {},
-    placements:      predData.placements      || {},
-    r32Teams:        [...new Set(r32Teams)],
-    r16Teams:        predData.r16Teams        || [],
-    qfTeams:         predData.qfTeams         || [],
-    sfTeams:         predData.sfTeams         || [],
-    finalPlacements: predData.finalPlacements || {},
-    questions:       predData.questions       || {}
+    r32Teams: [...new Set(r32Teams)],
+    r16Teams: [...new Set(r16Teams)],
+    qfTeams: [...new Set(qfTeams)],
+    sfTeams: [...new Set(sfTeams)]
+  };
+}
+
+// Build a scoreable prediction from stored data
+function buildScoreablePrediction(predData) {
+  const kt = deriveKnockoutTeams(predData);
+  const bracket = predData.bracket || {};
+  // Final placements from bracket
+  const fp = {};
+  const finalMatch = bracket['104'];
+  const bronzeMatch = bracket['103'];
+  if (finalMatch?.winner) {
+    fp['1'] = finalMatch.winner;
+    fp['2'] = finalMatch.home === finalMatch.winner ? finalMatch.away : finalMatch.home;
+  }
+  if (bronzeMatch?.winner) {
+    fp['3'] = bronzeMatch.winner;
+    fp['4'] = bronzeMatch.home === bronzeMatch.winner ? bronzeMatch.away : bronzeMatch.home;
+  }
+  return {
+    matches: predData.matches || {},
+    placements: predData.placements || {},
+    r32Teams: kt.r32Teams,
+    r16Teams: kt.r16Teams,
+    qfTeams: kt.qfTeams,
+    sfTeams: kt.sfTeams,
+    finalPlacements: fp,
+    topScorers: predData.topScorers || [],
+    firstScorer: predData.firstScorer || '',
+    firstRedCard: predData.firstRedCard || '',
+    firstPenalty: predData.firstPenalty || ''
   };
 }
 
 function buildScoreableResults(resData) {
   return {
-    matches:         resData.matches         || {},
-    placements:      resData.placements      || {},
-    r32Teams:        resData.r32Teams        || [],
-    r16Teams:        resData.r16Teams        || [],
-    qfTeams:         resData.qfTeams         || [],
-    sfTeams:         resData.sfTeams         || [],
+    matches: resData.matches || {},
+    placements: resData.placements || {},
+    r32Teams: resData.r32Teams || [],
+    r16Teams: resData.r16Teams || [],
+    qfTeams: resData.qfTeams || [],
+    sfTeams: resData.sfTeams || [],
     finalPlacements: resData.finalPlacements || {},
-    questions:       resData.questions       || {}
+    topScorers: resData.topScorers || [],
+    firstScorer: resData.firstScorer || '',
+    firstRedCard: resData.firstRedCard || '',
+    firstPenalty: resData.firstPenalty || ''
   };
 }
 
@@ -400,12 +457,12 @@ app.post('/api/auth/register', async (req, res) => {
     if (existing) return res.status(400).json({ error: 'E-postadressen är redan registrerad' });
     const hash = bcrypt.hashSync(password, 10);
     const isFirst = !(await get('SELECT id FROM users LIMIT 1'));
-    await run('INSERT INTO users (name, email, password_hash, is_admin, approved) VALUES (?, ?, ?, ?, ?)',
-      [name, email, hash, isFirst ? 1 : 0, isFirst ? 1 : 0]);
-    const user = await get('SELECT id, name, email, is_admin, approved, avatar FROM users WHERE email = ?', [email]);
+    await run('INSERT INTO users (name, email, password_hash, is_admin) VALUES (?, ?, ?, ?)',
+      [name, email, hash, isFirst ? 1 : 0]);
+    const user = await get('SELECT id, name, email, is_admin, avatar FROM users WHERE email = ?', [email]);
     const token = jwt.sign({ id: user.id, name: user.name, email: user.email, is_admin: user.is_admin }, JWT_SECRET, { expiresIn: '30d' });
     res.cookie('token', token, { httpOnly: true, maxAge: 30*24*60*60*1000 });
-    res.json({ user: { ...user, submitted: false }, token });
+    res.json({ user, token });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -415,21 +472,19 @@ app.post('/api/auth/login', async (req, res) => {
     const user = await get('SELECT * FROM users WHERE email = ?', [email]);
     if (!user || !bcrypt.compareSync(password, user.password_hash))
       return res.status(401).json({ error: 'Fel e-post eller lösenord' });
-    const pred = await get('SELECT submitted_at FROM predictions WHERE user_id = ?', [user.id]);
     const payload = { id: user.id, name: user.name, email: user.email, is_admin: user.is_admin };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' });
     res.cookie('token', token, { httpOnly: true, maxAge: 30*24*60*60*1000 });
-    res.json({ user: { ...payload, avatar: user.avatar, approved: user.approved, submitted: !!pred?.submitted_at }, token });
+    res.json({ user: { ...payload, avatar: user.avatar }, token });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/auth/logout', (req, res) => { res.clearCookie('token'); res.json({ ok: true }); });
 app.get('/api/auth/me', auth, async (req, res) => {
   try {
-    const u = await get('SELECT id, name, email, is_admin, approved, avatar FROM users WHERE id = ?', [req.user.id]);
+    const u = await get('SELECT id, name, email, is_admin, avatar FROM users WHERE id = ?', [req.user.id]);
     if (!u) return res.status(401).json({ error: 'Användare borttagen' });
-    const pred = await get('SELECT submitted_at FROM predictions WHERE user_id = ?', [req.user.id]);
-    res.json({ user: { ...u, submitted: !!pred?.submitted_at } });
+    res.json({ user: u });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -500,21 +555,16 @@ app.post('/api/predictions', auth, async (req, res) => {
     (await all('SELECT key, value FROM settings')).forEach(r => { settings[r.key] = r.value; });
     if (settings.locked === '1') return res.status(403).json({ error: 'Tipset är låst' });
     if (new Date(settings.deadline) < new Date()) return res.status(403).json({ error: 'Deadline har passerat' });
-    const { data, submit } = req.body;
-    const existing = await get('SELECT id, submitted_at FROM predictions WHERE user_id = ?', [req.user.id]);
+    const { data } = req.body;
+    const existing = await get('SELECT id FROM predictions WHERE user_id = ?', [req.user.id]);
     if (existing) {
-      if (submit && !existing.submitted_at) {
-        await run('UPDATE predictions SET data = ?, updated_at = NOW(), submitted_at = NOW() WHERE user_id = ?',
-          [JSON.stringify(data), req.user.id]);
-      } else {
-        await run('UPDATE predictions SET data = ?, updated_at = NOW() WHERE user_id = ?',
-          [JSON.stringify(data), req.user.id]);
-      }
+      await run('UPDATE predictions SET data = ?, updated_at = NOW() WHERE user_id = ?',
+        [JSON.stringify(data), req.user.id]);
     } else {
-      await run(`INSERT INTO predictions (user_id, data, submitted_at) VALUES (?, ?, ${submit ? 'NOW()' : 'NULL'})`,
+      await run('INSERT INTO predictions (user_id, data) VALUES (?, ?)',
         [req.user.id, JSON.stringify(data)]);
     }
-    res.json({ ok: true, submitted: submit ? true : undefined });
+    res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -528,12 +578,10 @@ app.get('/api/results', auth, async (req, res) => {
     const actualData = resRow ? resRow.data : {};
     const predRow = await get('SELECT data FROM predictions WHERE user_id = ?', [req.user.id]);
     const predData = predRow ? predRow.data : {};
-    const allPreds = await all('SELECT data FROM predictions');
-    const consensusMap = buildConsensusMap(allPreds.map(p => p.data));
     const scoreable = buildScoreablePrediction(predData);
     const scoreableActual = buildScoreableResults(actualData);
-    const score = computeScore(scoreable, scoreableActual, consensusMap);
-    res.json({ actual: actualData, prediction: predData, score, consensusMap });
+    const score = computeScore(scoreable, scoreableActual);
+    res.json({ actual: actualData, prediction: predData, score });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -542,7 +590,7 @@ app.get('/api/results', auth, async (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 async function calcLeaderboard() {
-  const users = await all('SELECT id, name, avatar FROM users WHERE approved = 1 ORDER BY created_at');
+  const users = await all('SELECT id, name, avatar FROM users ORDER BY created_at');
   const preds = await all('SELECT user_id, data FROM predictions');
   const resRow = await get('SELECT data FROM results ORDER BY id LIMIT 1');
   const actualData = resRow ? resRow.data : {};
@@ -551,12 +599,10 @@ async function calcLeaderboard() {
   const predMap = {};
   preds.forEach(p => { predMap[p.user_id] = p.data; });
 
-  const consensusMap = buildConsensusMap(preds.map(p => p.data));
-
   const board = users.map(u => {
     const predData = predMap[u.id] || {};
     const scoreable = buildScoreablePrediction(predData);
-    const score = computeScore(scoreable, scoreableActual, consensusMap);
+    const score = computeScore(scoreable, scoreableActual);
     return { name: u.name, avatar: u.avatar, points: score.total, breakdown: score.breakdown };
   });
   board.sort((a, b) => b.points - a.points);
@@ -713,24 +759,8 @@ app.put('/api/admin/settings', adminAuth, async (req, res) => {
 });
 
 app.get('/api/admin/users', adminAuth, async (req, res) => {
-  try {
-    const users = await all('SELECT u.id, u.name, u.email, u.is_admin, u.approved, u.created_at, p.submitted_at FROM users u LEFT JOIN predictions p ON p.user_id = u.id ORDER BY u.created_at');
-    res.json(users);
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.get('/api/admin/pending', adminAuth, async (req, res) => {
-  try {
-    const users = await all(`SELECT u.id, u.name, u.email, u.created_at, p.submitted_at FROM users u JOIN predictions p ON p.user_id = u.id WHERE u.approved = 0 AND p.submitted_at IS NOT NULL ORDER BY p.submitted_at`);
-    res.json(users);
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.put('/api/admin/users/:id/approve', adminAuth, async (req, res) => {
-  try {
-    await run('UPDATE users SET approved = 1 WHERE id = ?', [req.params.id]);
-    res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { res.json(await all('SELECT id, name, email, is_admin, created_at FROM users ORDER BY created_at')); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/admin/users', adminAuth, async (req, res) => {
@@ -788,70 +818,6 @@ app.post('/api/admin/sidebets/:id/winner', adminAuth, async (req, res) => {
     await run("UPDATE sidebets SET winner_id = ?, comment = ?, status = 'settled' WHERE id = ?",
       [winner_id, comment || null, req.params.id]);
     res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// ══════════════════════════════════════════════════════════════════════════════
-// ADMIN EXPORT (full backup of users, predictions, results, settings)
-// Read-only. Returns a JSON snapshot sufficient to recompute the leaderboard
-// manually if the app or database is lost.
-// ══════════════════════════════════════════════════════════════════════════════
-
-app.get('/api/admin/export', adminAuth, async (req, res) => {
-  try {
-    const settingsRows = await all('SELECT key, value FROM settings');
-    const settings = {};
-    settingsRows.forEach(r => { settings[r.key] = r.value; });
-
-    const resultsRow = await get('SELECT data, updated_at FROM results ORDER BY id LIMIT 1');
-    const actualResults = resultsRow ? resultsRow.data : {};
-
-    const users = await all(`
-      SELECT u.id, u.name, u.email, u.is_admin, u.approved, u.created_at,
-             p.data AS prediction, p.submitted_at, p.updated_at AS prediction_updated_at
-      FROM users u
-      LEFT JOIN predictions p ON p.user_id = u.id
-      WHERE u.approved = 1
-      ORDER BY u.created_at
-    `);
-
-    const payload = {
-      exported_at: new Date().toISOString(),
-      exported_by: req.user.name,
-      note: 'Komplett backup av godkända användare, deras tips, faktiska resultat, inställningar och poängregler. Kan användas för att rättna manuellt om appen kraschar.',
-      scoring_rules: SCORING,
-      settings,
-      actual_results: actualResults,
-      users: users.map(u => ({
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        is_admin: !!u.is_admin,
-        approved: !!u.approved,
-        created_at: u.created_at,
-        submitted_at: u.submitted_at,
-        prediction_updated_at: u.prediction_updated_at,
-        prediction: u.prediction || null
-      }))
-    };
-
-    const filename = `vm-bettet-export-${new Date().toISOString().slice(0,10)}.json`;
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.send(JSON.stringify(payload, null, 2));
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// ══════════════════════════════════════════════════════════════════════════════
-// CONSENSUS (match tip distribution -- requires login)
-// ══════════════════════════════════════════════════════════════════════════════
-
-app.get('/api/consensus', auth, async (req, res) => {
-  try {
-    const preds = await all('SELECT data FROM predictions');
-    const total = preds.length;
-    const consensusMap = buildConsensusMap(preds.map(p => p.data));
-    res.json({ consensusMap, total });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
