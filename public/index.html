@@ -3615,6 +3615,13 @@ function toggleBreakdown(row) {
 // HEM (personlig dashboard)
 // ══════════════════════════════════════════════════════════════════════
 
+// Returnerar "<flagga> " (emoji + mellanslag) eller "" om laget saknar flagga.
+// Delegerar till den befintliga TEAM_FLAGS-mappen (def. längre upp).
+function flag(team) {
+  const f = teamFlag(team);
+  return f ? f + ' ' : '';
+}
+
 async function loadHem() {
   const c = document.getElementById('hemContent');
   c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Laddar...</div>';
@@ -3753,12 +3760,12 @@ function renderHem(container, tournData, lbData, resultsData) {
       const badge = badgeForMatch(m);
       const pts = pointsForMatch(m);
       html += `<div class="hem-match">
-        <span class="team home">${escHtml(m.home)}</span>
+        <span class="team home">${flag(m.home)}${escHtml(m.home)}</span>
         <div class="center">
           <span class="score">${fmtScore(m.actual)}</span>
           <span class="time">Slutresultat</span>
         </div>
-        <span class="team away">${escHtml(m.away)}</span>
+        <span class="team away">${flag(m.away)}${escHtml(m.away)}</span>
         <div class="meta-line">
           <span class="you">Du tippade ${fmtScore(m.my)} ${badge ? `<span class="badge ${badge.cls}">${badge.txt}</span>` : ''}</span>
           <span>${pts > 0 ? '+' + pts + 'p' : ''}</span>
@@ -3774,12 +3781,12 @@ function renderHem(container, tournData, lbData, resultsData) {
       <div class="hem-section-title"><span>Kommande matcher</span><a href="#dagensm">Alla matcher →</a></div>`;
     for (const m of upcoming) {
       html += `<div class="hem-match">
-        <span class="team home">${escHtml(m.home)}</span>
+        <span class="team home">${flag(m.home)}${escHtml(m.home)}</span>
         <div class="center">
           <span class="score tipped">${fmtScore(m.my)}</span>
           <span class="time">${fmtDateTime(m.dt)}</span>
         </div>
-        <span class="team away">${escHtml(m.away)}</span>
+        <span class="team away">${flag(m.away)}${escHtml(m.away)}</span>
         <div class="meta-line">
           <span class="you">${m.my && m.my[0] !== '' && m.my[0] != null ? 'Du har tippat ' + fmtScore(m.my) : '<span class="badge pending">EJ TIPPAT</span>'}</span>
           <span>Grupp ${m.group}${m.channel ? ' · ' + m.channel : ''}</span>
@@ -3887,7 +3894,7 @@ function renderDagensm(container, tournData, consensusData, userPreds, actualMat
     }
     let s = `<div class="match-consensus-card">
         <div class="match-header">
-          <span class="teams">${escHtml(m.home)} &ndash; ${escHtml(m.away)}</span>
+          <span class="teams">${flag(m.home)}${escHtml(m.home)} &ndash; ${flag(m.away)}${escHtml(m.away)}</span>
           <span class="match-meta">Grupp ${m.group} &middot; ${m.time}${m.channel ? ' &middot; <span class="tv-badge tv-' + m.channel.toLowerCase() + '">' + escHtml(m.channel) + '</span>' : ''}</span>
         </div>`;
     if (actualScore) {
