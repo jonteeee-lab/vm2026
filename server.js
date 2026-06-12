@@ -769,6 +769,13 @@ app.delete('/api/admin/users/:id', adminAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.get('/api/admin/leaderboard/snapshots', adminAuth, async (req, res) => {
+  try {
+    const rows = await all('SELECT id, label, created_at FROM leaderboard_snapshots ORDER BY created_at DESC LIMIT 50');
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.post('/api/admin/leaderboard/snapshot', adminAuth, async (req, res) => {
   try {
     const board = await calcLeaderboard();
