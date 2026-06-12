@@ -929,6 +929,123 @@ select.form-input {
 .save-bar .save-status { color: var(--accent); }
 @media (max-width: 768px) { .save-bar { bottom: calc(var(--bottom-nav-h) + 12px); } }
 
+/* ══════ HEM / DASHBOARD ══════ */
+.hem-hero {
+  position: relative;
+  padding: 18px 18px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(200,150,12,0.22), rgba(200,150,12,0.06));
+  border: 1px solid rgba(200,150,12,0.45);
+  margin-bottom: 14px;
+}
+.hem-hero .hello {
+  font-size: 13px; color: var(--text2); font-weight: 600;
+}
+.hem-hero .rank-display {
+  display: flex; align-items: baseline; gap: 8px; margin: 6px 0 4px;
+}
+.hem-hero .rank-num {
+  font-size: 42px; font-weight: 900; color: var(--accent); line-height: 1;
+}
+.hem-hero .rank-of { font-size: 16px; color: var(--text2); font-weight: 600; }
+.hem-hero .rank-diff {
+  font-size: 13px; font-weight: 700;
+  padding: 3px 9px; border-radius: 999px;
+  margin-left: 4px;
+}
+.hem-hero .rank-diff.up    { background: rgba(26,122,60,0.18); color: var(--green); }
+.hem-hero .rank-diff.down  { background: rgba(192,57,43,0.18); color: var(--red); }
+.hem-hero .rank-diff.same  { background: rgba(120,120,120,0.12); color: var(--text3); }
+.hem-hero .points-line {
+  font-size: 14px; color: var(--text); font-weight: 600;
+}
+.hem-hero .points-line .pts { color: var(--accent); font-weight: 800; }
+.hem-hero .prize-line {
+  margin-top: 8px;
+  font-size: 13px; color: var(--text2);
+}
+.hem-hero .prize-line .amt { color: var(--accent); font-weight: 800; }
+
+.hem-context {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.hem-stat {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 12px; color: var(--text3); text-align: center;
+}
+.hem-stat .big { font-size: 20px; font-weight: 800; color: var(--text); display: block; }
+.hem-stat .lbl { font-size: 11px; }
+
+.hem-section {
+  margin-bottom: 14px;
+}
+.hem-section-title {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 13px; font-weight: 800;
+  letter-spacing: 0.4px; text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 8px; padding: 0 2px;
+}
+.hem-section-title a {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.2px;
+  text-transform: none; color: var(--accent);
+}
+
+.hem-match {
+  display: grid;
+  grid-template-columns: 1fr 86px 1fr;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.hem-match:last-child { margin-bottom: 0; }
+.hem-match .team { font-weight: 700; font-size: 14px; color: var(--text); }
+.hem-match .team.home { text-align: right; }
+.hem-match .team.away { text-align: left; }
+.hem-match .center {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.hem-match .score {
+  font-size: 18px; font-weight: 900; color: var(--text);
+  letter-spacing: 1px;
+}
+.hem-match .score.tipped { color: var(--text2); }
+.hem-match .time { font-size: 11px; color: var(--text3); }
+.hem-match .meta-line {
+  grid-column: 1 / 4;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 11px; color: var(--text3);
+  margin-top: 4px;
+}
+.hem-match .meta-line .you {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-weight: 600;
+}
+.hem-match .meta-line .you .badge {
+  display: inline-block; padding: 1px 6px; border-radius: 4px;
+  font-size: 10px; font-weight: 800;
+}
+.hem-match .meta-line .you .badge.exact { background: var(--green); color: #fff; }
+.hem-match .meta-line .you .badge.sign  { background: rgba(26,122,60,0.20); color: var(--green); }
+.hem-match .meta-line .you .badge.wrong { background: rgba(192,57,43,0.15); color: var(--red); }
+.hem-match .meta-line .you .badge.pending { background: var(--bg3); color: var(--text3); }
+@media (max-width: 480px) {
+  .hem-context { grid-template-columns: 1fr 1fr; }
+  .hem-match { grid-template-columns: 1fr 76px 1fr; padding: 8px 10px; }
+  .hem-match .team { font-size: 13px; }
+  .hem-match .score { font-size: 16px; }
+}
+
 /* Prize pot banner */
 .prize-pot-banner {
   display: flex; flex-direction: column;
@@ -1599,6 +1716,15 @@ select.form-input {
     </div>
   </div>
 
+  <!-- HEM (personlig dashboard) -->
+  <div class="view" id="view-hem">
+    <div class="section-title">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Hem
+    </div>
+    <div id="hemContent"><div class="loading-overlay"><div class="spinner"></div> Laddar...</div></div>
+  </div>
+
   <!-- TIPPA -->
   <div class="view" id="view-tippa">
     <div class="section-title">
@@ -2039,7 +2165,7 @@ async function handleLogin(e) {
     });
     applyUserState(user);
     updateNav();
-    navigate('tippa');
+    navigate('hem');
     showToast('Inloggad!', 'success');
   } catch (err) {
     errEl.textContent = err.message;
@@ -2062,7 +2188,7 @@ async function handleRegister(e) {
     });
     applyUserState(user);
     updateNav();
-    navigate('tippa');
+    navigate('hem');
     showToast('Registrerad och inloggad!', 'success');
   } catch (err) {
     errEl.textContent = err.message;
@@ -2090,8 +2216,9 @@ function navigate(view) {
 }
 
 function handleHash() {
-  const hash = (window.location.hash || '#landing').slice(1);
-  const authed = ['tippa','resultat','leaderboard','dagensm','alla','projektion','sidebets','admin','profil','info'];
+  const defaultView = currentUser ? 'hem' : 'landing';
+  const hash = (window.location.hash || '#' + defaultView).slice(1);
+  const authed = ['hem','tippa','resultat','leaderboard','dagensm','alla','projektion','sidebets','admin','profil','info'];
   if (authed.includes(hash) && !currentUser) {
     navigate('login');
     return;
@@ -2125,6 +2252,7 @@ function showView(view) {
   }
   updateNav();
   // Trigger view-specific loading
+  if (view === 'hem') loadHem();
   if (view === 'tippa') loadTippa();
   if (view === 'resultat') loadResultat();
   if (view === 'leaderboard') loadLeaderboard();
@@ -2152,7 +2280,7 @@ function updateNav() {
   const lb = document.getElementById('landingButtons');
   if (lb) {
     lb.innerHTML = loggedIn
-      ? '<button class="btn btn-primary" onclick="navigate(\'tippa\')">Tippa</button><button class="btn btn-secondary" onclick="navigate(\'leaderboard\')">Topplista</button>'
+      ? '<button class="btn btn-primary" onclick="navigate(\'hem\')">Till mitt VM-tips</button><button class="btn btn-secondary" onclick="navigate(\'leaderboard\')">Topplista</button>'
       : '<button class="btn btn-primary" onclick="navigate(\'login\')">Logga in</button><button class="btn btn-secondary" onclick="navigate(\'register\')">Registrera</button>';
   }
 
@@ -2162,7 +2290,7 @@ function updateNav() {
     const locked = ['resultat','alla','projektion','sidebets'];
     const tournLocked = !isTournamentLocked();
     const items = [
-      ['tippa','Tippa'],['resultat','Resultat'],['leaderboard','Topplista'],
+      ['hem','Hem'],['tippa','Tippa'],['resultat','Resultat'],['leaderboard','Topplista'],
       ['dagensm','Dagens matcher'],['alla','Alla svar'],['projektion','Projektion'],
       ['sidebets','Sidebets'],['info','Regler']
     ];
@@ -2184,7 +2312,7 @@ function updateNav() {
     const locked = ['resultat','alla','sidebets'];
     const tournLocked = !isTournamentLocked();
     const items = [
-      ['tippa','Tippa','<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>'],
+      ['hem','Hem','<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>'],
       ['leaderboard','Tabell','<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 7 17 7"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>'],
       ['dagensm','Matcher','<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'],
       ['info','Regler','<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'],
@@ -3482,6 +3610,191 @@ function toggleBreakdown(row) {
 // ══════════════════════════════════════════════════════════════════════
 // DAGENS MATCHER VIEW
 // ══════════════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════════════
+// HEM (personlig dashboard)
+// ══════════════════════════════════════════════════════════════════════
+
+async function loadHem() {
+  const c = document.getElementById('hemContent');
+  c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Laddar...</div>';
+  try {
+    const [tournData, lbData, resultsData] = await Promise.all([
+      loadTournament(),
+      api('/api/leaderboard').catch(() => ({ board: [], prevSnapshot: null })),
+      api('/api/results').catch(() => ({}))
+    ]);
+    renderHem(c, tournData, lbData, resultsData);
+  } catch (err) {
+    c.innerHTML = '<div class="empty-state">Kunde inte ladda: ' + escHtml(err.message) + '</div>';
+  }
+}
+
+function renderHem(container, tournData, lbData, resultsData) {
+  const { groupMatches } = tournData;
+  const board = (lbData && lbData.board) || [];
+  const prevSnapshot = lbData && lbData.prevSnapshot;
+  const actual = (resultsData && resultsData.actual) || {};
+  const prediction = (resultsData && resultsData.prediction) || {};
+  const myScore = (resultsData && resultsData.score) || { total: 0 };
+
+  const actualMatches = actual.matches || {};
+  const myMatches = prediction.matches || {};
+
+  // Find current user's position
+  const myName = currentUser?.name;
+  const myIdx = myName ? board.findIndex(p => p.name === myName) : -1;
+  const myRank = myIdx >= 0 ? myIdx + 1 : null;
+  const total = board.length;
+
+  // Diff vs previous snapshot
+  let rankDiff = null;
+  if (prevSnapshot && myName) {
+    const snap = Array.isArray(prevSnapshot) ? prevSnapshot : (prevSnapshot.board || []);
+    const prevIdx = snap.findIndex(p => p.name === myName);
+    if (prevIdx >= 0 && myRank) rankDiff = (prevIdx + 1) - myRank;
+  }
+
+  // Prize for my rank if turnering slutade nu
+  const ENTRY_TO_POT = 300;
+  const prizeTotal = total * ENTRY_TO_POT;
+  const splits = [0.50, 0.25, 0.15, 0.10];
+  const fmtKr = n => n.toLocaleString('sv-SE') + ' kr';
+  const myPrize = (myRank && myRank <= 4) ? Math.round(prizeTotal * splits[myRank-1]) : 0;
+
+  // Build match list with datetime, group + actual + my tip
+  const enriched = groupMatches.map(m => {
+    const [num, date, time, home, away, group, channel] = m;
+    const dt = parseMatchDate(date, time);
+    const a = actualMatches[String(num)];
+    const my = myMatches[String(num)];
+    return { num, dt, home, away, group, channel, actual: a, my };
+  });
+  const now = Date.now();
+  // Recently finished (kickoff in past, result entered) — newest first
+  const recentlyPlayed = enriched
+    .filter(m => m.dt.getTime() <= now && m.actual && m.actual[0] !== '' && m.actual[0] != null && m.actual[1] !== '' && m.actual[1] != null)
+    .sort((a, b) => b.dt - a.dt)
+    .slice(0, 3);
+  // Next 3 upcoming (kickoff in future), earliest first
+  const upcoming = enriched
+    .filter(m => m.dt.getTime() > now)
+    .sort((a, b) => a.dt - b.dt)
+    .slice(0, 3);
+
+  function signOf(h, a) { return h > a ? '1' : (h < a ? '2' : 'X'); }
+  function pointsForMatch(m) {
+    // 3p sign + 2p margin (no consensus boost calculated here)
+    if (!m.actual || !m.my) return 0;
+    const ah = Number(m.actual[0]), aa = Number(m.actual[1]);
+    const ph = Number(m.my[0]), pa = Number(m.my[1]);
+    if (Number.isNaN(ah) || Number.isNaN(aa) || Number.isNaN(ph) || Number.isNaN(pa)) return 0;
+    const aSign = signOf(ah, aa);
+    const pSign = signOf(ph, pa);
+    if (pSign !== aSign) return 0;
+    let pts = 3;
+    if ((ph - pa) === (ah - aa)) pts += 2;
+    return pts;
+  }
+
+  function badgeForMatch(m) {
+    if (!m.actual) return null;
+    if (!m.my || m.my[0] === '' || m.my[0] == null) return { cls: 'pending', txt: 'EJ TIPPAT' };
+    const ah = Number(m.actual[0]), aa = Number(m.actual[1]);
+    const ph = Number(m.my[0]), pa = Number(m.my[1]);
+    if (ph === ah && pa === aa) return { cls: 'exact', txt: 'EXAKT' };
+    if (signOf(ph, pa) === signOf(ah, aa)) return { cls: 'sign', txt: 'RÄTT 1X2' };
+    return { cls: 'wrong', txt: 'FEL' };
+  }
+
+  function fmtScore(s) {
+    if (!s || s[0] === '' || s[0] == null) return '—';
+    return s[0] + '–' + s[1];
+  }
+  function fmtDateTime(dt) {
+    const months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+    return dt.getDate() + ' ' + months[dt.getMonth()] + ' kl ' + String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+  }
+
+  // Build HTML
+  let html = '';
+
+  // Hero card
+  let diffHtml = '';
+  if (rankDiff !== null) {
+    if (rankDiff > 0) diffHtml = `<span class="rank-diff up">▲ ${rankDiff}</span>`;
+    else if (rankDiff < 0) diffHtml = `<span class="rank-diff down">▼ ${Math.abs(rankDiff)}</span>`;
+    else diffHtml = `<span class="rank-diff same">— oförändrad</span>`;
+  }
+  html += `<div class="hem-hero">
+    <div class="hello">Hej ${escHtml(myName || '')}!</div>
+    <div class="rank-display">
+      ${myRank ? `<span class="rank-num">#${myRank}</span><span class="rank-of">av ${total}</span>${diffHtml}` : '<span class="rank-of">Du finns inte med på topplistan än</span>'}
+    </div>
+    <div class="points-line">Du har <span class="pts">${myScore.total || 0}p</span></div>
+    ${myPrize > 0 ? `<div class="prize-line">Om turneringen slutade nu skulle du vinna <span class="amt">${fmtKr(myPrize)}</span></div>` : (prizeTotal > 0 ? `<div class="prize-line">Klättra till topp 4 för att vinna del av <span class="amt">${fmtKr(prizeTotal)}</span></div>` : '')}
+  </div>`;
+
+  // Context tiles
+  if (myRank) {
+    const behind = total - myRank;
+    const ahead = myRank - 1;
+    html += `<div class="hem-context">
+      <div class="hem-stat"><span class="big">${ahead}</span><span class="lbl">framför dig</span></div>
+      <div class="hem-stat"><span class="big">${behind}</span><span class="lbl">bakom dig</span></div>
+    </div>`;
+  }
+
+  // Recently played
+  if (recentlyPlayed.length > 0) {
+    html += `<div class="hem-section">
+      <div class="hem-section-title"><span>Senaste matcher</span><a href="#resultat">Se all rättning →</a></div>`;
+    for (const m of recentlyPlayed) {
+      const badge = badgeForMatch(m);
+      const pts = pointsForMatch(m);
+      html += `<div class="hem-match">
+        <span class="team home">${escHtml(m.home)}</span>
+        <div class="center">
+          <span class="score">${fmtScore(m.actual)}</span>
+          <span class="time">Slutresultat</span>
+        </div>
+        <span class="team away">${escHtml(m.away)}</span>
+        <div class="meta-line">
+          <span class="you">Du tippade ${fmtScore(m.my)} ${badge ? `<span class="badge ${badge.cls}">${badge.txt}</span>` : ''}</span>
+          <span>${pts > 0 ? '+' + pts + 'p' : ''}</span>
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Upcoming
+  if (upcoming.length > 0) {
+    html += `<div class="hem-section">
+      <div class="hem-section-title"><span>Kommande matcher</span><a href="#dagensm">Alla matcher →</a></div>`;
+    for (const m of upcoming) {
+      html += `<div class="hem-match">
+        <span class="team home">${escHtml(m.home)}</span>
+        <div class="center">
+          <span class="score tipped">${fmtScore(m.my)}</span>
+          <span class="time">${fmtDateTime(m.dt)}</span>
+        </div>
+        <span class="team away">${escHtml(m.away)}</span>
+        <div class="meta-line">
+          <span class="you">${m.my && m.my[0] !== '' && m.my[0] != null ? 'Du har tippat ' + fmtScore(m.my) : '<span class="badge pending">EJ TIPPAT</span>'}</span>
+          <span>Grupp ${m.group}${m.channel ? ' · ' + m.channel : ''}</span>
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  if (recentlyPlayed.length === 0 && upcoming.length === 0) {
+    html += `<div class="empty-state">Inga matcher att visa.</div>`;
+  }
+
+  container.innerHTML = html;
+}
 
 async function loadDagensm() {
   const c = document.getElementById('dagensmContent');
