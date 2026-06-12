@@ -1999,6 +1999,7 @@ async function loadTournament() {
 
 async function loadSettings() {
   settings = await api('/api/settings');
+  if (typeof updateNav === 'function') updateNav();
 }
 
 function isTournamentLocked() {
@@ -4363,6 +4364,7 @@ function resizeImageToDataUrl(file, maxSize, quality) {
 (async function init() {
   initTheme();
   await checkAuth();
+  await loadSettings();
   window.addEventListener('hashchange', handleHash);
   handleHash();
 })();
