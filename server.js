@@ -696,6 +696,12 @@ app.get('/api/admin/results', adminAuth, async (req, res) => {
 app.put('/api/admin/results', adminAuth, async (req, res) => {
   try {
     const { data } = req.body;
+    // Snapshot the current leaderboard BEFORE updating, so the next render can show movement.
+    const boardBefore = await calcLeaderboard();
+    if (boardBefore && boardBefore.length > 0) {
+      await run('INSERT INTO leaderboard_snapshots (data, label) VALUES (?, ?)',
+        [JSON.stringify(boardBefore), 'auto-pre-result-update']);
+    }
     await run('UPDATE results SET data = ?, updated_at = NOW() WHERE id = (SELECT id FROM results ORDER BY id LIMIT 1)',
       [JSON.stringify(data)]);
     res.json({ ok: true });
@@ -848,6 +854,10 @@ app.get('/api/admin/export', adminAuth, async (req, res) => {
 
 app.get('/api/consensus', auth, async (req, res) => {
   try {
+    const locked = await get("SELECT value FROM settings WHERE key='locked'");
+    const deadline = await get("SELECT value FROM settings WHERE key='deadline'");
+    const isLocked = locked?.value === '1' || new Date(deadline?.value) < new Date();
+    if (!isLocked) return res.status(403).json({ error: 'Inte låst ännu' });
     const preds = await all('SELECT data FROM predictions');
     const total = preds.length;
     const consensusMap = buildConsensusMap(preds.map(p => p.data));
