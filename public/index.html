@@ -461,6 +461,118 @@ select.form-input {
 .ko-rank-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
 .ko-rank-label { font-size: 12px; font-weight: 700; min-width: 70px; color: var(--text3); }
 
+/* Admin: match result entry */
+.admin-match-row {
+  display: grid;
+  grid-template-columns: 70px 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.admin-match-row:last-of-type { border-bottom: none; }
+.admin-match-row .admin-match-date {
+  font-size: 11px; color: var(--text3); font-weight: 500;
+}
+.admin-match-row .admin-team {
+  font-weight: 600; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.admin-match-row .admin-team.home  { text-align: right; }
+.admin-match-row .admin-team.away  { text-align: left; }
+.admin-match-row .admin-score-inputs {
+  display: flex; align-items: center; gap: 4px;
+  justify-content: center;
+}
+.admin-match-row .admin-score-input {
+  width: 44px; height: 36px;
+  text-align: center;
+  border: 2px solid var(--border); border-radius: 6px;
+  background: var(--bg3); color: var(--text);
+  font-family: inherit; font-size: 16px; font-weight: 800;
+  padding: 0;
+  -moz-appearance: textfield;
+}
+.admin-match-row .admin-score-input::-webkit-inner-spin-button,
+.admin-match-row .admin-score-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.admin-match-row .admin-score-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+.admin-match-row .admin-score-dash { font-weight: 700; color: var(--text3); }
+@media (max-width: 600px) {
+  .admin-match-row {
+    grid-template-columns: 1fr auto 1fr;
+    grid-template-rows: auto auto;
+    row-gap: 4px;
+    padding: 10px 0;
+  }
+  .admin-match-row .admin-match-date {
+    grid-column: 1 / 4; text-align: left;
+  }
+  .admin-match-row .admin-team.home  { grid-column: 1; grid-row: 2; }
+  .admin-match-row .admin-score-inputs { grid-column: 2; grid-row: 2; }
+  .admin-match-row .admin-team.away  { grid-column: 3; grid-row: 2; }
+}
+
+/* Admin: knockout placements */
+.admin-placements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.admin-placement-block {
+  padding: 10px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.admin-placement-title {
+  font-size: 12px; font-weight: 800;
+  color: var(--accent); text-transform: uppercase;
+  letter-spacing: 0.4px; margin-bottom: 6px;
+}
+.admin-placement-row {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.admin-placement-row:last-child { margin-bottom: 0; }
+.admin-placement-pos {
+  font-size: 12px; font-weight: 700; color: var(--text3);
+}
+.admin-placement-select { padding: 5px 6px; font-size: 13px; height: auto; }
+
+.admin-final-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+/* Admin: snapshot list */
+.snapshot-list {
+  display: flex; flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.snapshot-row {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.snapshot-row:last-child { border-bottom: none; }
+.snapshot-row:nth-child(odd) { background: var(--bg3); }
+.snapshot-when { color: var(--text3); font-size: 12px; font-weight: 600; }
+.snapshot-label { color: var(--text); font-weight: 500; word-break: break-word; }
+@media (max-width: 600px) {
+  .snapshot-row { grid-template-columns: 1fr; gap: 2px; padding: 8px 10px; }
+}
+
 /* Group standings table */
 .group-table {
   width: 100%;
@@ -1239,13 +1351,20 @@ select.form-input {
 /* ══════ ADMIN ══════ */
 .admin-user-row {
   display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
   padding: 10px 0;
   border-bottom: 1px solid var(--border);
   font-size: 13px;
 }
+.admin-user-row > div:first-child { min-width: 0; flex: 1; overflow-wrap: anywhere; }
 .admin-user-row .user-name { font-weight: 600; }
 .admin-user-row .user-email { color: var(--text3); font-size: 12px; }
-.admin-user-row .actions { display: flex; gap: 6px; }
+.admin-user-row .actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 600px) {
+  .admin-user-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .admin-user-row .actions { justify-content: flex-start; }
+  .admin-user-row .actions .btn { flex: 1; min-width: 0; }
+}
 
 /* ══════ TOAST ══════ */
 .toast {
@@ -4118,17 +4237,17 @@ function renderAdminGroupResults(container) {
       const mn = String(m[0]);
       const s = am[mn] || ['',''];
       const d = parseMatchDate(m[1], m[2]);
-      html += `<div class="match-row">
-        <span class="date">${formatDate(d)}</span>
-        <span class="team">${m[3]}</span>
-        <div class="score-inputs">
-          <input type="number" class="score-input" min="0" max="20" value="${s[0]!==''&&s[0]!=null?s[0]:''}"
+      html += `<div class="admin-match-row">
+        <span class="admin-match-date">${formatDate(d)} ${formatTime(d)}</span>
+        <span class="admin-team home">${escHtml(m[3])}</span>
+        <div class="admin-score-inputs">
+          <input type="number" class="admin-score-input" min="0" max="20" value="${s[0]!==''&&s[0]!=null?s[0]:''}"
             onchange="onAdminMatchScore('${mn}',0,this.value)">
-          <span class="score-dash">-</span>
-          <input type="number" class="score-input" min="0" max="20" value="${s[1]!==''&&s[1]!=null?s[1]:''}"
+          <span class="admin-score-dash">–</span>
+          <input type="number" class="admin-score-input" min="0" max="20" value="${s[1]!==''&&s[1]!=null?s[1]:''}"
             onchange="onAdminMatchScore('${mn}',1,this.value)">
         </div>
-        <span class="team away">${m[4]}</span>
+        <span class="admin-team away">${escHtml(m[4])}</span>
       </div>`;
     }
   }
@@ -4144,52 +4263,66 @@ function onAdminMatchScore(matchNum, idx, value) {
 }
 
 function renderAdminKnockoutResults(container) {
-  let html = '<div class="card"><h3>Faktiska resultat - Slutspel</h3>';
-  html += '<p class="text-muted" style="margin-bottom:12px">Ange placeringar, R32-lag, R16-lag etc. Dessa fält sparas som arrays.</p>';
+  let html = '<div class="card"><h3>Faktiska resultat – Slutspel</h3>';
+  html += '<p class="text-muted" style="margin-bottom:12px">Ange placeringar och vilka lag som gick vidare i varje runda.</p>';
 
   // Group placements
-  html += '<h4 style="margin-top:14px;color:var(--accent)">Gruppplaceringar (facit)</h4>';
+  html += '<h4 style="margin-top:8px;margin-bottom:10px;font-size:14px;color:var(--accent)">Gruppplaceringar (facit)</h4>';
+  html += '<div class="admin-placements-grid">';
   const ap = adminResults.placements || {};
   for (const g of Object.keys(T.groups)) {
     const teams = T.groups[g];
     const arr = ap[g] || ['','','',''];
-    html += `<div style="margin-bottom:8px"><strong>Grupp ${g}</strong><div style="display:flex;gap:6px;flex-wrap:wrap">`;
+    html += `<div class="admin-placement-block"><div class="admin-placement-title">Grupp ${g}</div>`;
     for (let i = 0; i < 4; i++) {
-      html += `<select class="form-input" style="width:auto;min-width:120px" onchange="onAdminPlacement('${g}',${i},this.value)">
-        <option value="">${i+1}:a</option>`;
+      html += `<div class="admin-placement-row">
+        <span class="admin-placement-pos">${i+1}:a</span>
+        <select class="form-input admin-placement-select" onchange="onAdminPlacement('${g}',${i},this.value)">
+          <option value="">— välj lag —</option>`;
       for (const t of teams) {
         html += `<option value="${t}" ${arr[i]===t?'selected':''}>${t}</option>`;
       }
-      html += '</select>';
+      html += '</select></div>';
     }
-    html += '</div></div>';
+    html += '</div>';
   }
+  html += '</div>';
 
-  // R32 teams, R16 teams etc
+  // R32 / R16 / QF / SF teams as comma-separated lists (with helper text)
   const roundFields = [
-    ['r32Teams', 'R32-lag (kommaseparerade)'],
-    ['r16Teams', 'R16-lag (kommaseparerade)'],
-    ['qfTeams', 'KF-lag (kommaseparerade)'],
-    ['sfTeams', 'SF-lag (kommaseparerade)']
+    ['r32Teams', 'R32-lag', 32, 'Lag som gick vidare från gruppspel till åttondelsfinal (16-delsfinal i appen).'],
+    ['r16Teams', 'R16-lag', 16, 'Lag som gick vidare till åttondelsfinal.'],
+    ['qfTeams',  'Kvartsfinal-lag', 8, 'Lag som spelade kvartsfinal.'],
+    ['sfTeams',  'Semifinal-lag',   4, 'Lag som spelade semifinal.']
   ];
-  for (const [key, label] of roundFields) {
+  html += '<h4 style="margin-top:20px;margin-bottom:10px;font-size:14px;color:var(--accent)">Lag som tagit sig vidare per runda</h4>';
+  for (const [key, label, expected, hint] of roundFields) {
     const val = (adminResults[key] || []).join(', ');
-    html += `<div class="form-group" style="margin-top:12px">
-      <label>${label}</label>
-      <input type="text" class="form-input" value="${escHtml(val)}" onchange="adminResults['${key}']=this.value.split(',').map(s=>s.trim()).filter(Boolean)">
+    const count = (adminResults[key] || []).length;
+    html += `<div class="form-group" style="margin-top:10px">
+      <label>${label} <span style="color:var(--text3);font-weight:400">(${count}/${expected})</span></label>
+      <input type="text" class="form-input" value="${escHtml(val)}"
+        onchange="adminResults['${key}']=this.value.split(',').map(s=>s.trim()).filter(Boolean);renderAdminTab()"
+        placeholder="Lagnamn separerade med komma">
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">${hint}</div>
     </div>`;
   }
 
   // Final placements
-  html += '<h4 style="margin-top:14px;color:var(--accent)">Slutplacering 1-4</h4>';
+  html += '<h4 style="margin-top:20px;margin-bottom:10px;font-size:14px;color:var(--accent)">Slutplacering 1–4</h4>';
+  html += '<div class="admin-final-grid">';
   const fp = adminResults.finalPlacements || {};
+  const placeIcons = ['🥇', '🥈', '🥉', '4️⃣'];
+  const placeLabels = ['Vinnare', 'Tvåa', 'Trea', 'Fyra'];
   for (let i = 1; i <= 4; i++) {
-    html += `<div class="form-group">
-      <label>Plats ${i}</label>
+    html += `<div class="form-group" style="margin-bottom:0">
+      <label>${placeIcons[i-1]} ${placeLabels[i-1]}</label>
       <input type="text" class="form-input" value="${escHtml(fp[String(i)]||'')}"
+        placeholder="Lagnamn"
         onchange="if(!adminResults.finalPlacements)adminResults.finalPlacements={};adminResults.finalPlacements['${i}']=this.value.trim()">
     </div>`;
   }
+  html += '</div>';
 
   html += '<button class="btn btn-primary" style="margin-top:16px" onclick="saveAdminResults()">Spara resultat</button>';
   html += '</div>';
@@ -4374,17 +4507,41 @@ async function saveSettings() {
   } catch (err) { showToast(err.message, 'error'); }
 }
 
-function renderAdminSnapshots(container) {
+async function renderAdminSnapshots(container) {
+  container.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Laddar...</div>';
   let html = '<div class="card"><h3>Leaderboard-snapshots</h3>';
-  html += '<p class="text-muted" style="margin-bottom:12px">Spara en snapshot av den aktuella topplistan. Nästa gång visas positionsförändringar.</p>';
+  html += '<p class="text-muted" style="margin-bottom:12px">Snapshots tas automatiskt innan varje resultatuppdatering så att positionsförändringar kan visas. Du kan också spara manuellt här.</p>';
   html += `<div class="form-group">
     <label>Etikett (valfritt)</label>
     <input type="text" class="form-input" id="snapshotLabel" placeholder="T.ex. Efter gruppspelet">
   </div>
-  <div style="display:flex;gap:8px">
-    <button class="btn btn-primary btn-sm" onclick="saveSnapshot()">Spara snapshot</button>
-    <button class="btn btn-danger btn-sm" onclick="clearSnapshot()">Rensa snapshots</button>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-primary btn-sm" onclick="saveSnapshot()">Spara snapshot nu</button>
+    <button class="btn btn-danger btn-sm" onclick="clearSnapshot()">Rensa alla snapshots</button>
   </div>`;
+
+  // Existing snapshots list
+  try {
+    const snaps = await api('/api/admin/leaderboard/snapshots');
+    if (snaps && snaps.length > 0) {
+      html += '<h4 style="margin-top:18px;margin-bottom:8px;font-size:13px;color:var(--text2)">Sparade snapshots</h4>';
+      html += '<div class="snapshot-list">';
+      for (const s of snaps) {
+        const when = new Date(s.created_at).toLocaleString('sv-SE', { dateStyle: 'short', timeStyle: 'short' });
+        const label = s.label || '(ingen etikett)';
+        html += `<div class="snapshot-row">
+          <div class="snapshot-when">${when}</div>
+          <div class="snapshot-label">${escHtml(label)}</div>
+        </div>`;
+      }
+      html += '</div>';
+      html += `<p class="text-muted" style="font-size:11px;margin-top:8px">Den senaste snapshotten används för att räkna positionsförändring på topplistan.</p>`;
+    } else {
+      html += '<p class="text-muted" style="font-size:12px;margin-top:14px">Inga snapshots sparade än.</p>';
+    }
+  } catch (err) {
+    html += `<p class="text-muted" style="font-size:12px;margin-top:14px">Kunde inte ladda snapshot-lista: ${escHtml(err.message)}</p>`;
+  }
   html += '</div>';
 
   html += '<div class="card" style="margin-top:16px"><h3>Exportera alla tips (backup)</h3>';
