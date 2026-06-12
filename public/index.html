@@ -817,6 +817,47 @@ select.form-input {
 .save-bar .save-status { color: var(--accent); }
 @media (max-width: 768px) { .save-bar { bottom: calc(var(--bottom-nav-h) + 12px); } }
 
+/* Movers (raket / sänket) */
+.movers-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+@media (max-width: 540px) {
+  .movers-row { grid-template-columns: 1fr; }
+}
+.mover-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+.mover-card .icon { font-size: 28px; line-height: 1; }
+.mover-card .info { flex: 1; min-width: 0; }
+.mover-card .role {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.mover-card .person {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 15px; font-weight: 700; margin-top: 2px;
+  color: var(--text);
+}
+.mover-card .delta {
+  font-size: 13px; font-weight: 600; margin-top: 2px;
+}
+.mover-rocket {
+  background: linear-gradient(180deg, rgba(26,122,60,0.10), rgba(26,122,60,0.04));
+}
+.mover-rocket .role  { color: var(--green); }
+.mover-rocket .delta { color: var(--green); }
+.mover-chute {
+  background: linear-gradient(180deg, rgba(192,57,43,0.10), rgba(192,57,43,0.04));
+}
+.mover-chute .role  { color: var(--red); }
+.mover-chute .delta { color: var(--red); }
+
 /* ══════ LEADERBOARD ══════ */
 .leaderboard-table {
   width: 100%;
@@ -926,6 +967,47 @@ select.form-input {
 .bar-mult-15 .bar-inner { background: #c8960c; }
 .bar-mult-2  .bar-inner { background: #1a7a3c; }
 .bar-mult-3  .bar-inner { background: #8b00d4; }
+/* User's own tip on each match */
+.user-tip-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-bottom: 10px;
+  padding: 4px 10px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12px; font-weight: 600;
+  color: var(--text2);
+}
+.user-tip-chip .label { color: var(--text3); font-weight: 500; }
+.user-tip-chip.no-tip { color: var(--text3); font-style: italic; }
+.user-tip-chip .score { font-size: 13px; color: var(--text); }
+.user-tip-chip .pick-sign {
+  display: inline-block;
+  background: var(--accent, #0078d4); color: #fff;
+  border-radius: 4px; padding: 1px 7px;
+  font-size: 11px; font-weight: 800;
+}
+.consensus-bar-row.user-pick .bar-outer { box-shadow: 0 0 0 2px var(--accent, #0078d4); }
+.consensus-bar-row.user-pick .sign-label { color: var(--accent, #0078d4); }
+/* Played matches accordion */
+.played-toggle {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%;
+  margin: 24px 0 12px;
+  padding: 12px 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px; font-weight: 600; color: var(--text2);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.played-toggle:hover { background: var(--bg3); }
+.played-toggle .chev { display: inline-block; transition: transform 0.2s; }
+.played-toggle.open .chev { transform: rotate(90deg); }
+.played-section { display: none; }
+.played-section.open { display: block; }
+.played-section .match-consensus-card { opacity: 0.85; }
 .dagensm-legend {
   display: flex; gap: 14px; flex-wrap: wrap;
   font-size: 12px; margin-bottom: 16px; align-items: center;
@@ -1804,9 +1886,14 @@ function handleHash() {
     navigate('tippa');
     return;
   }
-  const requiresApproval = ['resultat','dagensm','alla','projektion','sidebets'];
+  const requiresApproval = ['resultat','alla','projektion','sidebets'];
   if (requiresApproval.includes(hash) && !userApproved) {
     showToast('Tillgängligt när ditt tips är godkänt av admin.', 'info');
+    navigate('tippa');
+    return;
+  }
+  if (hash === 'dagensm' && !isTournamentLocked()) {
+    showToast('Tillgängligt när deadline har passerat.', 'info');
     navigate('tippa');
     return;
   }
@@ -1858,7 +1945,8 @@ function updateNav() {
   // Desktop nav
   const links = document.getElementById('navLinks');
   if (loggedIn) {
-    const locked = ['resultat','dagensm','alla','projektion','sidebets'];
+    const locked = ['resultat','alla','projektion','sidebets'];
+    const tournLocked = !isTournamentLocked();
     const items = [
       ['tippa','Tippa'],['resultat','Resultat'],['leaderboard','Topplista'],
       ['dagensm','Dagens matcher'],['alla','Alla svar'],['projektion','Projektion'],
@@ -1866,8 +1954,11 @@ function updateNav() {
     ];
     if (currentUser?.is_admin) items.push(['admin','Admin']);
     links.innerHTML = items.map(([id, label]) => {
-      const isLocked = locked.includes(id) && !userApproved;
-      return `<a href="#${id}" class="${currentView===id?'active':''}${isLocked?' nav-locked':''}" title="${isLocked?'Kräver godkänt tips':''}">${label}</a>`;
+      const approvalLocked = locked.includes(id) && !userApproved;
+      const deadlineLocked = id === 'dagensm' && tournLocked;
+      const isLocked = approvalLocked || deadlineLocked;
+      const title = deadlineLocked ? 'Tillgängligt när deadline har passerat' : (approvalLocked ? 'Kräver godkänt tips' : '');
+      return `<a href="#${id}" class="${currentView===id?'active':''}${isLocked?' nav-locked':''}" title="${title}">${label}</a>`;
     }).join('');
   } else {
     links.innerHTML = '<a href="#login" class="' + (currentView==='login'?'active':'') + '">Logga in</a><a href="#register" class="' + (currentView==='register'?'active':'') + '">Registrera</a>';
@@ -1876,7 +1967,8 @@ function updateNav() {
   // Bottom nav
   const bn = document.getElementById('bottomNav');
   if (loggedIn) {
-    const locked = ['resultat','dagensm','alla','sidebets'];
+    const locked = ['resultat','alla','sidebets'];
+    const tournLocked = !isTournamentLocked();
     const items = [
       ['tippa','Tippa','<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>'],
       ['leaderboard','Tabell','<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 7 17 7"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>'],
@@ -1886,8 +1978,11 @@ function updateNav() {
     ];
     if (currentUser?.is_admin) items.push(['admin','Admin','<circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>']);
     bn.innerHTML = items.map(([id,label,icon]) => {
-      const isLocked = locked.includes(id) && !userApproved;
-      return `<a href="#${id}" class="${currentView===id?'active':''}${isLocked?' nav-locked':''}" title="${isLocked?'Kräver godkänt tips':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${icon}</svg>${label}</a>`;
+      const approvalLocked = locked.includes(id) && !userApproved;
+      const deadlineLocked = id === 'dagensm' && tournLocked;
+      const isLocked = approvalLocked || deadlineLocked;
+      const title = deadlineLocked ? 'Tillgängligt när deadline har passerat' : (approvalLocked ? 'Kräver godkänt tips' : '');
+      return `<a href="#${id}" class="${currentView===id?'active':''}${isLocked?' nav-locked':''}" title="${title}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${icon}</svg>${label}</a>`;
     }).join('');
   } else { bn.innerHTML = ''; }
 }
@@ -1904,6 +1999,13 @@ async function loadTournament() {
 
 async function loadSettings() {
   settings = await api('/api/settings');
+}
+
+function isTournamentLocked() {
+  if (!settings) return false;
+  if (settings.locked === '1') return true;
+  if (!settings.deadline) return false;
+  return new Date(settings.deadline) < new Date();
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -2989,8 +3091,65 @@ function renderLeaderboard(container, data) {
     snap.forEach((p, i) => { prevRanks[p.name] = i + 1; });
   }
 
+  // Compute Raketen (biggest climb) and Sänket (biggest drop). Skip NY entries.
+  let raket = null;
+  let chute = null;
+  if (prevSnapshot) {
+    board.forEach((p, i) => {
+      const prevRank = prevRanks[p.name];
+      if (!prevRank) return;
+      const diff = prevRank - (i + 1);
+      if (diff > 0) {
+        if (!raket || diff > raket.diff || (diff === raket.diff && p.points > raket.points)) {
+          raket = { name: p.name, avatar: p.avatar, diff, points: p.points };
+        }
+      } else if (diff < 0) {
+        const drop = -diff;
+        if (!chute || drop > chute.drop || (drop === chute.drop && p.points < chute.points)) {
+          chute = { name: p.name, avatar: p.avatar, drop, points: p.points };
+        }
+      }
+    });
+  }
+
+  let html = '';
+  if (raket || chute) {
+    html += '<div class="movers-row">';
+    if (raket) {
+      html += `<div class="mover-card mover-rocket">
+        <div class="icon">🚀</div>
+        <div class="info">
+          <div class="role">Raketen</div>
+          <div class="person">${avatarHtml(raket.avatar, raket.name, 'sm')}<span>${escHtml(raket.name)}</span></div>
+          <div class="delta">▲ ${raket.diff} ${raket.diff === 1 ? 'placering' : 'placeringar'} upp</div>
+        </div>
+      </div>`;
+    } else {
+      html += `<div class="mover-card mover-rocket" style="opacity:0.6">
+        <div class="icon">🚀</div>
+        <div class="info"><div class="role">Raketen</div><div class="delta">Ingen har klättrat</div></div>
+      </div>`;
+    }
+    if (chute) {
+      html += `<div class="mover-card mover-chute">
+        <div class="icon">🪂</div>
+        <div class="info">
+          <div class="role">Sänket</div>
+          <div class="person">${avatarHtml(chute.avatar, chute.name, 'sm')}<span>${escHtml(chute.name)}</span></div>
+          <div class="delta">▼ ${chute.drop} ${chute.drop === 1 ? 'placering' : 'placeringar'} ner</div>
+        </div>
+      </div>`;
+    } else {
+      html += `<div class="mover-card mover-chute" style="opacity:0.6">
+        <div class="icon">🪂</div>
+        <div class="info"><div class="role">Sänket</div><div class="delta">Ingen har tappat</div></div>
+      </div>`;
+    }
+    html += '</div>';
+  }
+
   const colCount = prevSnapshot ? 5 : 4;
-  let html = '<div class="card" style="overflow-x:auto"><table class="leaderboard-table"><thead><tr>';
+  html += '<div class="card" style="overflow-x:auto"><table class="leaderboard-table"><thead><tr>';
   html += '<th>#</th><th>Namn</th><th>Poäng</th><th title="Extra poäng från konsensus-multiplikator">Boost</th>';
   if (prevSnapshot) html += '<th>Förändring</th>';
   html += '</tr></thead><tbody>';
@@ -3079,11 +3238,12 @@ async function loadDagensm() {
   const c = document.getElementById('dagensmContent');
   c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Laddar...</div>';
   try {
-    const [tournData, consensusData] = await Promise.all([
+    const [tournData, consensusData, userPreds] = await Promise.all([
       loadTournament(),
-      api('/api/consensus')
+      api('/api/consensus'),
+      api('/api/predictions').catch(() => ({}))
     ]);
-    renderDagensm(c, tournData, consensusData);
+    renderDagensm(c, tournData, consensusData, userPreds);
   } catch (err) {
     c.innerHTML = '<div class="empty-state">' + escHtml(err.message) + '</div>';
   }
@@ -3103,12 +3263,18 @@ function barCls(pct) {
   return 'bar-mult-3';
 }
 
-function renderDagensm(container, tournData, consensusData) {
+function renderDagensm(container, tournData, consensusData, userPreds) {
   const { groupMatches } = tournData;
   const { consensusMap, total } = consensusData;
+  const userMatches = (userPreds && userPreds.matches) || {};
 
-  // Group matches by Swedish date (convert ET → local/Swedish time)
-  const byDate = {};
+  const now = Date.now();
+  const PLAYED_AFTER_MS = 4 * 60 * 60 * 1000; // 4 hours after kickoff
+
+  // Split matches into upcoming and played, then group each by Swedish date.
+  const byDateUpcoming = {};
+  const byDatePlayed = {};
+  let playedCount = 0;
   for (const m of groupMatches) {
     const [num, date, time, home, away, group, channel] = m;
     const dt = parseMatchDate(date, time);
@@ -3116,14 +3282,67 @@ function renderDagensm(container, tournData, consensusData) {
       String(dt.getMonth() + 1).padStart(2, '0') + '-' +
       String(dt.getDate()).padStart(2, '0');
     const swTime = formatTime(dt);
-    if (!byDate[swDate]) byDate[swDate] = [];
-    byDate[swDate].push({ num, date: swDate, time: swTime, home, away, group, channel });
+    const entry = { num, date: swDate, time: swTime, home, away, group, channel };
+    const isPlayed = (dt.getTime() + PLAYED_AFTER_MS) <= now;
+    const bucket = isPlayed ? byDatePlayed : byDateUpcoming;
+    if (!bucket[swDate]) bucket[swDate] = [];
+    bucket[swDate].push(entry);
+    if (isPlayed) playedCount++;
   }
 
   const months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
   function fmtDate(d) {
     const dt = new Date(d + 'T12:00:00');
     return dt.getDate() + ' ' + months[dt.getMonth()];
+  }
+
+  function userPickSign(num, home, away) {
+    const s = userMatches[String(num)];
+    if (!s || s[0] === '' || s[0] == null || s[1] === '' || s[1] == null) return null;
+    const h = Number(s[0]); const a = Number(s[1]);
+    if (Number.isNaN(h) || Number.isNaN(a)) return null;
+    if (h > a) return { sign: '1', score: h + '-' + a };
+    if (h < a) return { sign: '2', score: h + '-' + a };
+    return { sign: 'X', score: h + '-' + a };
+  }
+
+  function renderMatchCard(m) {
+    const mn = String(m.num);
+    const cons = consensusMap[mn];
+    const pick = userPickSign(m.num, m.home, m.away);
+    let s = `<div class="match-consensus-card">
+        <div class="match-header">
+          <span class="teams">${escHtml(m.home)} &ndash; ${escHtml(m.away)}</span>
+          <span class="match-meta">Grupp ${m.group} &middot; ${m.time}${m.channel ? ' &middot; <span class="tv-badge tv-' + m.channel.toLowerCase() + '">' + escHtml(m.channel) + '</span>' : ''}</span>
+        </div>`;
+    if (pick) {
+      s += `<div class="user-tip-chip"><span class="label">Du tippade</span><span class="score">${pick.score}</span><span class="pick-sign">${pick.sign}</span></div>`;
+    } else {
+      s += `<div class="user-tip-chip no-tip">Du har inte tippat den här matchen</div>`;
+    }
+    if (!cons) {
+      s += `<div style="font-size:12px;color:var(--text3)">Inga tips registrerade</div>`;
+    } else {
+      s += `<div class="consensus-bars">`;
+      for (const sign of ['1', 'X', '2']) {
+        const pct = cons[sign] || 0;
+        const pctPct = Math.round(pct * 100);
+        const { text: mText, cls: mCls } = multLabel(pct);
+        const bc = barCls(pct);
+        const barW = Math.max(pct * 100, pct > 0 ? 4 : 0);
+        const rowCls = (pick && pick.sign === sign) ? 'consensus-bar-row user-pick' : 'consensus-bar-row';
+        s += `<div class="${rowCls}">
+          <span class="sign-label">${sign}</span>
+          <div class="bar-outer ${bc}">
+            <div class="bar-inner" style="width:${barW}%">${pctPct > 12 ? pctPct + '%' : ''}</div>
+          </div>
+          <span class="bar-mult ${mCls}">${mText}</span>
+        </div>`;
+      }
+      s += `</div>`;
+    }
+    s += `</div>`;
+    return s;
   }
 
   let html = `
@@ -3140,46 +3359,49 @@ function renderDagensm(container, tournData, consensusData) {
       </div>
     </div>`;
 
-  for (const [date, matches] of Object.entries(byDate)) {
-    html += `<div class="dagensm-date-header">${fmtDate(date)}</div>`;
-    for (const m of matches) {
-      const mn = String(m.num);
-      const cons = consensusMap[mn];
-      html += `<div class="match-consensus-card">
-        <div class="match-header">
-          <span class="teams">${escHtml(m.home)} &ndash; ${escHtml(m.away)}</span>
-          <span class="match-meta">Grupp ${m.group} &middot; ${m.time}${m.channel ? ' &middot; <span class="tv-badge tv-' + m.channel.toLowerCase() + '">' + escHtml(m.channel) + '</span>' : ''}</span>
-        </div>`;
-
-      if (!cons) {
-        html += `<div style="font-size:12px;color:var(--text3)">Inga tips registrerade</div>`;
-      } else {
-        html += `<div class="consensus-bars">`;
-        for (const [sign, label] of [['1', m.home], ['X', 'Oavgjort'], ['2', m.away]]) {
-          const pct = cons[sign] || 0;
-          const pctPct = Math.round(pct * 100);
-          const { text: mText, cls: mCls } = multLabel(pct);
-          const bc = barCls(pct);
-          const barW = Math.max(pct * 100, pct > 0 ? 4 : 0);
-          html += `<div class="consensus-bar-row">
-            <span class="sign-label">${sign}</span>
-            <div class="bar-outer ${bc}">
-              <div class="bar-inner" style="width:${barW}%">${pctPct > 12 ? pctPct + '%' : ''}</div>
-            </div>
-            <span class="bar-mult ${mCls}">${mText}</span>
-          </div>`;
-        }
-        html += `</div>`;
-      }
-      html += `</div>`;
+  const upcomingDates = Object.keys(byDateUpcoming).sort();
+  if (upcomingDates.length === 0) {
+    html += `<div class="empty-state" style="margin-bottom:12px">Inga kommande matcher.</div>`;
+  } else {
+    for (const date of upcomingDates) {
+      html += `<div class="dagensm-date-header">${fmtDate(date)}</div>`;
+      for (const m of byDateUpcoming[date]) html += renderMatchCard(m);
     }
   }
 
-  if (!Object.keys(byDate).length) {
+  if (playedCount > 0) {
+    html += `<button type="button" class="played-toggle" id="playedToggleBtn" onclick="togglePlayedSection()">
+      <span class="chev">▸</span>
+      <span>Visa spelade matcher (${playedCount})</span>
+    </button>`;
+    html += `<div class="played-section" id="playedSection">`;
+    const playedDates = Object.keys(byDatePlayed).sort();
+    for (const date of playedDates) {
+      html += `<div class="dagensm-date-header">${fmtDate(date)}</div>`;
+      for (const m of byDatePlayed[date]) html += renderMatchCard(m);
+    }
+    html += `</div>`;
+  }
+
+  if (upcomingDates.length === 0 && playedCount === 0) {
     html = '<div class="empty-state">Inga matcher hittades.</div>';
   }
 
   container.innerHTML = html;
+}
+
+function togglePlayedSection() {
+  const sec = document.getElementById('playedSection');
+  const btn = document.getElementById('playedToggleBtn');
+  if (!sec || !btn) return;
+  const isOpen = sec.classList.toggle('open');
+  btn.classList.toggle('open', isOpen);
+  const label = btn.querySelector('span:last-child');
+  if (label) {
+    const m = label.textContent.match(/\((\d+)\)/);
+    const count = m ? m[1] : '';
+    label.textContent = (isOpen ? 'Dölj' : 'Visa') + ' spelade matcher' + (count ? ' (' + count + ')' : '');
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════
