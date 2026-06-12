@@ -3360,16 +3360,6 @@ function renderDagensm(container, tournData, consensusData, userPreds) {
       </div>
     </div>`;
 
-  const upcomingDates = Object.keys(byDateUpcoming).sort();
-  if (upcomingDates.length === 0) {
-    html += `<div class="empty-state" style="margin-bottom:12px">Inga kommande matcher.</div>`;
-  } else {
-    for (const date of upcomingDates) {
-      html += `<div class="dagensm-date-header">${fmtDate(date)}</div>`;
-      for (const m of byDateUpcoming[date]) html += renderMatchCard(m);
-    }
-  }
-
   if (playedCount > 0) {
     html += `<button type="button" class="played-toggle" id="playedToggleBtn" onclick="togglePlayedSection()">
       <span class="chev">▸</span>
@@ -3382,6 +3372,16 @@ function renderDagensm(container, tournData, consensusData, userPreds) {
       for (const m of byDatePlayed[date]) html += renderMatchCard(m);
     }
     html += `</div>`;
+  }
+
+  const upcomingDates = Object.keys(byDateUpcoming).sort();
+  if (upcomingDates.length === 0) {
+    html += `<div class="empty-state" style="margin-bottom:12px">Inga kommande matcher.</div>`;
+  } else {
+    for (const date of upcomingDates) {
+      html += `<div class="dagensm-date-header">${fmtDate(date)}</div>`;
+      for (const m of byDateUpcoming[date]) html += renderMatchCard(m);
+    }
   }
 
   if (upcomingDates.length === 0 && playedCount === 0) {
