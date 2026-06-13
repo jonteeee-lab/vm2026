@@ -572,6 +572,24 @@ app.get('/api/leaderboard', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Ledar-historik för Ledartröjan-badgen: vem låg överst vid varje rättningstillfälle.
+// Snapshots skapas auto före varje resultatuppdatering (se PUT /api/admin/results).
+app.get('/api/leaderboard/history', auth, async (req, res) => {
+  try {
+    const rows = await all('SELECT data, created_at FROM leaderboard_snapshots ORDER BY created_at ASC');
+    const history = [];
+    for (const r of rows) {
+      let board = typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
+      if (!Array.isArray(board)) board = (board && board.board) || [];
+      if (board.length === 0) continue;
+      const top = board[0];
+      if (!top || !(top.points > 0)) continue; // hoppa över 0-poängs-lägen (turneringsstart)
+      history.push({ at: r.created_at, leader: top.name, points: top.points });
+    }
+    res.json({ history });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ══════════════════════════════════════════════════════════════════════════════
 // ALL PREDICTIONS (visible after lock)
 // ══════════════════════════════════════════════════════════════════════════════
