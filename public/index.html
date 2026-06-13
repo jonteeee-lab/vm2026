@@ -1300,10 +1300,16 @@ select.form-input {
 .consensus-bars { display: flex; flex-direction: column; gap: 6px; }
 .consensus-bar-row {
   display: grid;
-  grid-template-columns: 30px 1fr 42px;
+  grid-template-columns: 30px 1fr auto 42px;
   align-items: center;
   gap: 8px;
   font-size: 12px;
+}
+.consensus-bar-row.clickable { cursor: pointer; }
+.consensus-bar-row.clickable:hover .bar-outer { box-shadow: 0 0 0 2px var(--accent); }
+.bar-count {
+  font-size: 11px; font-weight: 700; color: var(--text2);
+  white-space: nowrap; text-align: right; min-width: 32px;
 }
 .consensus-bar-row .sign-label {
   font-weight: 700; color: var(--text2); text-align: center;
@@ -1335,6 +1341,12 @@ select.form-input {
 .bar-mult-15 .bar-inner { background: #c8960c; }
 .bar-mult-2  .bar-inner { background: #1a7a3c; }
 .bar-mult-3  .bar-inner { background: #8b00d4; }
+/* Vilka som tippat respektive 1/X/2 (utfälls vid klick) */
+.voters-panel { margin: 4px 0 2px 38px; padding: 8px 10px; background: var(--bg3); border-radius: 8px; border: 1px solid var(--border); }
+.voters-head { font-size: 11px; font-weight: 700; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px; }
+.voters-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.voter-chip { display: inline-flex; align-items: center; gap: 5px; background: var(--bg2); border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px 3px 3px; font-size: 12px; font-weight: 600; }
+.voter-chip .voter-score { color: var(--text3); font-weight: 500; font-variant-numeric: tabular-nums; }
 /* User's own tip on each match */
 .user-tip-chip {
   display: inline-flex; align-items: center; gap: 6px;
@@ -4074,14 +4086,15 @@ async function loadDagensm() {
   const c = document.getElementById('dagensmContent');
   c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Laddar...</div>';
   try {
-    const [tournData, consensusData, userPreds, resultsData] = await Promise.all([
+    const [tournData, consensusData, userPreds, resultsData, allPredsData] = await Promise.all([
       loadTournament(),
       api('/api/consensus'),
       api('/api/predictions').catch(() => ({})),
-      api('/api/results').catch(() => ({}))
+      api('/api/results').catch(() => ({})),
+      api('/api/allPredictions').catch(() => null)
     ]);
     const actualMatches = (resultsData && resultsData.actual && resultsData.actual.matches) || {};
-    renderDagensm(c, tournData, consensusData, userPreds, actualMatches);
+    renderDagensm(c, tournData, consensusData, userPreds, actualMatches, allPredsData);
   } catch (err) {
     c.innerHTML = '<div class="empty-state">' + escHtml(err.message) + '</div>';
   }
@@ -4101,11 +4114,27 @@ function barCls(pct) {
   return 'bar-mult-3';
 }
 
-function renderDagensm(container, tournData, consensusData, userPreds, actualMatches) {
+function renderDagensm(container, tournData, consensusData, userPreds, actualMatches, allPredsData) {
   const { groupMatches } = tournData;
   const { consensusMap, total } = consensusData;
   const userMatches = (userPreds && userPreds.matches) || {};
   const actuals = actualMatches || {};
+  const participants = (allPredsData && allPredsData.participants) || null;
+
+  // Vilka som tippat 1/X/2 för en match — för antal och utfällbar namnlista.
+  // Returnerar null om deltagardata saknas (t.ex. innan deadline).
+  function votersFor(mn) {
+    if (!participants) return null;
+    const out = { '1': [], 'X': [], '2': [] };
+    for (const p of participants) {
+      const s = p.data && p.data.matches && p.data.matches[mn];
+      if (!s || s[0] === '' || s[0] == null || s[1] === '' || s[1] == null) continue;
+      const h = Number(s[0]), a = Number(s[1]);
+      if (Number.isNaN(h) || Number.isNaN(a)) continue;
+      out[h > a ? '1' : (h < a ? '2' : 'X')].push({ name: p.name, avatar: p.avatar, score: h + '-' + a });
+    }
+    return out;
+  }
 
   const now = Date.now();
   const PLAYED_AFTER_MS = 4 * 60 * 60 * 1000; // 4 hours after kickoff
@@ -4183,6 +4212,7 @@ function renderDagensm(container, tournData, consensusData, userPreds, actualMat
     if (!cons) {
       s += `<div style="font-size:12px;color:var(--text3)">Inga tips registrerade</div>`;
     } else {
+      const voters = votersFor(mn);
       s += `<div class="consensus-bars">`;
       for (const sign of ['1', 'X', '2']) {
         const pct = cons[sign] || 0;
@@ -4190,16 +4220,32 @@ function renderDagensm(container, tournData, consensusData, userPreds, actualMat
         const { text: mText, cls: mCls } = multLabel(pct);
         const bc = barCls(pct);
         const barW = Math.max(pct * 100, pct > 0 ? 4 : 0);
+        const list = voters ? voters[sign] : null;
+        const count = list ? list.length : null;
+        const clickable = count > 0;
         const rowCls = (pick && pick.sign === sign) ? 'consensus-bar-row user-pick' : 'consensus-bar-row';
-        s += `<div class="${rowCls}">
+        s += `<div class="${rowCls}${clickable ? ' clickable' : ''}"${clickable ? ` onclick="toggleVoters('${mn}','${sign}')"` : ''}>
           <span class="sign-label">${sign}</span>
           <div class="bar-outer ${bc}">
             <div class="bar-inner" style="width:${barW}%">${pctPct > 12 ? pctPct + '%' : ''}</div>
           </div>
+          <span class="bar-count">${count != null ? count + ' st' : ''}</span>
           <span class="bar-mult ${mCls}">${mText}</span>
         </div>`;
       }
       s += `</div>`;
+      // Utfällbara namnlistor (en per tecken)
+      if (voters) {
+        for (const sign of ['1', 'X', '2']) {
+          const list = voters[sign];
+          if (!list.length) continue;
+          s += `<div class="voters-panel" id="v-${mn}-${sign}" hidden>
+            <div class="voters-head">${sign} &middot; ${list.length} st</div>
+            <div class="voters-list">` +
+            list.map(v => `<span class="voter-chip">${avatarHtml(v.avatar, v.name, 'xs')}<span>${escHtml(v.name)}</span><span class="voter-score">${v.score}</span></span>`).join('') +
+            `</div></div>`;
+        }
+      }
     }
     s += `</div>`;
     return s;
@@ -4248,6 +4294,11 @@ function renderDagensm(container, tournData, consensusData, userPreds, actualMat
   }
 
   container.innerHTML = html;
+}
+
+function toggleVoters(mn, sign) {
+  const el = document.getElementById('v-' + mn + '-' + sign);
+  if (el) el.hidden = !el.hidden;
 }
 
 function togglePlayedSection() {
