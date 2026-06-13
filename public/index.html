@@ -2,7 +2,7 @@
 <html lang="sv">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VM-Bettet 2026</title>
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
@@ -143,15 +143,7 @@ a { color: var(--accent); text-decoration: none; }
   .main-content { padding-bottom: calc(var(--bottom-nav-h) + 16px) !important; }
 }
 
-/* ══════ POÄNGRACET & BADGES ══════ */
-.race-chips { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
-.race-chip {
-  font-size:12px; font-weight:600; padding:6px 14px; border-radius:999px;
-  background:var(--bg3); border:1px solid var(--border); color:var(--text2);
-  cursor:pointer; font-family:inherit; transition:all 0.15s;
-}
-.race-chip.active { background:var(--primary); color:#fff; border-color:var(--primary); }
-.race-hint { font-size:12px; color:var(--text3); margin-top:10px; text-align:center; }
+/* ══════ BADGES ══════ */
 .badge-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(215px,1fr)); gap:12px; }
 .badge-card {
   border:1px solid var(--border); border-radius:10px; padding:14px;
@@ -285,6 +277,12 @@ a { color: var(--accent); text-decoration: none; }
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(200,150,12,0.15);
+}
+/* iOS auto-zoomar in på fält med <16px text vid fokus — sätt 16px på mobil */
+@media (max-width: 600px) {
+  .form-input, .score-input, .margin-input, .admin-score-input,
+  input[type="text"], input[type="email"], input[type="password"],
+  input[type="number"], select, textarea { font-size: 16px; }
 }
 select.form-input {
   cursor: pointer;
@@ -1235,14 +1233,23 @@ select.form-input {
 .leaderboard-table tr.me td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 /* Mobile: inline change next to rank, hide dedicated column */
 .rank-change-mobile { display: none; }
+.lb-card { overflow-x: auto; }
 @media (max-width: 600px) {
-  .leaderboard-table .col-change { display: none; }
+  /* Inget ska kunna scrolla i sidled — göm extrakolumner, kapa långa namn */
+  .lb-card { overflow-x: hidden; padding: 12px; }
+  .leaderboard-table .col-change,
+  .leaderboard-table .col-boost { display: none; }
   .rank-change-mobile {
     display: block;
     font-size: 10px; font-weight: 700;
     margin-top: 2px; line-height: 1;
   }
   .leaderboard-table .rank { vertical-align: top; padding-top: 8px; }
+  .leaderboard-table th, .leaderboard-table td { padding: 9px 6px; }
+  .leaderboard-table .name-cell > div { min-width: 0; max-width: 100%; }
+  .leaderboard-table .name-cell > div > span:not([class]) {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+  }
 }
 .me-badge {
   display: inline-block;
@@ -3533,15 +3540,16 @@ async function loadLeaderboard() {
   const c = document.getElementById('leaderboardContent');
   c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Laddar...</div>';
   try {
-    // Extradata för Poängracet + Badges hämtas parallellt.
+    // Extradata för Badges hämtas parallellt.
     // Failar något (ej godkänd, ej låst) renderas topplistan utan dem.
-    const [data, resultsData, allPredsData, tourn] = await Promise.all([
+    const [data, resultsData, allPredsData, tourn, historyData] = await Promise.all([
       api('/api/leaderboard'),
       userApproved ? api('/api/results').catch(() => null) : Promise.resolve(null),
       userApproved ? api('/api/allPredictions').catch(() => null) : Promise.resolve(null),
-      loadTournament().catch(() => null)
+      loadTournament().catch(() => null),
+      userApproved ? api('/api/leaderboard/history').catch(() => null) : Promise.resolve(null)
     ]);
-    renderLeaderboard(c, data, { resultsData, allPredsData, tourn });
+    renderLeaderboard(c, data, { resultsData, allPredsData, tourn, historyData });
   } catch (err) {
     c.innerHTML = '<div class="empty-state">' + escHtml(err.message) + '</div>';
   }
@@ -3582,17 +3590,17 @@ function renderLeaderboard(container, data, extras = {}) {
     });
   }
 
-  // ── Poängracet + Badges (frontend-replay av turneringen, dag för dag) ──
-  let raceData = null, badgeInfo = null;
+  // ── Badges (räknas ur tips + resultat + snapshot-historik) ──
+  let badgeInfo = null;
   try {
-    const { resultsData, allPredsData, tourn } = extras;
+    const { resultsData, allPredsData, tourn, historyData } = extras;
     if (resultsData && allPredsData && tourn && allPredsData.participants) {
       const consensusMap = resultsData.consensusMap || {};
       const actual = resultsData.actual || {};
-      raceData = buildRaceData(tourn, allPredsData.participants, actual, consensusMap, board);
-      badgeInfo = computeBadges(allPredsData.participants, actual, consensusMap, board, raket, raceData, tourn);
+      const leaderHistory = (historyData && historyData.history) || [];
+      badgeInfo = computeBadges(allPredsData.participants, actual, consensusMap, board, raket, tourn, leaderHistory);
     }
-  } catch (e) { console.error('race/badges:', e); raceData = null; badgeInfo = null; }
+  } catch (e) { console.error('badges:', e); badgeInfo = null; }
   const badgesByName = (badgeInfo && badgeInfo.byName) || {};
 
   // Prize pot: 300 kr per approved participant, split 50/25/15/10 for top 4
@@ -3656,8 +3664,8 @@ function renderLeaderboard(container, data, extras = {}) {
   }
 
   const colCount = prevSnapshot ? 5 : 4;
-  html += '<div class="card" style="overflow-x:auto"><table class="leaderboard-table"><thead><tr>';
-  html += '<th>#</th><th>Namn</th><th>Poäng</th><th title="Extra poäng från konsensus-multiplikator">Boost</th>';
+  html += '<div class="card lb-card"><table class="leaderboard-table"><thead><tr>';
+  html += '<th>#</th><th>Namn</th><th>Poäng</th><th class="col-boost" title="Extra poäng från konsensus-multiplikator">Boost</th>';
   if (prevSnapshot) html += '<th class="col-change">Förändring</th>';
   html += '</tr></thead><tbody>';
 
@@ -3695,7 +3703,7 @@ function renderLeaderboard(container, data, extras = {}) {
         ${prizeInline}
       </td>
       <td class="points-cell">${p.points}</td>
-      <td class="boost-cell">${boostHtml}</td>`;
+      <td class="boost-cell col-boost">${boostHtml}</td>`;
     if (prevSnapshot) html += `<td class="col-change">${changeHtml}</td>`;
     html += '</tr>';
 
@@ -3731,22 +3739,6 @@ function renderLeaderboard(container, data, extras = {}) {
 
   html += '</tbody></table></div>';
 
-  // ── Poängracet ──
-  if (raceData && raceData.days.length > 0) {
-    raceState = raceData;
-    html += `<div class="card">
-      <h2>📈 Poängracet</h2>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Poängutveckling dag för dag — vem rycker, vem tappar?</p>
-      <div class="race-chips">
-        <button class="race-chip${raceFilter==='alla'?' active':''}" onclick="raceSetFilter('alla')">Alla</button>
-        <button class="race-chip${raceFilter==='top5'?' active':''}" onclick="raceSetFilter('top5')">Topp 5</button>
-        <button class="race-chip${raceFilter==='rivaler'?' active':''}" onclick="raceSetFilter('rivaler')">Jag + rivaler</button>
-      </div>
-      <div style="overflow-x:auto"><div style="min-width:560px" id="raceSvgBox"></div></div>
-      <div class="race-hint">Tryck på en linje för att lyfta fram en spelare</div>
-    </div>`;
-  }
-
   // ── Badge-galleri ──
   if (badgeInfo && badgeInfo.cards.length > 0) {
     html += `<div class="card">
@@ -3771,7 +3763,6 @@ function renderLeaderboard(container, data, extras = {}) {
   } else {
     container.innerHTML = html;
   }
-  if (raceData && raceData.days.length > 0) renderRaceChart();
 }
 
 function toggleBreakdown(row) {
@@ -3783,83 +3774,13 @@ function toggleBreakdown(row) {
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// POÄNGRACET & BADGES (frontend-replay, ingen server-ändring)
+// BADGES
 // ══════════════════════════════════════════════════════════════════════
 
-let raceState = null;       // { days: ['2026-06-11',...], series: [{name, avatar, pts[], me}] }
-let raceFilter = 'alla';
-let raceHighlight = null;
-
-// Speglar serverns consensusMult — måste hållas i synk med server.js
-function consensusMultLocal(pct) {
-  if (pct > 0.50) return 1.0;
-  if (pct > 0.25) return 1.5;
-  if (pct > 0.10) return 2.0;
-  return 3.0;
-}
-function swDateOf(dt) {
-  return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
-}
 function hasVal(arr) { return arr && arr[0] !== '' && arr[0] != null && arr[1] !== '' && arr[1] != null; }
 function raceSign(h, a) { return h > a ? '1' : (h < a ? '2' : 'X'); }
 
-// Spelar upp turneringen dag för dag: matchpoäng (1X2 × konsensus-mult + marginal)
-// + grupplaceringar (på gruppens sista matchdag). Sista dagen ersätts med
-// officiella leaderboard-poängen så ev. slutspels-/specialpoäng alltid stämmer.
-function buildRaceData(tourn, participants, actual, consensusMap, board) {
-  const now = Date.now();
-  const ms = tourn.groupMatches.map(m => {
-    const dt = parseMatchDate(m[1], m[2]);
-    return { num: String(m[0]), dt, group: m[5], swDate: swDateOf(dt) };
-  });
-  const played = ms.filter(m => m.dt.getTime() <= now);
-  const days = [...new Set(played.map(m => m.swDate))].sort();
-  if (days.length === 0) return null;
-
-  const groupEnd = {};
-  for (const m of ms) { if (!groupEnd[m.group] || m.swDate > groupEnd[m.group]) groupEnd[m.group] = m.swDate; }
-
-  const actualMatches = actual.matches || {};
-  const actualPlacements = actual.placements || {};
-  const boardByName = {};
-  board.forEach(p => { boardByName[p.name] = p.points; });
-
-  const series = [];
-  for (const part of participants) {
-    if (!(part.name in boardByName)) continue; // bara godkända deltagare
-    const predM = (part.data && part.data.matches) || {};
-    const predPl = (part.data && part.data.placements) || {};
-    const deltaByDay = {};
-    for (const m of played) {
-      const a = actualMatches[m.num], p = predM[m.num];
-      if (!hasVal(a) || !hasVal(p)) continue;
-      const ah = +a[0], aa = +a[1], ph = +p[0], pa = +p[1];
-      const aSign = raceSign(ah, aa), pSign = raceSign(ph, pa);
-      if (pSign !== aSign) continue;
-      const pct = consensusMap[m.num] ? consensusMap[m.num][aSign] : null;
-      let pts = 3 * (pct == null ? 1 : consensusMultLocal(pct));
-      if (pSign !== 'X' && Math.abs(ph - pa) === Math.abs(ah - aa)) pts += 2;
-      deltaByDay[m.swDate] = (deltaByDay[m.swDate] || 0) + pts;
-    }
-    for (const g of Object.keys(actualPlacements)) {
-      const aArr = actualPlacements[g], pArr = predPl[g];
-      if (!aArr || aArr.length < 4 || !pArr) continue;
-      let c = 0;
-      for (let i = 0; i < 4; i++) if (pArr[i] && aArr[i] && pArr[i] === aArr[i]) c++;
-      const tier = [0,5,10,0,20][c] || 0;
-      const d = groupEnd[g];
-      if (tier && d && days.includes(d)) deltaByDay[d] = (deltaByDay[d] || 0) + tier;
-    }
-    let cum = 0;
-    const pts = days.map(d => { cum += (deltaByDay[d] || 0); return Math.round(cum * 10) / 10; });
-    pts[pts.length - 1] = boardByName[part.name]; // officiell sanning idag
-    series.push({ name: part.name, avatar: part.avatar, pts, me: !!(currentUser && currentUser.name === part.name) });
-  }
-  series.sort((a, b) => b.pts[b.pts.length-1] - a.pts[a.pts.length-1]);
-  return { days, series };
-}
-
-function computeBadges(participants, actual, consensusMap, board, raket, raceData, tourn) {
+function computeBadges(participants, actual, consensusMap, board, raket, tourn, leaderHistory) {
   const actualMatches = actual.matches || {};
   const now = Date.now();
   const playedOrdered = tourn.groupMatches
@@ -3904,13 +3825,15 @@ function computeBadges(participants, actual, consensusMap, board, raket, raceDat
       flockPct: flockTot > 0 ? flockHit / flockTot : 0 });
   }
 
-  // Ledartröjan: dagar i ledning från replay (delad ledning räknas för alla)
+  // Ledartröjan: räknas från snapshot-historiken — antal rättningstillfällen i topp.
+  // Varje snapshot = leaderboarden före en resultatuppdatering. Nuvarande ställning
+  // läggs till som senaste datapunkt (den är inte snapshotad än).
   const leadDays = {};
-  if (raceData) {
-    raceData.days.forEach((d, i) => {
-      const max = Math.max(...raceData.series.map(s => s.pts[i]));
-      if (max > 0) raceData.series.forEach(s => { if (s.pts[i] === max) leadDays[s.name] = (leadDays[s.name] || 0) + 1; });
-    });
+  for (const h of (leaderHistory || [])) {
+    if (h && h.leader) leadDays[h.leader] = (leadDays[h.leader] || 0) + 1;
+  }
+  if (board.length > 0 && board[0].points > 0) {
+    leadDays[board[0].name] = (leadDays[board[0].name] || 0) + 1;
   }
 
   function topBy(arr, valFn, min = 1) {
@@ -3938,7 +3861,7 @@ function computeBadges(participants, actual, consensusMap, board, raket, raceDat
   else cards.push({ emoji: '🚀', title: 'Raketen', desc: 'Störst klättring senaste dygnet', holders: [], stat: '', shame: false });
   const leadArr = Object.keys(leadDays).map(n => ({ name: n, avatar: (stats.find(s => s.name === n) || {}).avatar, days: leadDays[n] }));
   const tLead = topBy(leadArr, s => s.days);
-  award('👑', 'Ledartröjan', 'Flest dagar i ledning', tLead, tLead.val ? tLead.val + (tLead.val === 1 ? ' dag' : ' dagar') : '');
+  award('👑', 'Ledartröjan', 'Flest gånger överst när det rättats', tLead, tLead.val ? tLead.val + (tLead.val === 1 ? ' gång' : ' gånger') : '');
   const tFlock = topBy(stats, s => s.flockPct, 0.0001);
   award('🐑', 'Flockdjuret', 'Tippar mest som alla andra', tFlock, tFlock.val ? Math.round(tFlock.val * 100) + '% med strömmen' : '', true);
   const tStolpe = topBy(stats, s => s.stolpe);
@@ -3949,92 +3872,6 @@ function computeBadges(participants, actual, consensusMap, board, raket, raceDat
   }
 
   return { cards, byName };
-}
-
-function raceSetFilter(f) {
-  raceFilter = f;
-  document.querySelectorAll('.race-chip').forEach(ch => ch.classList.remove('active'));
-  const map = { alla: 0, top5: 1, rivaler: 2 };
-  const chips = document.querySelectorAll('.race-chip');
-  if (chips[map[f]]) chips[map[f]].classList.add('active');
-  renderRaceChart();
-}
-function raceToggleByIdx(i) {
-  const s = raceState && raceState.series[i];
-  if (!s) return;
-  raceHighlight = (raceHighlight === s.name) ? null : s.name;
-  renderRaceChart();
-}
-
-function renderRaceChart() {
-  const box = document.getElementById('raceSvgBox');
-  if (!box || !raceState) return;
-  const { days, series } = raceState;
-  const myIdx = series.findIndex(s => s.me);
-
-  let shown = series;
-  if (raceFilter === 'top5') {
-    shown = series.slice(0, 5);
-    if (myIdx >= 5) shown = shown.concat([series[myIdx]]);
-  } else if (raceFilter === 'rivaler' && myIdx >= 0) {
-    const lo = Math.max(0, Math.min(myIdx - 2, series.length - 5));
-    shown = series.slice(lo, lo + 5);
-  }
-
-  const W = 720, H = 360, padL = 40, padR = 130, padT = 16, padB = 34;
-  const maxVal = Math.max(10, ...shown.map(s => Math.max(...s.pts)));
-  const maxY = Math.ceil(maxVal * 1.08 / 10) * 10;
-  const step = Math.max(5, Math.ceil(maxY / 6 / 5) * 5);
-  const denom = Math.max(1, days.length - 1);
-  const x = i => padL + i * ((W - padL - padR) / denom);
-  const y = v => H - padB - (v / maxY) * (H - padT - padB);
-  const months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
-  const dayLbl = d => (+d.slice(8)) + ' ' + months[+d.slice(5,7) - 1];
-
-  let s = '';
-  for (let v = 0; v <= maxY; v += step) {
-    s += `<line x1="${padL}" y1="${y(v)}" x2="${W-padR}" y2="${y(v)}" style="stroke:var(--border)" stroke-width="1"/>`;
-    s += `<text x="${padL-8}" y="${y(v)+4}" text-anchor="end" font-size="10" style="fill:var(--text3)">${v}</text>`;
-  }
-  const lblEvery = Math.max(1, Math.ceil(days.length / 8));
-  days.forEach((d, i) => {
-    if (i % lblEvery === 0 || i === days.length - 1)
-      s += `<text x="${x(i)}" y="${H-10}" text-anchor="middle" font-size="10" style="fill:var(--text3)">${dayLbl(d)}</text>`;
-  });
-
-  // Etikettpositioner (anti-kollision, min 15px lucka).
-  // Mellantoner som funkar i både ljust och mörkt tema.
-  const palette = ['#4a6184','#5b6f8e','#7a8ca6','#8c9cb2','#9caabe','#aab6c8','#b8c2d2','#c5cedd'];
-  const drawn = shown.map(p => {
-    const seriesIdx = series.indexOf(p);
-    const isHi = raceHighlight === p.name;
-    return { p, seriesIdx, isHi,
-      color: p.me ? '#c8960c' : (isHi ? 'var(--text)' : palette[Math.min(seriesIdx, palette.length-1)]),
-      endY: y(p.pts[p.pts.length-1]) };
-  }).sort((a, b) => a.endY - b.endY);
-  let prevY = -Infinity;
-  for (const d of drawn) {
-    d.lblY = Math.max(d.endY, prevY + 15);
-    prevY = d.lblY;
-  }
-
-  // Linjer: omarkerade först, "jag"/highlight överst
-  const ordered = [...drawn].sort((a, b) => (a.p.me || a.isHi ? 1 : 0) - (b.p.me || b.isHi ? 1 : 0));
-  for (const d of ordered) {
-    const p = d.p;
-    const thick = p.me || d.isHi;
-    const path = p.pts.map((v, i) => (i ? 'L' : 'M') + x(i) + ' ' + y(v)).join(' ');
-    const initials = escHtml(p.name.slice(0,2).toUpperCase());
-    const lx = x(days.length-1) + 10;
-    s += `<g style="cursor:pointer" onclick="raceToggleByIdx(${d.seriesIdx})">`;
-    s += `<path d="${path}" fill="none" style="stroke:${d.color}" stroke-width="${thick?3.5:1.8}" stroke-linecap="round" ${thick?'':'opacity="0.8"'}/>`;
-    p.pts.forEach((v, i) => { s += `<circle cx="${x(i)}" cy="${y(v)}" r="${thick?4:2.5}" style="fill:${d.color}"/>`; });
-    s += `<circle cx="${lx+9}" cy="${d.lblY}" r="9" fill="${p.me?'#c8960c':'#1a3460'}"/>`;
-    s += `<text x="${lx+9}" y="${d.lblY+3.5}" text-anchor="middle" font-size="8" font-weight="700" fill="#fff">${initials}</text>`;
-    s += `<text x="${lx+24}" y="${d.lblY+3.5}" font-size="11" font-weight="${thick?'800':'600'}" style="fill:${p.me?'#c8960c':'var(--text2)'}">${escHtml(p.name)} ${p.pts[p.pts.length-1]}p</text>`;
-    s += `</g>`;
-  }
-  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%">${s}</svg>`;
 }
 
 // ══════════════════════════════════════════════════════════════════════
