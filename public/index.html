@@ -1768,7 +1768,7 @@ select.form-input {
       <div class="card">
         <h3>Hur fungerar det?</h3>
         <ul>
-          <li>Tippa alla 72 gruppspelsmatcher (1X2 + exakt resultat)</li>
+          <li>Tippa alla 72 gruppspelsmatcher (1X2 + målskillnad)</li>
           <li>Placera lagen 1-4 i varje grupp</li>
           <li>Fyll i hela slutspelsträdet fram till final</li>
           <li>Tippa skyttekung, första mål, första röda kort m.m.</li>
@@ -3872,7 +3872,7 @@ function computeBadges(participants, actual, consensusMap, board, raket, tourn, 
   }
 
   const tExact  = topBy(stats, s => s.exact);
-  award('🎯', 'Exakt-kungen', 'Flest exakta resultat', tExact, tExact.val ? tExact.val + ' exakta' : '');
+  award('🎯', 'Marginalkungen', 'Flest rätt målskillnad', tExact, tExact.val ? tExact.val + ' rätt skillnad' : '');
   const tSkrall = topBy(stats, s => s.skrall);
   award('🃏', 'Skrällmästaren', 'Flest rätt när ≤10% tippade likadant', tSkrall, tSkrall.val ? tSkrall.val + (tSkrall.val === 1 ? ' skräll' : ' skrällar') : '');
   const tStreak = topBy(stats, s => s.streak, 2);
@@ -3885,7 +3885,7 @@ function computeBadges(participants, actual, consensusMap, board, raket, tourn, 
   const tFlock = topBy(stats, s => s.flockPct, 0.0001);
   award('🐑', 'Flockdjuret', 'Tippar mest som alla andra', tFlock, tFlock.val ? Math.round(tFlock.val * 100) + '% med strömmen' : '', true);
   const tStolpe = topBy(stats, s => s.stolpe);
-  award('🧱', 'Stolpe ut', 'Flest rätt 1X2 utan exakt resultat', tStolpe, tStolpe.val ? tStolpe.val + ' ggr nära' : '', true);
+  award('🧱', 'Stolpe ut', 'Flest rätt 1X2 utan rätt målskillnad', tStolpe, tStolpe.val ? tStolpe.val + ' ggr nära' : '', true);
   if (board.length >= 2) {
     const last = board[board.length - 1];
     award('💀', 'Rödlyktan', 'Sist i tabellen — kämpa dig ur den', [{ name: last.name, avatar: last.avatar }], 'plats ' + board.length + ' av ' + board.length, true);
@@ -3996,7 +3996,7 @@ function renderHem(container, tournData, lbData, resultsData) {
     if (!m.my || m.my[0] === '' || m.my[0] == null) return { cls: 'pending', txt: 'EJ TIPPAT' };
     const ah = Number(m.actual[0]), aa = Number(m.actual[1]);
     const ph = Number(m.my[0]), pa = Number(m.my[1]);
-    if (signOf(ph, pa) === signOf(ah, aa) && ah !== aa && Math.abs(ph - pa) === Math.abs(ah - aa)) return { cls: 'exact', txt: 'EXAKT' };
+    if (signOf(ph, pa) === signOf(ah, aa) && ah !== aa && Math.abs(ph - pa) === Math.abs(ah - aa)) return { cls: 'exact', txt: 'RÄTT SKILLNAD' };
     if (signOf(ph, pa) === signOf(ah, aa)) return { cls: 'sign', txt: 'RÄTT 1X2' };
     return { cls: 'wrong', txt: 'FEL' };
   }
@@ -4177,9 +4177,10 @@ function renderDagensm(container, tournData, consensusData, userPreds, actualMat
     if (!s || s[0] === '' || s[0] == null || s[1] === '' || s[1] == null) return null;
     const h = Number(s[0]); const a = Number(s[1]);
     if (Number.isNaN(h) || Number.isNaN(a)) return null;
-    if (h > a) return { sign: '1', score: h + '-' + a };
-    if (h < a) return { sign: '2', score: h + '-' + a };
-    return { sign: 'X', score: h + '-' + a };
+    const margin = Math.abs(h - a);
+    if (h > a) return { sign: '1', score: h + '-' + a, margin };
+    if (h < a) return { sign: '2', score: h + '-' + a, margin };
+    return { sign: 'X', score: h + '-' + a, margin };
   }
 
   function renderMatchCard(m) {
@@ -4188,12 +4189,13 @@ function renderDagensm(container, tournData, consensusData, userPreds, actualMat
     const pick = userPickSign(m.num, m.home, m.away);
     // Actual result if entered
     const a = actuals[mn];
-    let actualScore = null, actualSign = null;
+    let actualScore = null, actualSign = null, actualMargin = null;
     if (a && a[0] !== '' && a[0] != null && a[1] !== '' && a[1] != null) {
       const ah = Number(a[0]), aa = Number(a[1]);
       if (!Number.isNaN(ah) && !Number.isNaN(aa)) {
         actualScore = ah + '-' + aa;
         actualSign = ah > aa ? '1' : (ah < aa ? '2' : 'X');
+        actualMargin = Math.abs(ah - aa);
       }
     }
     let s = `<div class="match-consensus-card">
@@ -4202,11 +4204,11 @@ function renderDagensm(container, tournData, consensusData, userPreds, actualMat
           <span class="match-meta">Grupp ${m.group} &middot; ${m.time}${m.channel ? ' &middot; <span class="tv-badge tv-' + m.channel.toLowerCase() + '">' + escHtml(m.channel) + '</span>' : ''}</span>
         </div>`;
     if (actualScore) {
-      const exact = pick && pick.score === actualScore;
+      const exact = pick && actualSign !== 'X' && pick.sign === actualSign && pick.margin === actualMargin;
       const signRight = pick && pick.sign === actualSign;
       let badge = '';
       if (pick) {
-        if (exact) badge = '<span class="result-badge exact">EXAKT</span>';
+        if (exact) badge = '<span class="result-badge exact">RÄTT SKILLNAD</span>';
         else if (signRight) badge = '<span class="result-badge sign">RÄTT 1X2</span>';
         else badge = '<span class="result-badge wrong">FEL</span>';
       }
