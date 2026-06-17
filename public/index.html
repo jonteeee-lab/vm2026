@@ -3817,7 +3817,9 @@ function computeBadges(participants, actual, consensusMap, board, raket, tourn, 
       if (!hasVal(p)) continue;
       const ah = +a[0], aa = +a[1], ph = +p[0], pa = +p[1];
       const aSign = raceSign(ah, aa), pSign = raceSign(ph, pa);
-      const isExact = (ph === ah && pa === aa);
+      // "Exakt" = rätt målskillnad (som poängmotorn belönar), inte rätt exakt resultat.
+      // Oavgjort räknas aldrig — där finns ingen målskillnad att sätta.
+      const isExact = (pSign === aSign && aSign !== 'X' && Math.abs(ph - pa) === Math.abs(ah - aa));
       if (isExact) exact++;
       if (pSign === aSign && !isExact) stolpe++;
       if (pSign === aSign && consensusMap[m.num] && consensusMap[m.num][aSign] <= 0.10) skrall++;
@@ -3985,7 +3987,7 @@ function renderHem(container, tournData, lbData, resultsData) {
     const pSign = signOf(ph, pa);
     if (pSign !== aSign) return 0;
     let pts = 3;
-    if ((ph - pa) === (ah - aa)) pts += 2;
+    if (aSign !== 'X' && (ph - pa) === (ah - aa)) pts += 2;
     return pts;
   }
 
@@ -3994,7 +3996,7 @@ function renderHem(container, tournData, lbData, resultsData) {
     if (!m.my || m.my[0] === '' || m.my[0] == null) return { cls: 'pending', txt: 'EJ TIPPAT' };
     const ah = Number(m.actual[0]), aa = Number(m.actual[1]);
     const ph = Number(m.my[0]), pa = Number(m.my[1]);
-    if (ph === ah && pa === aa) return { cls: 'exact', txt: 'EXAKT' };
+    if (signOf(ph, pa) === signOf(ah, aa) && ah !== aa && Math.abs(ph - pa) === Math.abs(ah - aa)) return { cls: 'exact', txt: 'EXAKT' };
     if (signOf(ph, pa) === signOf(ah, aa)) return { cls: 'sign', txt: 'RÄTT 1X2' };
     return { cls: 'wrong', txt: 'FEL' };
   }
