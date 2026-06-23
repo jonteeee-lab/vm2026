@@ -1421,7 +1421,12 @@ select.form-input {
 .played-toggle.open .chev { transform: rotate(90deg); }
 .played-section { display: none; }
 .played-section.open { display: block; }
-.played-section .match-consensus-card { opacity: 0.85; }
+.played-section .match-consensus-card {
+  background: var(--bg3);
+  border-color: transparent;
+  opacity: 0.72;
+}
+.played-section .dagensm-date-header { opacity: 0.72; }
 .dagensm-legend {
   display: flex; gap: 14px; flex-wrap: wrap;
   font-size: 12px; margin-bottom: 16px; align-items: center;
