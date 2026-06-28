@@ -4500,8 +4500,9 @@ function togglePlayedSection() {
 // Rendering UI is straight from the mockup (classes prefixed ko-).
 // Data sources swapped to the real app: deltagarnas brackets, flag(), actual.
 // Pure logic functions take data as arguments and touch NO DOM, so they can be
-// extracted and unit-tested: koClassify, koMatchModel, koNodeTeams, koProjWinner,
-// koWinnerOrProj, koDeeperFor, koActualWinner, koReachKvart/Semi/Final, koTierFor.
+// extracted and unit-tested: koClassify, koMatchModel, koNodeTeams, koWinnerOrNull,
+// koDeeperFor, koActualWinner, koReachKvart/Semi/Final, koTierFor,
+// koIsDetermined, koRoundDetermined, koVisibleRounds.
 // ══════════════════════════════════════════════════════════════════════
 
 /* ── Embedded slutspelsdata (frontend är single-file; finns ej i backend) ── */
@@ -4736,11 +4737,10 @@ function koBuildContext(allPredsData) {
 }
 
 /* ══════════ RENDER: TRÄD (desktop) ══════════ */
-function koTeamRow(ctx, team, { winner, loser, proj, mine } = {}) {
+function koTeamRow(ctx, team, { winner, loser, mine } = {}) {
   let cls = 'ko-team-row';
   if (winner) cls += ' ko-winner';
   if (loser) cls += ' ko-loser';
-  if (proj) cls += ' ko-proj';
   if (mine) cls += ' ko-mine';
   const nm = team == null ? '?' : escHtml(team);
   return `<div class="${cls}"><span class="ko-flag">${team == null ? '⚪' : flag(team)}</span><span class="ko-nm">${nm}</span>${mine ? '<span class="ko-minetag">DU</span>' : ''}</div>`;
@@ -4920,7 +4920,6 @@ function koCardHTML(ctx, m) {
   let stateHTML;
   if (m.state === 'played' && m.actual) { stateHTML = `<div class="ko-koc-state ko-played">✓ Spelad · ${escHtml(m.actual.w)} gick vidare</div>`; }
   else if (m.state === 'today') { stateHTML = `<div class="ko-koc-state ko-today">● Spelas idag</div>`; }
-  else if (m.state === 'projected') { stateHTML = `<div class="ko-koc-state ko-upcoming">Projicerade lag — matar-matcherna inte spelade än</div>`; }
   else { stateHTML = `<div class="ko-koc-state ko-upcoming">Kommande</div>`; }
 
   function outcomeBlock(o) {
