@@ -1717,6 +1717,148 @@ select.form-input {
 .profile-hint { font-size: 12px; color: var(--text3); text-align: center; }
 
 .leaderboard-table .name-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+
+/* ════════════════════════════════════════════════════════════════
+   SLUTSPEL (knockout) — ported from slutspel_mockup.html.
+   All classes prefixed ko- to avoid collision with existing styles.
+   ════════════════════════════════════════════════════════════════ */
+.ko-intro { color: var(--text2); font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
+.ko-note-banner { background: var(--gold-bg); border: 1px solid var(--accent-light); color: #6b5208; font-size: 12.5px; padding: 9px 13px; border-radius: 10px; margin: 0 0 14px; line-height: 1.5; }
+.ko-note-banner strong { color: #4a3905; }
+
+/* Bracket tree */
+.ko-bracket-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--card-shadow); padding: 16px; overflow-x: auto; }
+.ko-bracket { position: relative; min-width: 1120px; }
+.ko-bracket-svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.ko-bracket-svg path { fill: none; stroke: var(--border); stroke-width: 2; }
+.ko-bracket-cols { position: relative; z-index: 1; display: flex; }
+.ko-bcol { flex: 1; display: flex; flex-direction: column; justify-content: space-around; min-width: 178px; }
+.ko-bcol-head { text-align: center; font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
+.ko-bcol-head .ko-pts { display: block; color: var(--accent); font-size: 10.5px; margin-top: 2px; letter-spacing: .2px; }
+.ko-match-node { background: var(--bg2); border: 1.5px solid var(--border); border-radius: 9px; margin: 7px 9px; cursor: pointer; overflow: hidden; transition: all .14s; box-shadow: 0 1px 4px rgba(12,31,63,0.05); }
+.ko-match-node:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(12,31,63,0.13); }
+.ko-match-node.ko-today { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,150,12,0.16); }
+.ko-match-node.ko-projected { border-style: dashed; opacity: .92; }
+.ko-team-row { display: flex; align-items: center; gap: 7px; padding: 7px 9px; font-size: 13px; font-weight: 600; position: relative; }
+.ko-team-row + .ko-team-row { border-top: 1px solid var(--border); }
+.ko-team-row .ko-flag { font-size: 15px; line-height: 1; }
+.ko-team-row .ko-nm { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ko-team-row.ko-winner { background: var(--green-bg); color: var(--green); font-weight: 800; }
+.ko-team-row.ko-loser { color: var(--text3); text-decoration: line-through; opacity: .65; }
+.ko-team-row.ko-proj .ko-nm { font-style: italic; color: var(--text2); }
+.ko-team-row.ko-mine::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent); }
+.ko-team-row .ko-minetag { font-size: 9px; font-weight: 800; color: var(--accent); letter-spacing: .4px; }
+.ko-node-foot { font-size: 10px; color: var(--text3); padding: 3px 9px 6px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.ko-node-foot .ko-state-today { color: var(--accent); font-weight: 800; }
+.ko-node-foot .ko-state-played { color: var(--green); font-weight: 800; }
+.ko-mini-cons { display: flex; height: 5px; border-radius: 3px; overflow: hidden; flex: 1; background: var(--bg3); max-width: 70px; }
+.ko-mini-cons i { display: block; height: 100%; }
+.ko-mini-cons i.ko-a { background: var(--primary-light); }
+.ko-mini-cons i.ko-b { background: var(--accent-light); }
+.ko-bronze-box { margin: 18px 9px 4px; padding: 10px 12px; background: linear-gradient(180deg,#fff,#fdf8ec); border: 1.5px solid var(--accent-light); border-radius: 9px; cursor: pointer; transition: all .14s; }
+.ko-bronze-box:hover { box-shadow: 0 4px 14px rgba(12,31,63,0.13); transform: translateY(-1px); }
+.ko-bronze-box .ko-bt { font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+
+/* Mobile round-pager */
+.ko-pager-narrow { display: none; }
+.ko-pg-pills { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 10px; -webkit-overflow-scrolling: touch; }
+.ko-pg-pill { flex: 0 0 auto; border: 1px solid var(--border); background: var(--bg2); font: inherit; font-size: 12.5px; font-weight: 700; color: var(--text2); padding: 8px 14px; border-radius: 20px; cursor: pointer; white-space: nowrap; }
+.ko-pg-pill.ko-active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.ko-pg-filter { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; font-size: 13px; font-weight: 600; color: var(--text2); cursor: pointer; }
+.ko-pg-switch { position: relative; width: 40px; height: 23px; border-radius: 14px; background: var(--border); transition: .15s; flex-shrink: 0; }
+.ko-pg-switch.ko-on { background: var(--accent); }
+.ko-pg-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 19px; height: 19px; border-radius: 50%; background: #fff; transition: .15s; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+.ko-pg-switch.ko-on::after { left: 19px; }
+.ko-pg-list { display: grid; gap: 10px; }
+.ko-pg-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--card-shadow); padding: 12px; cursor: pointer; }
+.ko-pg-card:active { transform: scale(.99); }
+.ko-pg-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+.ko-pg-round { font-size: 10.5px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .3px; }
+.ko-pg-badge { font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 12px; background: var(--bg3); color: var(--text2); white-space: nowrap; }
+.ko-pg-badge.ko-played { background: var(--green-bg); color: var(--green); }
+.ko-pg-badge.ko-today { background: var(--gold-bg); color: #6b5208; }
+.ko-pg-badge.ko-proj { background: var(--bg3); color: var(--text3); font-style: italic; }
+.ko-pg-sides { display: flex; align-items: center; gap: 8px; }
+.ko-pg-side { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 6px; border-radius: 10px; background: var(--bg3); text-align: center; position: relative; }
+.ko-pg-side.ko-win { background: var(--green-bg); }
+.ko-pg-side.ko-lose { opacity: .45; }
+.ko-pg-side.ko-mine { box-shadow: inset 0 0 0 2px var(--accent); }
+.ko-pg-flag { font-size: 23px; line-height: 1; }
+.ko-pg-team { font-size: 12.5px; font-weight: 800; line-height: 1.1; }
+.ko-pg-cnt { font-size: 11px; font-weight: 700; color: var(--green); }
+.ko-pg-cnt.ko-zero { color: var(--text3); }
+.ko-pg-vs { font-size: 10px; color: var(--text3); font-weight: 700; flex: 0 0 auto; }
+.ko-pg-mine { margin-top: 10px; font-size: 12px; font-weight: 700; padding: 8px 10px; border-radius: 8px; background: var(--gold-bg); color: #6b5208; text-align: center; }
+.ko-pg-mine.ko-good { background: var(--green-bg); color: var(--green); }
+.ko-pg-mine.ko-bad { background: var(--red-bg); color: var(--red); }
+.ko-pg-mine.ko-none { background: var(--bg3); color: var(--text3); font-weight: 600; }
+.ko-pg-empty { text-align: center; color: var(--text3); font-size: 13px; padding: 30px 10px; }
+.ko-pg-hint { font-size: 11.5px; color: var(--text3); margin: 4px 2px 12px; line-height: 1.5; }
+.ko-pg-guar { margin-top: 10px; font-size: 11.5px; font-weight: 700; color: #6b5208; background: var(--gold-bg); padding: 6px 10px; border-radius: 8px; text-align: center; }
+
+@media (max-width: 760px) {
+  .ko-tree-wide { display: none; }
+  .ko-pager-narrow { display: block; }
+}
+
+/* Match card (drawer) */
+.ko-koc { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--card-shadow); overflow: hidden; }
+.ko-koc-head { padding: 14px 16px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: #fff; }
+.ko-koc-round { font-size: 11px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase; color: var(--accent-light); }
+.ko-koc-teams { font-size: 17px; font-weight: 800; margin-top: 3px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ko-koc-decides { font-size: 12.5px; color: rgba(255,255,255,.82); margin-top: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ko-koc-meta { font-size: 11.5px; color: rgba(255,255,255,.7); margin-top: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ko-koc-stake { background: var(--accent); color: #1a1206; font-weight: 800; font-size: 11.5px; padding: 2px 9px; border-radius: 20px; }
+.ko-tv-badge { font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 5px; background: rgba(255,255,255,.18); color: #fff; }
+.ko-koc-body { padding: 14px 16px; }
+.ko-koc-state { font-size: 12px; font-weight: 700; padding: 7px 12px; border-radius: 8px; margin-bottom: 14px; display: inline-flex; align-items: center; gap: 7px; }
+.ko-koc-state.ko-today { background: var(--gold-bg); color: #6b5208; }
+.ko-koc-state.ko-played { background: var(--green-bg); color: var(--green); }
+.ko-koc-state.ko-upcoming { background: var(--bg3); color: var(--text2); }
+.ko-gains-q { font-size: 13px; font-weight: 800; margin: 16px 0 10px; }
+.ko-outcomes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 480px){ .ko-outcomes { grid-template-columns: 1fr; } }
+.ko-outcome { border: 1.5px solid var(--border); border-radius: 11px; overflow: hidden; display: flex; flex-direction: column; }
+.ko-outcome.ko-is-actual { border-color: var(--green); box-shadow: 0 0 0 2px var(--green-bg); }
+.ko-outcome.ko-is-bust { opacity: .55; }
+.ko-outcome-head { padding: 10px 11px; background: var(--bg3); display: flex; align-items: center; gap: 8px; }
+.ko-outcome-head .ko-oflag { font-size: 18px; }
+.ko-outcome-head .ko-otext { flex: 1; line-height: 1.2; }
+.ko-outcome-head .ko-olead { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .4px; }
+.ko-outcome-head .ko-oteam { font-size: 14px; font-weight: 800; }
+.ko-outcome-head .ko-ocount { font-size: 11px; font-weight: 800; color: var(--green); background: var(--green-bg); padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
+.ko-outcome.ko-is-actual .ko-outcome-head { background: var(--green-bg); }
+.ko-actualtag { font-size: 9px; background: var(--green); color: #fff; padding: 2px 7px; border-radius: 12px; letter-spacing: .4px; font-weight: 800; }
+.ko-persons { padding: 5px; display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.ko-person { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 8px; font-size: 13px; }
+.ko-person.ko-mine { background: var(--gold-bg); }
+.ko-person .ko-ava { width: 26px; height: 26px; border-radius: 50%; background: var(--primary-light); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; flex-shrink: 0; }
+.ko-person .ko-pn { flex: 1; font-weight: 700; min-width: 0; }
+.ko-person .ko-pn .ko-alive { display: block; font-size: 10px; font-weight: 700; color: var(--text3); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ko-person .ko-pn .ko-alive.ko-hot { color: var(--accent); }
+.ko-person .ko-pp { font-weight: 800; font-size: 14px; flex-shrink: 0; }
+.ko-person .ko-pp.ko-gain { color: var(--green); }
+.ko-person .ko-pp.ko-bust { color: var(--red); font-size: 11px; }
+.ko-person .ko-minetag { font-size: 8px; font-weight: 800; color: var(--accent); border: 1px solid var(--accent-light); border-radius: 4px; padding: 1px 4px; }
+.ko-persons-empty { font-size: 12px; color: var(--text3); padding: 12px 10px; font-style: italic; text-align: center; }
+.ko-guar { border: 1.5px solid var(--accent-light); background: linear-gradient(180deg,#fffdf6,#fef6e2); border-radius: 11px; padding: 11px 12px; margin-bottom: 14px; }
+.ko-guar-head { font-size: 13px; font-weight: 800; color: #6b5208; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.ko-guar-pts { font-size: 11px; font-weight: 800; color: #1a1206; background: var(--accent); padding: 2px 9px; border-radius: 20px; }
+.ko-guar-sub { font-size: 11.5px; color: var(--text2); margin: 4px 0 6px; }
+.ko-guar .ko-persons { padding: 0; }
+.ko-guar .ko-person:not(:last-child) { border-bottom: 1px solid rgba(200,150,12,0.18); }
+.ko-more-btn { width: 100%; border: none; background: none; font: inherit; font-size: 12px; font-weight: 800; color: var(--accent); padding: 8px; cursor: pointer; border-top: 1px solid var(--bg3); }
+.ko-more-btn:hover { background: var(--bg3); border-radius: 0 0 8px 8px; }
+.ko-legend { font-size: 11px; color: var(--text3); margin-top: 12px; line-height: 1.6; }
+
+/* Drawer */
+.ko-scrim { position: fixed; inset: 0; background: rgba(12,31,63,.45); z-index: 1400; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.ko-scrim.ko-open { opacity: 1; pointer-events: auto; }
+.ko-drawer { position: fixed; z-index: 1500; top: 0; right: 0; height: 100%; width: 440px; max-width: 94vw; background: var(--bg); box-shadow: -8px 0 40px rgba(12,31,63,.25); transform: translateX(100%); transition: transform .24s cubic-bezier(.4,0,.2,1); overflow-y: auto; }
+.ko-drawer.ko-open { transform: translateX(0); }
+.ko-drawer-inner { padding: 14px; }
+.ko-drawer-close { position: sticky; top: 0; float: right; background: var(--bg2); border: 1px solid var(--border); width: 34px; height: 34px; border-radius: 50%; font-size: 18px; cursor: pointer; color: var(--text2); z-index: 2; }
+@media (max-width: 560px){ .ko-drawer { width: 100%; } }
 </style>
 </head>
 <body>
@@ -4106,7 +4248,9 @@ async function loadDagensm() {
       api('/api/results').catch(() => ({})),
       api('/api/allPredictions').catch(() => null)
     ]);
-    const actualMatches = (resultsData && resultsData.actual && resultsData.actual.matches) || {};
+    const actualFull = (resultsData && resultsData.actual) || {};
+    const actualMatches = actualFull.matches || {};
+    koActualResults = actualFull; // full actual (r16Teams/qfTeams/... ) för slutspelsvyn
     renderDagensm(c, tournData, consensusData, userPreds, actualMatches, allPredsData);
   } catch (err) {
     c.innerHTML = '<div class="empty-state">' + escHtml(err.message) + '</div>';
@@ -4133,6 +4277,13 @@ function renderDagensm(container, tournData, consensusData, userPreds, actualMat
   const userMatches = (userPreds && userPreds.matches) || {};
   const actuals = actualMatches || {};
   const participants = (allPredsData && allPredsData.participants) || null;
+
+  // ── GRIND: när HELA gruppspelet är rättat (alla gruppmatcher har faktiskt
+  // resultat) byts denna vy mot slutspelet. Annars: oförändrat beteende. ──
+  if (koAllGroupMatchesPlayed(groupMatches, actuals)) {
+    renderSlutspel(container, allPredsData);
+    return;
+  }
 
   // Vilka som tippat 1/X/2 för en match — för antal och utfällbar namnlista.
   // Returnerar null om deltagardata saknas (t.ex. innan deadline).
@@ -4343,6 +4494,574 @@ function togglePlayedSection() {
     label.textContent = (isOpen ? 'Dölj' : 'Visa') + ' spelade matcher' + (count ? ' (' + count + ')' : '');
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════
+// SLUTSPEL (knockout) — ported from slutspel_mockup.html
+// Rendering UI is straight from the mockup (classes prefixed ko-).
+// Data sources swapped to the real app: deltagarnas brackets, flag(), actual.
+// Pure logic functions take data as arguments and touch NO DOM, so they can be
+// extracted and unit-tested: koClassify, koMatchModel, koNodeTeams, koProjWinner,
+// koWinnerOrProj, koDeeperFor, koActualWinner, koReachKvart/Semi/Final, koTierFor.
+// ══════════════════════════════════════════════════════════════════════
+
+/* ── Embedded slutspelsdata (frontend är single-file; finns ej i backend) ── */
+// Verifierad 2026-06-28. R32: [matchNr,'datum','tid',hemma,borta,slot1,slot2,'kanal']
+const KO_R32 = [
+  [74,'2026-06-29','22:30','Tyskland','Paraguay','1E','3D','SVT'],
+  [77,'2026-06-30','23:00','Frankrike','Sverige','1I','3F','TV4'],
+  [73,'2026-06-28','21:00','Sydafrika','Kanada','2A','2B','SVT'],
+  [75,'2026-06-30','03:00','Nederländerna','Marocko','1F','2C','SVT'],
+  [83,'2026-07-03','01:00','Portugal','Kroatien','2K','2L','TV4'],
+  [84,'2026-07-02','21:00','Spanien','Österrike','1H','2J','SVT'],
+  [81,'2026-07-02','02:00','USA','Bosnien','1D','3B','TV4'],
+  [82,'2026-07-01','22:00','Belgien','Senegal','1G','3I','TV4'],
+  [76,'2026-06-29','19:00','Brasilien','Japan','1C','2F','TV4'],
+  [78,'2026-06-30','19:00','Elfenbenskusten','Norge','2E','2I','TV4'],
+  [79,'2026-07-01','03:00','Mexiko','Ecuador','1A','3E','TV4'],
+  [80,'2026-07-01','18:00','England','DR Kongo','1L','3K','SVT'],
+  [86,'2026-07-04','00:00','Argentina','Kap Verde','1J','3H','SVT'],
+  [88,'2026-07-03','20:00','Australien','Egypten','2D','2G','TV4'],
+  [85,'2026-07-03','05:00','Schweiz','Algeriet','1B','3J','TV4'],
+  [87,'2026-07-04','03:30','Colombia','Ghana','1K','3L','SVT'],
+];
+// R16/QF/SF: [matchNr,'datum','tid','kanal']   FINAL/BRONZE: [matchNr,'datum','tid','kanal']
+const KO_R16 = [
+  [89,'2026-07-04','23:00','SVT'],[90,'2026-07-04','19:00','TV4'],
+  [93,'2026-07-06','21:00','TV4'],[94,'2026-07-07','02:00','TV4'],
+  [91,'2026-07-05','22:00','TV4'],[92,'2026-07-06','02:00','SVT'],
+  [95,'2026-07-07','18:00','TV4'],[96,'2026-07-07','22:00','SVT'],
+];
+const KO_QF = [
+  [97,'2026-07-09','22:00',''],[98,'2026-07-10','21:00',''],
+  [99,'2026-07-11','23:00',''],[100,'2026-07-12','03:00',''],
+];
+const KO_SF = [[101,'2026-07-14','21:00','SVT'],[102,'2026-07-15','21:00','TV4']];
+const KO_FINAL  = [104,'2026-07-19','21:00','TV4'];
+const KO_BRONZE = [103,'2026-07-18','23:00',''];
+const KO_FEED = { r16:i=>[2*i,2*i+1], qf:i=>[2*i,2*i+1], sf:i=>[2*i,2*i+1], final:()=>[0,1] };
+const KO_PREV = { r16:'r32', qf:'r16', sf:'qf', final:'sf' };
+
+// Fullt faktiskt slutspelsresultat (resultsData.actual). Sätts i loadDagensm.
+let koActualResults = null;
+
+// Poäng per rond-tier — speglar computeScoreLocal (r16Team 3, qfTeam 6, sfTeam 12,
+// finalistAdvance 8, winnerBonus 12). Nyckel = rondkod i trädet (förskjuten ett steg).
+const KO_RCFG = {
+  r32:  { name:'16-delsfinal',   short:'16-del', decides:'en plats i åttondelsfinalen', stake:'3p',      tier:3 },
+  r16:  { name:'Åttondelsfinal', short:'Åttondel', decides:'en plats i kvartsfinalen',  stake:'6p',      tier:6 },
+  qf:   { name:'Kvartsfinal',    short:'Kvart',  decides:'en plats i semifinalen',      stake:'12p',     tier:12 },
+  sf:   { name:'Semifinal',      short:'Semi',   decides:'en finalplats',               stake:'8p',      tier:8 },
+  final:{ name:'Final',          short:'Final',  decides:'vem som blir världsmästare',  stake:'12p / 8p',tier:12 },
+};
+const KO_ROUNDS = [
+  {key:'r32', name:'16-delsfinal',   pts:'3p / lag i åttondel', n:16},
+  {key:'r16', name:'Åttondelsfinal', pts:'6p / lag i kvart',    n:8},
+  {key:'qf',  name:'Kvartsfinal',    pts:'12p / lag i semi',    n:4},
+  {key:'sf',  name:'Semifinal',      pts:'8p / finalist',       n:2},
+  {key:'final',name:'Final',         pts:'12p mästare · 8p tvåa', n:1},
+];
+
+/* ══════════ GRIND ══════════ */
+// True om ALLA gruppmatcher har ett faktiskt resultat (icke-null hemma+borta).
+function koAllGroupMatchesPlayed(groupMatches, actuals) {
+  if (!groupMatches || !groupMatches.length) return false;
+  let done = 0;
+  for (const m of groupMatches) {
+    const a = actuals[String(m[0])];
+    if (a && a[0] !== '' && a[0] != null && a[1] !== '' && a[1] != null
+        && !Number.isNaN(Number(a[0])) && !Number.isNaN(Number(a[1]))) done++;
+  }
+  return done >= groupMatches.length;
+}
+
+/* ══════════ HÄRLEDNING (ren logik — ingen DOM) ══════════ */
+// En slutspelsmatch avgör vem som når NÄSTA rond. "Vem gynnas om lag X vinner" =
+// de vars prediction har X i NÄSTA ronds mängd. Fält-mappningen är förskjuten ett
+// steg mot rondkoderna (verifierad mot computeScoreLocal — ändra ej).
+//   r32-match → r16Teams · r16 → qfTeams · qf → sfTeams · sf → finalister · final → mästare
+const koReachKvart = data => new Set((data && data.qfTeams) || []);  // vinnare åttondel → kvart
+const koReachSemi  = data => new Set((data && data.sfTeams) || []);  // vinnare kvart → semi
+const koReachFinal = data => {                                       // vinnare semi → final
+  const fp = (data && data.finalPlacements) || {};
+  return new Set([fp['1'], fp['2']].filter(Boolean));
+};
+const koChamp  = data => ((data && data.finalPlacements) || {})['1'] || null;
+const koSecond = data => ((data && data.finalPlacements) || {})['2'] || null;
+const koR16Set = data => new Set((data && data.r16Teams) || []);    // valda 16 av 32 (fri tippning)
+
+function koTierFor(round) { return (KO_RCFG[round] || {}).tier || 0; }
+
+// 'a' | 'b' | 'both' | 'none'. 'both' = deltagaren har BÅDA lagen i nästa ronds mängd.
+function koClassify(data, round, a, b) {
+  if (round === 'final') {
+    const ch = koChamp(data);
+    return ch === a ? 'a' : (ch === b ? 'b' : 'none');
+  }
+  let set;
+  if (round === 'r32') set = koR16Set(data);     // alla har valt 16 av 32 fritt → 'both' uppstår på riktigt
+  else if (round === 'r16') set = koReachKvart(data);
+  else if (round === 'qf') set = koReachSemi(data);
+  else if (round === 'sf') set = koReachFinal(data);
+  const ha = set.has(a), hb = set.has(b);
+  if (ha && hb) return 'both';
+  if (ha) return 'a';
+  if (hb) return 'b';
+  return 'none';
+}
+
+// Faktisk vinnare av en match (för 'played'-läge). Nästlade mängder: qfTeams ⊆ r16Teams.
+// r32 → ∈ actual.r16Teams · r16 → ∈ actual.qfTeams · qf → ∈ actual.sfTeams ·
+// sf → ∈ actual-finalister · final → actual.finalPlacements['1']. Null om ej spelad.
+function koActualWinner(actual, round, idx, nodeTeamsFn) {
+  if (!actual) return null;
+  const [a, b] = nodeTeamsFn(round, idx);
+  if (a == null || b == null) return null;
+  let set;
+  if (round === 'r32') set = new Set(actual.r16Teams || []);
+  else if (round === 'r16') set = new Set(actual.qfTeams || []);
+  else if (round === 'qf') set = new Set(actual.sfTeams || []);
+  else if (round === 'sf') { const fp = actual.finalPlacements || {}; set = new Set([fp['1'], fp['2']].filter(Boolean)); }
+  else if (round === 'final') { const fp = actual.finalPlacements || {}; return fp['1'] || null; }
+  if (set.has(a)) return a;
+  if (set.has(b)) return b;
+  return null;
+}
+
+// Konsensus-projektion: vem flest deltagare har vidare (memoiserad per render via ctx).
+function koProjWinner(ctx, round, idx) {
+  const [a, b] = koNodeTeams(ctx, round, idx);
+  if (a == null || b == null) return a != null ? a : b;
+  let ca = 0, cb = 0;
+  for (const part of ctx.parts) {
+    const c = koClassify(part.data, round, a, b);
+    if (c === 'a') ca++; else if (c === 'b') cb++;
+  }
+  return ca >= cb ? a : b;
+}
+function koWinnerOrProj(ctx, round, idx) {
+  const k = round + idx;
+  if (k in ctx.woCache) return ctx.woCache[k];
+  const v = koActualWinner(ctx.actual, round, idx, (r, i) => koNodeTeams(ctx, r, i)) || koProjWinner(ctx, round, idx);
+  ctx.woCache[k] = v;
+  return v;
+}
+function koNodeTeams(ctx, round, idx) {
+  if (round === 'r32') return [KO_R32[idx][3], KO_R32[idx][4]];
+  const [x, y] = KO_FEED[round](idx), pr = KO_PREV[round];
+  return [koWinnerOrProj(ctx, pr, x), koWinnerOrProj(ctx, pr, y)];
+}
+// Matar-matcher spelade? (avgör projected vs upcoming för djupare ronder)
+function koIsDetermined(ctx, round, idx) {
+  if (round === 'r32') return true;
+  const [x, y] = KO_FEED[round](idx), pr = KO_PREV[round];
+  const nt = (r, i) => koNodeTeams(ctx, r, i);
+  return koActualWinner(ctx.actual, pr, x, nt) != null && koActualWinner(ctx.actual, pr, y, nt) != null;
+}
+// 'played' | 'today' | 'upcoming' | 'projected'
+function koStateOf(ctx, round, idx) {
+  const win = koActualWinner(ctx.actual, round, idx, (r, i) => koNodeTeams(ctx, r, i));
+  if (win != null) return 'played';
+  if (round === 'r32') {
+    return KO_R32[idx][1] === ctx.today ? 'today' : 'upcoming';
+  }
+  return koIsDetermined(ctx, round, idx) ? 'upcoming' : 'projected';
+}
+// Faktisk vinnare som objekt för UI ({w} eller null)
+function koActualOf(ctx, round, idx) {
+  const w = koActualWinner(ctx.actual, round, idx, (r, i) => koNodeTeams(ctx, r, i));
+  return w ? { w } : null;
+}
+// Datum/tid/kanal för en nod
+function koMeta(round, idx) {
+  if (round === 'r32') { const m = KO_R32[idx]; return { date:m[1], time:m[2], channel:m[7] }; }
+  if (round === 'r16') { const m = KO_R16[idx]; return { date:m[1], time:m[2], channel:m[3] }; }
+  if (round === 'qf')  { const m = KO_QF[idx];  return { date:m[1], time:m[2], channel:m[3] }; }
+  if (round === 'sf')  { const m = KO_SF[idx];  return { date:m[1], time:m[2], channel:m[3] }; }
+  if (round === 'final'){ return { date:KO_FINAL[1], time:KO_FINAL[2], channel:KO_FINAL[3] }; }
+  return { date:'', time:'', channel:'' };
+}
+
+// "Håller liv i" — vad hålls vid liv om 'team' vinner i denna match (strikt djupare
+// ronder). Ren logik, DOM-fri, extraherbar. round = matchens rondkod.
+function koDeeperFor(data, round, team) {
+  const d = [];
+  if (round === 'r32') { if (koReachKvart(data).has(team)) d.push('kvart'); if (koReachSemi(data).has(team)) d.push('semi'); if (koReachFinal(data).has(team)) d.push('final'); if (koChamp(data) === team) d.push('mästare'); }
+  else if (round === 'r16') { if (koReachSemi(data).has(team)) d.push('semi'); if (koReachFinal(data).has(team)) d.push('final'); if (koChamp(data) === team) d.push('mästare'); }
+  else if (round === 'qf') { if (koReachFinal(data).has(team)) d.push('final'); if (koChamp(data) === team) d.push('mästare'); }
+  else if (round === 'sf') { if (koChamp(data) === team) d.push('mästare'); else if (koSecond(data) === team) d.push('tvåa'); }
+  return d;
+}
+
+// poäng-på-spel + per-person-utfall för en nod (ren logik)
+function koMatchModel(ctx, round, idx) {
+  const teams = koNodeTeams(ctx, round, idx);
+  const [a, b] = teams;
+  const cfg = KO_RCFG[round];
+
+  const aP = [], bP = [], guaranteed = [];
+  for (const part of ctx.parts) {
+    const c = koClassify(part.data, round, a, b);
+    if (c === 'none') continue;
+    const pts = cfg.tier;
+    if (c === 'both') {
+      guaranteed.push({ name: part.name, avatar: part.avatar, pts, aliveA: koDeeperFor(part.data, round, a), aliveB: koDeeperFor(part.data, round, b) });
+    } else {
+      const team = c === 'a' ? a : b;
+      const dpr = round === 'final' ? [] : koDeeperFor(part.data, round, team);
+      (c === 'a' ? aP : bP).push({ name: part.name, avatar: part.avatar, pts, alive: dpr.length ? ('håller liv i: ' + dpr.join(', ')) : null });
+    }
+  }
+
+  return {
+    round, idx, roundName: cfg.name, decides: cfg.decides, stake: cfg.stake, teams,
+    state: koStateOf(ctx, round, idx), actual: koActualOf(ctx, round, idx), meta: koMeta(round, idx),
+    outcomes: [{ team: a, persons: aP }, { team: b, persons: bP }],
+    guaranteed,
+  };
+}
+
+/* ══════════ KONTEXT (binder data till en render) ══════════ */
+function koBuildContext(allPredsData) {
+  const rawParts = (allPredsData && allPredsData.participants) || [];
+  const parts = rawParts.map(p => ({ name: p.name, avatar: p.avatar, data: p.data || {} }));
+  const me = (typeof currentUser !== 'undefined' && currentUser && currentUser.name) || null;
+  // ME måste finnas bland deltagarna för DU-markeringar; annars degradera tyst.
+  const meKnown = me != null && parts.some(p => p.name === me);
+  const now = new Date();
+  const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+  const actual = koActualResults || null;
+  return { parts, me, meKnown, today, actual, woCache: {} };
+}
+
+/* ══════════ RENDER: TRÄD (desktop) ══════════ */
+function koTeamRow(ctx, team, { winner, loser, proj, mine } = {}) {
+  let cls = 'ko-team-row';
+  if (winner) cls += ' ko-winner';
+  if (loser) cls += ' ko-loser';
+  if (proj) cls += ' ko-proj';
+  if (mine) cls += ' ko-mine';
+  const nm = team == null ? '?' : escHtml(team);
+  return `<div class="${cls}"><span class="ko-flag">${team == null ? '⚪' : flag(team)}</span><span class="ko-nm">${nm}</span>${mine ? '<span class="ko-minetag">DU</span>' : ''}</div>`;
+}
+function koMiniCons(ctx, round, idx, teams) {
+  const [a, b] = teams; let ca = 0, cb = 0;
+  for (const part of ctx.parts) { const c = koClassify(part.data, round, a, b); if (c === 'a') ca++; else if (c === 'b') cb++; }
+  const tot = Math.max(ca + cb, 1);
+  return `<span class="ko-mini-cons"><i class="ko-a" style="width:${ca / tot * 100}%"></i><i class="ko-b" style="width:${cb / tot * 100}%"></i></span>`;
+}
+function koRenderTree(ctx) {
+  let html = '';
+  for (const r of KO_ROUNDS) {
+    html += `<div class="ko-bcol" data-round="${r.key}">`;
+    html += `<div class="ko-bcol-head">${r.name}<span class="ko-pts">${r.pts}</span></div>`;
+    for (let i = 0; i < r.n; i++) {
+      const teams = koNodeTeams(ctx, r.key, i), [a, b] = teams;
+      const st = koStateOf(ctx, r.key, i), act = koActualOf(ctx, r.key, i);
+      const proj = (st === 'projected'), determined = koIsDetermined(ctx, r.key, i);
+      const myc = ctx.meKnown ? koClassify(ctx.parts.find(p => p.name === ctx.me).data, r.key, a, b) : 'none';
+      const mineA = (myc === 'a' || myc === 'both'), mineB = (myc === 'b' || myc === 'both');
+      let foot;
+      if (act) { foot = `<span class="ko-state-played">✓ ${escHtml(act.w)}</span>${koMiniCons(ctx, r.key, i, teams)}`; }
+      else if (st === 'today') { foot = `<span class="ko-state-today">● Spelas idag</span>${koMiniCons(ctx, r.key, i, teams)}`; }
+      else { foot = `<span>${proj ? 'Projicerat' : 'Kommande'}</span>${koMiniCons(ctx, r.key, i, teams)}`; }
+      html += `<div class="ko-match-node ${st === 'today' ? 'ko-today' : ''} ${proj ? 'ko-projected' : ''}" data-round="${r.key}" data-idx="${i}" onclick="koOpenMatch('${r.key}',${i})">
+        ${koTeamRow(ctx, a, { winner: act && act.w === a, loser: act && act.w !== a, proj: proj && !determined, mine: mineA })}
+        ${koTeamRow(ctx, b, { winner: act && act.w === b, loser: act && act.w !== b, proj: proj && !determined, mine: mineB })}
+        <div class="ko-node-foot">${foot}</div>
+      </div>`;
+    }
+    if (r.key === 'final') {
+      html += `<div class="ko-bronze-box" onclick="koOpenBronze()">
+        <div class="ko-bt">🥉 Bronsmatch · 8p</div>
+        <div style="font-size:12px;color:var(--text2)">Förlorarna i semifinalerna · avgör 3:e plats</div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  return html;
+}
+function koDrawConnectors() {
+  const svg = document.getElementById('koConnectors');
+  const bracket = document.getElementById('koBracket');
+  if (!svg || !bracket || !bracket.offsetWidth) return;
+  const br = bracket.getBoundingClientRect();
+  svg.setAttribute('viewBox', `0 0 ${br.width} ${br.height}`);
+  const center = el => { const r = el.getBoundingClientRect(); return { x: r.left - br.left, xr: r.right - br.left, y: r.top - br.top + r.height / 2 }; };
+  let paths = '';
+  for (const round of ['r16', 'qf', 'sf', 'final']) {
+    const col = bracket.querySelector(`.ko-bcol[data-round="${round}"]`);
+    const fcol = bracket.querySelector(`.ko-bcol[data-round="${KO_PREV[round]}"]`);
+    if (!col || !fcol) continue;
+    const nodes = col.querySelectorAll('.ko-match-node');
+    const fnodes = fcol.querySelectorAll('.ko-match-node');
+    nodes.forEach((node, i) => {
+      const nc = center(node);
+      KO_FEED[round](i).forEach(fi => {
+        if (!fnodes[fi]) return;
+        const fc = center(fnodes[fi]);
+        const midx = (fc.xr + nc.x) / 2;
+        paths += `<path d="M ${fc.xr} ${fc.y} H ${midx} V ${nc.y} H ${nc.x}"/>`;
+      });
+    });
+  }
+  svg.innerHTML = paths;
+}
+
+/* ══════════ RENDER: MOBIL ROND-PAGER ══════════ */
+let koPagerRound = 'r16', koPagerMine = false;
+
+function koCompactCard(ctx, m, round, idx) {
+  const [a, b] = m.teams, o = m.outcomes;
+  const win = m.state === 'played' ? m.actual.w : null;
+  let badge;
+  if (m.state === 'played') badge = `<span class="ko-pg-badge ko-played">✓ ${escHtml(win)} vidare</span>`;
+  else if (m.state === 'today') badge = `<span class="ko-pg-badge ko-today">● Spelas idag</span>`;
+  else if (m.state === 'projected') badge = `<span class="ko-pg-badge ko-proj">Projicerade lag</span>`;
+  else badge = `<span class="ko-pg-badge">Kommande</span>`;
+
+  const meBoth = ctx.meKnown && m.guaranteed.some(g => g.name === ctx.me);
+  function side(team, persons) {
+    const cnt = persons.length, mine = meBoth || (ctx.meKnown && persons.some(p => p.name === ctx.me));
+    const isWin = win === team, isLose = win && win !== team;
+    const cntTxt = cnt ? `${cnt} st${m.round !== 'final' ? ` · +${persons[0].pts}p` : ''}` : '0 st';
+    return `<div class="ko-pg-side ${isWin ? 'ko-win' : ''} ${isLose ? 'ko-lose' : ''} ${mine ? 'ko-mine' : ''}">
+      <span class="ko-pg-flag">${team == null ? '⚪' : flag(team)}</span>
+      <span class="ko-pg-team">${team == null ? '?' : escHtml(team)}</span>
+      <span class="ko-pg-cnt ${cnt ? '' : 'ko-zero'}">${cntTxt}</span>
+    </div>`;
+  }
+  const guarLine = m.guaranteed.length
+    ? `<div class="ko-pg-guar">🔒 ${m.guaranteed.length} gynnas oavsett (+${m.guaranteed[0].pts}p garanterat)</div>` : '';
+  const meta = m.meta || {};
+  const metaBits = [];
+  if (meta.date) metaBits.push(koFmtDate(meta.date));
+  if (meta.time) metaBits.push(meta.time);
+  if (meta.channel) metaBits.push(meta.channel);
+  const metaStr = metaBits.join(' · ');
+  return `<div class="ko-pg-card" onclick="koOpenMatch('${round}',${idx})">
+    <div class="ko-pg-top"><span class="ko-pg-round">${m.roundName} · ${m.stake} på spel${metaStr ? ' · ' + escHtml(metaStr) : ''}</span>${badge}</div>
+    <div class="ko-pg-sides">${side(a, o[0].persons)}<span class="ko-pg-vs">vs</span>${side(b, o[1].persons)}</div>
+    ${guarLine}
+    ${koMineLine(ctx, m)}
+  </div>`;
+}
+function koMineLine(ctx, m) {
+  if (!ctx.meKnown) return '';
+  const [a, b] = m.teams, c = koClassify(ctx.parts.find(p => p.name === ctx.me).data, m.round, a, b);
+  const an = a == null ? '?' : escHtml(a), bn = b == null ? '?' : escHtml(b);
+  if (c === 'none') return `<div class="ko-pg-mine ko-none">Du har inget lag kvar i den här matchen</div>`;
+  if (c === 'both') {
+    const g = m.guaranteed.find(x => x.name === ctx.me);
+    if (m.state === 'played') return `<div class="ko-pg-mine ko-good">✓ Du fick +${g.pts}p — du hade båda lagen kvar</div>`;
+    const depTeam = g.aliveA.length ? an : (g.aliveB.length ? bn : null);
+    const dep = depTeam ? ` · men djupare vad bara om ${depTeam} vinner` : '';
+    return `<div class="ko-pg-mine ko-good">Du får <strong>+${g.pts}p oavsett</strong> — du har båda lagen kvar${dep}</div>`;
+  }
+  const team = c === 'a' ? a : b, tn = c === 'a' ? an : bn;
+  const me = m.outcomes.find(x => x.team === team).persons.find(p => p.name === ctx.me);
+  if (m.state === 'played') {
+    if (m.actual.w === team) return `<div class="ko-pg-mine ko-good">✓ Du fick +${me.pts}p — ${tn} gick vidare</div>`;
+    return `<div class="ko-pg-mine ko-bad">✗ Ditt lag ${tn} åkte ut</div>`;
+  }
+  return `<div class="ko-pg-mine">Du tjänar <strong>+${me.pts}p</strong> om ${tn} vinner${me.alive ? ` · ${me.alive}` : ''}</div>`;
+}
+function koRenderPager(ctx) {
+  const pills = KO_ROUNDS.map(r => `<button class="ko-pg-pill ${r.key === koPagerRound ? 'ko-active' : ''}" onclick="koSetPagerRound('${r.key}')">${KO_RCFG[r.key].short}</button>`).join('');
+  const r = KO_ROUNDS.find(x => x.key === koPagerRound);
+  let cards = '';
+  const meData = ctx.meKnown ? ctx.parts.find(p => p.name === ctx.me).data : null;
+  for (let i = 0; i < r.n; i++) {
+    const m = koMatchModel(ctx, r.key, i);
+    if (koPagerMine && (!meData || koClassify(meData, r.key, m.teams[0], m.teams[1]) === 'none')) continue;
+    cards += koCompactCard(ctx, m, r.key, i);
+  }
+  if (!cards) cards = `<div class="ko-pg-empty">Inga matcher i den här ronden med dina lag kvar.</div>`;
+  const filter = ctx.meKnown ? `<div class="ko-pg-filter" onclick="koTogglePagerMine()">
+      <span class="ko-pg-switch ${koPagerMine ? 'ko-on' : ''}"></span> Visa bara matcher med mina lag
+    </div>` : '';
+  return `
+    <div class="ko-pg-pills">${pills}</div>
+    ${filter}
+    <div class="ko-pg-hint">Tryck på ett kort för full detalj (vem gynnas + hur mycket).${ctx.meKnown ? ' Raden längst ner visar vad <strong>du</strong> tjänar.' : ''}</div>
+    <div class="ko-pg-list">${cards}</div>`;
+}
+function koSetPagerRound(k) { koPagerRound = k; const el = document.getElementById('koPager'); if (el && koCtx) el.innerHTML = koRenderPager(koCtx); }
+function koTogglePagerMine() { koPagerMine = !koPagerMine; const el = document.getElementById('koPager'); if (el && koCtx) el.innerHTML = koRenderPager(koCtx); }
+
+/* ══════════ RENDER: KORT ══════════ */
+function koAva(name, avatar) { return avatarHtml(avatar, name, 'xs'); }
+const KO_LIST_CAP = 6;
+function koCollapsibleRows(ctx, items, buildRow) {
+  const sorted = [...items].sort((x, y) => ((x.name === ctx.me ? -1 : 0) - (y.name === ctx.me ? -1 : 0)));
+  const rows = sorted.map((it, i) => buildRow(it, i >= KO_LIST_CAP)).join('');
+  const extra = sorted.length - KO_LIST_CAP;
+  const more = extra > 0 ? `<button class="ko-more-btn" onclick="koToggleMore(event,this)" data-n="${extra}">+${extra} till ▾</button>` : '';
+  return rows + more;
+}
+function koToggleMore(ev, btn) {
+  ev.stopPropagation();
+  const box = btn.parentElement;
+  const open = !box.classList.contains('ko-show-all');
+  box.classList.toggle('ko-show-all', open);
+  box.querySelectorAll('.ko-person.ko-extra').forEach(e => e.hidden = !open);
+  btn.innerHTML = open ? 'Visa färre ▴' : `+${btn.dataset.n} till ▾`;
+}
+function koCardHTML(ctx, m) {
+  const [a, b] = m.teams;
+  const an = a == null ? '?' : escHtml(a), bn = b == null ? '?' : escHtml(b);
+  const af = a == null ? '⚪' : flag(a), bf = b == null ? '⚪' : flag(b);
+
+  let stateHTML;
+  if (m.state === 'played' && m.actual) { stateHTML = `<div class="ko-koc-state ko-played">✓ Spelad · ${escHtml(m.actual.w)} gick vidare</div>`; }
+  else if (m.state === 'today') { stateHTML = `<div class="ko-koc-state ko-today">● Spelas idag</div>`; }
+  else if (m.state === 'projected') { stateHTML = `<div class="ko-koc-state ko-upcoming">Projicerade lag — matar-matcherna inte spelade än</div>`; }
+  else { stateHTML = `<div class="ko-koc-state ko-upcoming">Kommande</div>`; }
+
+  function outcomeBlock(o) {
+    const tn = o.team == null ? '?' : escHtml(o.team), tf = o.team == null ? '⚪' : flag(o.team);
+    const isActual = m.state === 'played' && m.actual && m.actual.w === o.team;
+    const isBust = m.state === 'played' && m.actual && m.actual.w !== o.team;
+    const lead = m.round === 'final'
+      ? (isActual ? `${tn} är mästare` : `Om ${tn} vinner`)
+      : (m.state === 'played' ? (isActual ? `${tn} vann` : `${tn} förlorade`) : `Om ${tn} vinner`);
+    let rows;
+    if (!o.persons.length) { rows = `<div class="ko-persons-empty">Ingen har ${tn} kvar — ingen gynnas.</div>`; }
+    else rows = koCollapsibleRows(ctx, o.persons, (pp, hidden) => {
+      const mine = ctx.meKnown && pp.name === ctx.me;
+      const ptsHTML = isBust ? `<span class="ko-pp ko-bust">sprack</span>` : `<span class="ko-pp ko-gain">+${pp.pts}p</span>`;
+      const aliveHTML = pp.alive && !isBust ? `<span class="ko-alive ${/mästare|final/.test(pp.alive) ? 'ko-hot' : ''}">→ ${escHtml(pp.alive)}</span>` : '';
+      return `<div class="ko-person ${mine ? 'ko-mine' : ''} ${hidden ? 'ko-extra' : ''}"${hidden ? ' hidden' : ''}>
+        ${koAva(pp.name, pp.avatar)}
+        <span class="ko-pn">${escHtml(pp.name)}${mine ? ' <span class="ko-minetag">DU</span>' : ''}${aliveHTML}</span>
+        ${ptsHTML}
+      </div>`;
+    });
+    const ptsEach = o.persons.length ? `+${o.persons[0].pts}p` : '';
+    return `<div class="ko-outcome ${isActual ? 'ko-is-actual' : ''} ${isBust ? 'ko-is-bust' : ''}">
+      <div class="ko-outcome-head">
+        <span class="ko-oflag">${tf}</span>
+        <span class="ko-otext"><span class="ko-olead">${lead}</span></span>
+        ${isActual ? '<span class="ko-actualtag">UTFALL</span>' : (o.persons.length ? `<span class="ko-ocount">${o.persons.length} st · ${ptsEach}</span>` : '<span class="ko-ocount" style="color:var(--text3);background:var(--bg3)">0 st</span>')}
+      </div>
+      <div class="ko-persons">${rows}</div>
+    </div>`;
+  }
+
+  let guarHTML = '';
+  if (m.guaranteed && m.guaranteed.length) {
+    const rows = koCollapsibleRows(ctx, m.guaranteed, (g, hidden) => {
+      const mine = ctx.meKnown && g.name === ctx.me;
+      const notes = [];
+      if (g.aliveA.length) notes.push(`om ${an} vinner: ${escHtml(g.aliveA.join(', '))}`);
+      if (g.aliveB.length) notes.push(`om ${bn} vinner: ${escHtml(g.aliveB.join(', '))}`);
+      const noteHTML = notes.length ? `<span class="ko-alive ko-hot">→ djupare vad ${notes.join(' · ')}</span>` : '';
+      return `<div class="ko-person ${mine ? 'ko-mine' : ''} ${hidden ? 'ko-extra' : ''}"${hidden ? ' hidden' : ''}>
+        ${koAva(g.name, g.avatar)}
+        <span class="ko-pn">${escHtml(g.name)}${mine ? ' <span class="ko-minetag">DU</span>' : ''}${noteHTML}</span>
+        <span class="ko-pp ko-gain">+${g.pts}p</span>
+      </div>`;
+    });
+    guarHTML = `<div class="ko-guar">
+      <div class="ko-guar-head">🔒 Gynnas oavsett vem som vinner <span class="ko-guar-pts">+${m.guaranteed[0].pts}p garanterat</span></div>
+      <div class="ko-guar-sub">Har båda lagen kvar i sin tippning — bankar poängen hur det än går.</div>
+      <div class="ko-persons">${rows}</div>
+    </div>`;
+  }
+
+  const gainsQ = m.round === 'final' ? 'Vem gynnas av varje utfall?' : 'Vem gynnas av en vinst?';
+  const meta = m.meta || {};
+  const metaBits = [];
+  if (meta.date) metaBits.push(koFmtDate(meta.date));
+  if (meta.time) metaBits.push(meta.time);
+  if (meta.channel) metaBits.push(`<span class="ko-tv-badge">${escHtml(meta.channel)}</span>`);
+  const metaHTML = metaBits.length ? `<div class="ko-koc-meta">${metaBits.join(' · ')}</div>` : '';
+  return `<div class="ko-koc">
+    <div class="ko-koc-head">
+      <div class="ko-koc-round">${m.roundName}</div>
+      <div class="ko-koc-teams">${af} ${an} <span style="opacity:.5;font-weight:600">–</span> ${bf} ${bn}</div>
+      <div class="ko-koc-decides">Avgör ${m.decides} <span class="ko-koc-stake">${m.stake} på spel</span></div>
+      ${metaHTML}
+    </div>
+    <div class="ko-koc-body">
+      ${stateHTML}
+      ${guarHTML}
+      <div class="ko-gains-q">${gainsQ}</div>
+      <div class="ko-outcomes">
+        ${outcomeBlock(m.outcomes[0])}
+        ${outcomeBlock(m.outcomes[1])}
+      </div>
+      ${m.round !== 'final' ? `<div class="ko-legend" style="margin-top:12px"><strong>→</strong> = vinsten håller också personens djupare vad vid liv (semi/final/mästare), utöver poängen som bankas nu.</div>` : ''}
+    </div>
+  </div>`;
+}
+const KO_MONTHS = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+function koFmtDate(d) {
+  if (!d) return '';
+  const parts = d.split('-');
+  if (parts.length !== 3) return d;
+  return Number(parts[2]) + ' ' + KO_MONTHS[Number(parts[1]) - 1];
+}
+
+/* ══════════ INTERAKTION ══════════ */
+function koOpenMatch(round, idx) {
+  if (!koCtx) return;
+  document.getElementById('koDrawerBody').innerHTML = koCardHTML(koCtx, koMatchModel(koCtx, round, idx));
+  document.getElementById('koDrawer').classList.add('ko-open');
+  document.getElementById('koScrim').classList.add('ko-open');
+}
+function koOpenBronze() {
+  const b = KO_BRONZE;
+  const metaBits = [];
+  if (b[1]) metaBits.push(koFmtDate(b[1]));
+  if (b[2]) metaBits.push(b[2]);
+  if (b[3]) metaBits.push(`<span class="ko-tv-badge">${escHtml(b[3])}</span>`);
+  const metaHTML = metaBits.length ? `<div class="ko-koc-meta">${metaBits.join(' · ')}</div>` : '';
+  document.getElementById('koDrawerBody').innerHTML = `<div class="ko-koc"><div class="ko-koc-head"><div class="ko-koc-round">Bronsmatch 🥉</div><div class="ko-koc-teams">Semifinal-förlorarna</div><div class="ko-koc-decides">Avgör 3:e plats <span class="ko-koc-stake">8p på spel</span></div>${metaHTML}</div><div class="ko-koc-body"><div class="ko-koc-state ko-upcoming">Projicerad — semifinalerna inte spelade</div><p style="font-size:13px;color:var(--text2)">När semifinalerna är klara fylls lagen i automatiskt och kortet visar vilka som tippat rätt 3:e-platslag (8p var), precis som de andra korten.</p></div></div>`;
+  document.getElementById('koDrawer').classList.add('ko-open');
+  document.getElementById('koScrim').classList.add('ko-open');
+}
+function koCloseDrawer() {
+  const d = document.getElementById('koDrawer'), s = document.getElementById('koScrim');
+  if (d) d.classList.remove('ko-open');
+  if (s) s.classList.remove('ko-open');
+}
+
+/* ══════════ TOPPNIVÅ: SLUTSPELSVY ══════════ */
+let koCtx = null;
+function renderSlutspel(container, allPredsData) {
+  koCtx = koBuildContext(allPredsData);
+  const noPart = !koCtx.parts.length;
+  const intro = `<div class="ko-intro">Trädet är kartan, matchkortet är djupet. Allt härlett ur deltagarnas brackets — inga nya tips.</div>
+    <div class="ko-note-banner"><strong>Gruppspelet är slutspelat.</strong> Poängen följer din modell oförändrad — en match avgör vem som når nästa rond, och den ronds poäng bankas av alla som har vinnaren så långt. Varje matchkort svarar på en enda fråga: <strong>vem gynnas om respektive lag vinner?</strong></div>`;
+  if (noPart) {
+    container.innerHTML = intro + `<div class="empty-state">Kunde inte ladda deltagarnas brackets.</div>`;
+    return;
+  }
+  container.innerHTML = intro + `
+    <div class="ko-bracket-card ko-tree-wide">
+      <div class="ko-bracket" id="koBracket">
+        <svg class="ko-bracket-svg" id="koConnectors"></svg>
+        <div class="ko-bracket-cols" id="koCols">${koRenderTree(koCtx)}</div>
+      </div>
+      <div class="ko-legend">🟡 markering = ditt val · streckad ruta = projicerat lag (matar-matcher inte spelade än) · grön = vidare · klicka på en match för detaljer. Hela trädet inkl. 16-delsfinalen (32 lag) — scrolla i sidled. <strong>På mobil byts trädet mot en rond-lista.</strong></div>
+    </div>
+    <div class="ko-pager-narrow" id="koPager">${koRenderPager(koCtx)}</div>`;
+  // Drawer (skapa en gång, återanvänd)
+  koEnsureDrawer();
+  requestAnimationFrame(koDrawConnectors);
+}
+function koEnsureDrawer() {
+  if (document.getElementById('koDrawer')) return;
+  const scrim = document.createElement('div');
+  scrim.className = 'ko-scrim'; scrim.id = 'koScrim'; scrim.onclick = koCloseDrawer;
+  const drawer = document.createElement('div');
+  drawer.className = 'ko-drawer'; drawer.id = 'koDrawer';
+  drawer.innerHTML = `<div class="ko-drawer-inner"><button class="ko-drawer-close" onclick="koCloseDrawer()">×</button><div id="koDrawerBody"></div></div>`;
+  document.body.appendChild(scrim);
+  document.body.appendChild(drawer);
+}
+// Rita om connectors vid resize endast om trädet finns i DOM (annan vy → no-op)
+window.addEventListener('resize', () => { if (document.getElementById('koBracket')) koDrawConnectors(); });
 
 // ══════════════════════════════════════════════════════════════════════
 // ALLA SVAR VIEW
