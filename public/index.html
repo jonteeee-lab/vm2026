@@ -4920,7 +4920,13 @@ function koRenderPager(ctx) {
     <div class="ko-pg-list">${cards}</div>`;
 }
 function koSetPagerRound(k) { koPagerRound = k; const el = document.getElementById('koPager'); if (el && koCtx) el.innerHTML = koRenderPager(koCtx); }
-function koTogglePagerMine() { koPagerMine = !koPagerMine; const el = document.getElementById('koList'); if (el && koCtx) el.innerHTML = koRenderList(koCtx); }
+function koTogglePagerMine() {
+  koPagerMine = !koPagerMine;
+  const sw = document.getElementById('koMineSwitch');
+  if (sw) sw.classList.toggle('ko-on', koPagerMine);
+  const el = document.getElementById('koList');
+  if (el && koCtx) el.innerHTML = koRenderList(koCtx);
+}
 
 /* ══════════ RENDER: ENHETLIG TIDSORDNAD LISTA (alla skärmbredder) ══════════ */
 // Samlar alla matcher i bestämda ronder, sorterar på avsparkstid stigande, och
@@ -5097,7 +5103,7 @@ function renderSlutspel(container, allPredsData) {
     return;
   }
   const filter = koCtx.meKnown ? `<div class="ko-pg-filter" onclick="koTogglePagerMine()">
-      <span class="ko-pg-switch ${koPagerMine ? 'ko-on' : ''}"></span> Visa bara matcher med mina lag
+      <span class="ko-pg-switch ${koPagerMine ? 'ko-on' : ''}" id="koMineSwitch"></span> Visa bara matcher med mina lag
     </div>` : '';
   container.innerHTML = intro + `
     <div class="ko-pg-hint">Alla slutspelsmatcher i tidsordning — först överst. Klicka på en match för vilka som tjänar på den. Kommande ronder dyker upp när lagen är klara.</div>
