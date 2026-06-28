@@ -1805,6 +1805,11 @@ select.form-input {
 .ko-pg-hint { font-size: 11.5px; color: var(--text3); margin: 4px 2px 12px; line-height: 1.5; }
 .ko-pg-guar { margin-top: 10px; font-size: 11.5px; font-weight: 700; color: #6b5208; background: var(--gold-bg); padding: 6px 10px; border-radius: 8px; text-align: center; }
 
+/* Enhetlig tidsordnad matchlista (samma på alla skärmbredder) */
+.ko-list-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 760px) { .ko-list-grid { grid-template-columns: 1fr 1fr; } }
+.ko-next-label { margin-top: 10px; font-size: 11.5px; color: var(--text3); padding: 7px 2px 0; border-top: 1px solid var(--bg3); line-height: 1.45; }
+
 @media (max-width: 760px) {
   .ko-tree-wide { display: none; }
   .ko-pager-narrow { display: block; }
@@ -4854,7 +4859,21 @@ function koCompactCard(ctx, m, round, idx) {
     <div class="ko-pg-sides">${side(a, o[0].persons)}<span class="ko-pg-vs">vs</span>${side(b, o[1].persons)}</div>
     ${guarLine}
     ${koMineLine(ctx, m)}
+    ${koNextLabel(ctx, round, idx)}
   </div>`;
+}
+// Struktur-etikett: vart vinnaren tar vägen. round==='final' → ingen etikett.
+const KO_NEXT_ROUND_NAME = { r32:'åttondelsfinalen', r16:'kvartsfinalen', qf:'semifinalen', sf:'finalen' };
+function koNextLabel(ctx, round, idx) {
+  if (round === 'final') return '';
+  const nextName = KO_NEXT_ROUND_NAME[round];
+  if (!nextName) return '';
+  const sib = (idx % 2 === 0) ? idx + 1 : idx - 1;     // syskon-matarens index
+  const [sa, sb] = koNodeTeams(ctx, round, sib);
+  let opp;
+  if (sa == null || sb == null) opp = 'en match som inte är klar än';
+  else opp = `${escHtml(sa)}/${escHtml(sb)}`;
+  return `<div class="ko-next-label">→ vinnaren möter vinnaren av ${opp} i ${nextName}</div>`;
 }
 function koMineLine(ctx, m) {
   if (!ctx.meKnown) return '';
@@ -4865,7 +4884,7 @@ function koMineLine(ctx, m) {
     const g = m.guaranteed.find(x => x.name === ctx.me);
     if (m.state === 'played') return `<div class="ko-pg-mine ko-good">✓ Du fick +${g.pts}p — du hade båda lagen kvar</div>`;
     const depTeam = g.aliveA.length ? an : (g.aliveB.length ? bn : null);
-    const dep = depTeam ? ` · men djupare vad bara om ${depTeam} vinner` : '';
+    const dep = depTeam ? ` · men dina chanser längre fram lever bara om ${depTeam} vinner` : '';
     return `<div class="ko-pg-mine ko-good">Du får <strong>+${g.pts}p oavsett</strong> — du har båda lagen kvar${dep}</div>`;
   }
   const team = c === 'a' ? a : b, tn = c === 'a' ? an : bn;
@@ -4897,11 +4916,39 @@ function koRenderPager(ctx) {
   return `
     <div class="ko-pg-pills">${pills}</div>
     ${filter}
-    <div class="ko-pg-hint">Tryck på ett kort för full detalj (vem gynnas + hur mycket).${ctx.meKnown ? ' Raden längst ner visar vad <strong>du</strong> tjänar.' : ''}</div>
+    <div class="ko-pg-hint">Tryck på en match för att se vilka som tjänar på den — och hur mycket.${ctx.meKnown ? ' Raden längst ner visar vad <strong>du</strong> tjänar.' : ''}</div>
     <div class="ko-pg-list">${cards}</div>`;
 }
 function koSetPagerRound(k) { koPagerRound = k; const el = document.getElementById('koPager'); if (el && koCtx) el.innerHTML = koRenderPager(koCtx); }
-function koTogglePagerMine() { koPagerMine = !koPagerMine; const el = document.getElementById('koPager'); if (el && koCtx) el.innerHTML = koRenderPager(koCtx); }
+function koTogglePagerMine() { koPagerMine = !koPagerMine; const el = document.getElementById('koList'); if (el && koCtx) el.innerHTML = koRenderList(koCtx); }
+
+/* ══════════ RENDER: ENHETLIG TIDSORDNAD LISTA (alla skärmbredder) ══════════ */
+// Samlar alla matcher i bestämda ronder, sorterar på avsparkstid stigande, och
+// renderar kompaktkort. "Visa bara mina lag"-filtret (koPagerMine) tillämpas.
+function koRenderList(ctx) {
+  const visible = koVisibleRounds(ctx);
+  const meData = ctx.meKnown ? ctx.parts.find(p => p.name === ctx.me).data : null;
+  const items = [];
+  for (const key of visible) {
+    const r = KO_ROUNDS.find(x => x.key === key);
+    for (let i = 0; i < r.n; i++) {
+      const m = koMatchModel(ctx, key, i);
+      const meta = m.meta || {};
+      // sorteringsnyckel: 'YYYY-MM-DD HH:MM' — matcher utan meta sist.
+      const sortKey = (meta.date && meta.time) ? (meta.date + ' ' + meta.time) : '9999-99-99 99:99';
+      items.push({ m, round: key, idx: i, sortKey });
+    }
+  }
+  items.sort((x, y) => x.sortKey < y.sortKey ? -1 : (x.sortKey > y.sortKey ? 1 : 0));
+
+  let cards = '';
+  for (const it of items) {
+    if (koPagerMine && (!meData || koClassify(meData, it.round, it.m.teams[0], it.m.teams[1]) === 'none')) continue;
+    cards += koCompactCard(ctx, it.m, it.round, it.idx);
+  }
+  if (!cards) cards = `<div class="ko-pg-empty">${koPagerMine ? 'Inga matcher med dina lag kvar just nu.' : 'Inga slutspelsmatcher att visa än.'}</div>`;
+  return `<div class="ko-list-grid">${cards}</div>`;
+}
 
 /* ══════════ RENDER: KORT ══════════ */
 function koAva(name, avatar) { return avatarHtml(avatar, name, 'xs'); }
@@ -4966,7 +5013,7 @@ function koCardHTML(ctx, m) {
       const notes = [];
       if (g.aliveA.length) notes.push(`om ${an} vinner: ${escHtml(g.aliveA.join(', '))}`);
       if (g.aliveB.length) notes.push(`om ${bn} vinner: ${escHtml(g.aliveB.join(', '))}`);
-      const noteHTML = notes.length ? `<span class="ko-alive ko-hot">→ djupare vad ${notes.join(' · ')}</span>` : '';
+      const noteHTML = notes.length ? `<span class="ko-alive ko-hot">→ längre fram: ${notes.join(' · ')}</span>` : '';
       return `<div class="ko-person ${mine ? 'ko-mine' : ''} ${hidden ? 'ko-extra' : ''}"${hidden ? ' hidden' : ''}>
         ${koAva(g.name, g.avatar)}
         <span class="ko-pn">${escHtml(g.name)}${mine ? ' <span class="ko-minetag">DU</span>' : ''}${noteHTML}</span>
@@ -4975,7 +5022,7 @@ function koCardHTML(ctx, m) {
     });
     guarHTML = `<div class="ko-guar">
       <div class="ko-guar-head">🔒 Gynnas oavsett vem som vinner <span class="ko-guar-pts">+${m.guaranteed[0].pts}p garanterat</span></div>
-      <div class="ko-guar-sub">Har båda lagen kvar i sin tippning — bankar poängen hur det än går.</div>
+      <div class="ko-guar-sub">Har båda lagen kvar i sitt slutspelstips — får poäng oavsett vem som vinner.</div>
       <div class="ko-persons">${rows}</div>
     </div>`;
   }
@@ -5002,7 +5049,7 @@ function koCardHTML(ctx, m) {
         ${outcomeBlock(m.outcomes[0])}
         ${outcomeBlock(m.outcomes[1])}
       </div>
-      ${m.round !== 'final' ? `<div class="ko-legend" style="margin-top:12px"><strong>→</strong> = vinsten håller också personens djupare vad vid liv (semi/final/mästare), utöver poängen som bankas nu.</div>` : ''}
+      ${m.round !== 'final' ? `<div class="ko-legend" style="margin-top:12px"><strong>→</strong> = en vinst håller även personens tips längre fram vid liv (semifinal/final/vinnare), utöver poängen just nu.</div>` : ''}
     </div>
   </div>`;
 }
@@ -5028,7 +5075,7 @@ function koOpenBronze() {
   if (b[2]) metaBits.push(b[2]);
   if (b[3]) metaBits.push(`<span class="ko-tv-badge">${escHtml(b[3])}</span>`);
   const metaHTML = metaBits.length ? `<div class="ko-koc-meta">${metaBits.join(' · ')}</div>` : '';
-  document.getElementById('koDrawerBody').innerHTML = `<div class="ko-koc"><div class="ko-koc-head"><div class="ko-koc-round">Bronsmatch 🥉</div><div class="ko-koc-teams">Semifinal-förlorarna</div><div class="ko-koc-decides">Avgör 3:e plats <span class="ko-koc-stake">8p på spel</span></div>${metaHTML}</div><div class="ko-koc-body"><div class="ko-koc-state ko-upcoming">Projicerad — semifinalerna inte spelade</div><p style="font-size:13px;color:var(--text2)">När semifinalerna är klara fylls lagen i automatiskt och kortet visar vilka som tippat rätt 3:e-platslag (8p var), precis som de andra korten.</p></div></div>`;
+  document.getElementById('koDrawerBody').innerHTML = `<div class="ko-koc"><div class="ko-koc-head"><div class="ko-koc-round">Bronsmatch 🥉</div><div class="ko-koc-teams">Semifinal-förlorarna</div><div class="ko-koc-decides">Avgör 3:e plats <span class="ko-koc-stake">8p på spel</span></div>${metaHTML}</div><div class="ko-koc-body"><div class="ko-koc-state ko-upcoming">Lagen är inte klara än — semifinalerna måste spelas först</div><p style="font-size:13px;color:var(--text2)">När semifinalerna är klara fylls lagen i automatiskt och kortet visar vilka som tippat rätt 3:e-platslag (8p var), precis som de andra korten.</p></div></div>`;
   document.getElementById('koDrawer').classList.add('ko-open');
   document.getElementById('koScrim').classList.add('ko-open');
 }
@@ -5043,27 +5090,21 @@ let koCtx = null;
 function renderSlutspel(container, allPredsData) {
   koCtx = koBuildContext(allPredsData);
   const noPart = !koCtx.parts.length;
-  const intro = `<div class="ko-intro">Trädet är kartan, matchkortet är djupet. Allt härlett ur deltagarnas brackets — inga nya tips.</div>
-    <div class="ko-note-banner"><strong>Gruppspelet är slutspelat.</strong> Poängen följer din modell oförändrad — en match avgör vem som når nästa rond, och den ronds poäng bankas av alla som har vinnaren så långt. Varje matchkort svarar på en enda fråga: <strong>vem gynnas om respektive lag vinner?</strong></div>`;
+  const intro = `<div class="ko-intro">Här ser du hur slutspelet ligger till. Klicka på en match för att se vilka i ligan som tjänar på att respektive lag vinner — och hur många poäng det ger.</div>
+    <div class="ko-note-banner"><strong>Gruppspelet är klart — nu kör vi slutspelet!</strong> Varje match avgör vilka lag som går vidare. Du får poäng för varje lag du tippat rätt så långt — ju längre ett lag du valt går, desto mer. Varje matchkort svarar på en fråga: <strong>vem tjänar på att respektive lag vinner?</strong></div>`;
   if (noPart) {
-    container.innerHTML = intro + `<div class="empty-state">Kunde inte ladda deltagarnas brackets.</div>`;
+    container.innerHTML = intro + `<div class="empty-state">Kunde inte ladda allas slutspelstips just nu. Ladda om sidan och försök igen.</div>`;
     return;
   }
-  // Default pager till djupaste bestämda ronden (bara bestämda ronder visas).
-  const visible = koVisibleRounds(koCtx);
-  koPagerRound = visible[visible.length - 1] || 'r32';
+  const filter = koCtx.meKnown ? `<div class="ko-pg-filter" onclick="koTogglePagerMine()">
+      <span class="ko-pg-switch ${koPagerMine ? 'ko-on' : ''}"></span> Visa bara matcher med mina lag
+    </div>` : '';
   container.innerHTML = intro + `
-    <div class="ko-bracket-card ko-tree-wide">
-      <div class="ko-bracket${visible.length === 1 ? ' ko-single' : ''}" id="koBracket">
-        <svg class="ko-bracket-svg" id="koConnectors"></svg>
-        <div class="ko-bracket-cols" id="koCols">${koRenderTree(koCtx)}</div>
-      </div>
-      <div class="ko-legend">🟡 markering = ditt val · grön = vidare · klicka på en match för detaljer. Endast ronder där alla lag är avgjorda visas — kommande ronder dyker upp när matande matcher spelats. <strong>På mobil byts trädet mot en rond-lista.</strong></div>
-    </div>
-    <div class="ko-pager-narrow" id="koPager">${koRenderPager(koCtx)}</div>`;
+    <div class="ko-pg-hint">Alla slutspelsmatcher i tidsordning — först överst. Klicka på en match för vilka som tjänar på den. Kommande ronder dyker upp när lagen är klara.</div>
+    ${filter}
+    <div id="koList">${koRenderList(koCtx)}</div>`;
   // Drawer (skapa en gång, återanvänd)
   koEnsureDrawer();
-  requestAnimationFrame(koDrawConnectors);
 }
 function koEnsureDrawer() {
   if (document.getElementById('koDrawer')) return;
