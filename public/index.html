@@ -1728,11 +1728,20 @@ select.form-input {
 
 /* Bracket tree */
 .ko-bracket-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--card-shadow); padding: 16px; overflow-x: auto; }
-.ko-bracket { position: relative; min-width: 1120px; }
+.ko-bracket { position: relative; min-width: 0; width: max-content; }
 .ko-bracket-svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 .ko-bracket-svg path { fill: none; stroke: var(--border); stroke-width: 2; }
 .ko-bracket-cols { position: relative; z-index: 1; display: flex; }
-.ko-bcol { flex: 1; display: flex; flex-direction: column; justify-content: space-around; min-width: 178px; }
+.ko-bcol { flex: 0 0 auto; display: flex; flex-direction: column; justify-content: space-around; min-width: 178px; width: 196px; }
+/* Enkel rond (bara 16-delen synlig) → rutnät istället för utsträckt bracket-kolumn */
+.ko-bracket.ko-single { width: auto; min-width: 0; }
+.ko-bracket.ko-single .ko-bracket-cols { display: block; }
+.ko-bracket.ko-single .ko-bcol { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; width: auto; }
+.ko-bracket.ko-single .ko-bcol-head { grid-column: 1 / -1; text-align: left; margin-bottom: 4px; }
+.ko-bracket.ko-single .ko-match-node { margin: 0; }
+/* Hopfällbara namnlistor: dölj extra-rader via klass (hidden-attributet överkörs av display:flex) */
+.ko-person.ko-extra { display: none; }
+.ko-persons.ko-show-all .ko-person.ko-extra { display: flex; }
 .ko-bcol-head { text-align: center; font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
 .ko-bcol-head .ko-pts { display: block; color: var(--accent); font-size: 10.5px; margin-top: 2px; letter-spacing: .2px; }
 .ko-match-node { background: var(--bg2); border: 1.5px solid var(--border); border-radius: 9px; margin: 7px 9px; cursor: pointer; overflow: hidden; transition: all .14s; box-shadow: 0 1px 4px rgba(12,31,63,0.05); }
@@ -4907,9 +4916,7 @@ function koCollapsibleRows(ctx, items, buildRow) {
 function koToggleMore(ev, btn) {
   ev.stopPropagation();
   const box = btn.parentElement;
-  const open = !box.classList.contains('ko-show-all');
-  box.classList.toggle('ko-show-all', open);
-  box.querySelectorAll('.ko-person.ko-extra').forEach(e => e.hidden = !open);
+  const open = box.classList.toggle('ko-show-all');
   btn.innerHTML = open ? 'Visa färre ▴' : `+${btn.dataset.n} till ▾`;
 }
 function koCardHTML(ctx, m) {
@@ -5047,7 +5054,7 @@ function renderSlutspel(container, allPredsData) {
   koPagerRound = visible[visible.length - 1] || 'r32';
   container.innerHTML = intro + `
     <div class="ko-bracket-card ko-tree-wide">
-      <div class="ko-bracket" id="koBracket">
+      <div class="ko-bracket${visible.length === 1 ? ' ko-single' : ''}" id="koBracket">
         <svg class="ko-bracket-svg" id="koConnectors"></svg>
         <div class="ko-bracket-cols" id="koCols">${koRenderTree(koCtx)}</div>
       </div>
