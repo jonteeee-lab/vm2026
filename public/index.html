@@ -1808,6 +1808,8 @@ select.form-input {
 /* Enhetlig tidsordnad matchlista (samma på alla skärmbredder) */
 .ko-list-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 @media (min-width: 760px) { .ko-list-grid { grid-template-columns: 1fr 1fr; } }
+.ko-today-head { font-size: 13px; font-weight: 800; color: var(--accent); letter-spacing: .3px; margin: 2px 0 12px; display: flex; align-items: center; gap: 7px; }
+.ko-pg-card.ko-today-card { box-shadow: 0 0 0 2px var(--accent-light), var(--card-shadow); }
 .ko-next-label { margin-top: 10px; font-size: 11.5px; color: var(--text3); padding: 7px 2px 0; border-top: 1px solid var(--bg3); line-height: 1.45; }
 
 @media (max-width: 760px) {
@@ -2563,7 +2565,7 @@ function updateNav() {
     const tournLocked = !isTournamentLocked();
     const items = [
       ['hem','Hem'],['tippa','Tippa'],['resultat','Resultat'],['leaderboard','Topplista'],
-      ['dagensm','Dagens matcher'],['alla','Alla svar'],['projektion','Projektion'],
+      ['dagensm','Dagens matcher'],['alla','Alla svar'],
       ['sidebets','Sidebets'],['info','Regler']
     ];
     if (currentUser?.is_admin) items.push(['admin','Admin']);
@@ -2591,7 +2593,7 @@ function updateNav() {
       ['mer','Mer','<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>']
     ];
     if (currentUser?.is_admin) items.push(['admin','Admin','<circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>']);
-    const moreViews = ['tippa','resultat','alla','projektion','sidebets'];
+    const moreViews = ['tippa','resultat','alla','sidebets'];
     bn.innerHTML = items.map(([id,label,icon]) => {
       if (id === 'mer') {
         const active = moreViews.includes(currentView);
@@ -2612,7 +2614,6 @@ function updateNav() {
         ['tippa','Tippa','<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>'],
         ['resultat','Resultat','<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'],
         ['alla','Alla svar','<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'],
-        ['projektion','Projektion','<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>'],
         ['sidebets','Sidebets','<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>']
       ];
       const chev = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
@@ -4854,7 +4855,7 @@ function koCompactCard(ctx, m, round, idx) {
   if (meta.time) metaBits.push(meta.time);
   if (meta.channel) metaBits.push(meta.channel);
   const metaStr = metaBits.join(' · ');
-  return `<div class="ko-pg-card" onclick="koOpenMatch('${round}',${idx})">
+  return `<div class="ko-pg-card${m.state === 'today' ? ' ko-today-card' : ''}" onclick="koOpenMatch('${round}',${idx})">
     <div class="ko-pg-top"><span class="ko-pg-round">${m.roundName} · ${m.stake} på spel${metaStr ? ' · ' + escHtml(metaStr) : ''}</span>${badge}</div>
     <div class="ko-pg-sides">${side(a, o[0].persons)}<span class="ko-pg-vs">vs</span>${side(b, o[1].persons)}</div>
     ${guarLine}
@@ -4948,12 +4949,21 @@ function koRenderList(ctx) {
   items.sort((x, y) => x.sortKey < y.sortKey ? -1 : (x.sortKey > y.sortKey ? 1 : 0));
 
   let cards = '';
+  let todayCount = 0, firstTodayTime = null;
   for (const it of items) {
     if (koPagerMine && (!meData || koClassify(meData, it.round, it.m.teams[0], it.m.teams[1]) === 'none')) continue;
+    if (it.m.state === 'today') {
+      todayCount++;
+      const t = it.m.meta && it.m.meta.time;
+      if (t && (!firstTodayTime || t < firstTodayTime)) firstTodayTime = t;
+    }
     cards += koCompactCard(ctx, it.m, it.round, it.idx);
   }
   if (!cards) cards = `<div class="ko-pg-empty">${koPagerMine ? 'Inga matcher med dina lag kvar just nu.' : 'Inga slutspelsmatcher att visa än.'}</div>`;
-  return `<div class="ko-list-grid">${cards}</div>`;
+  const head = todayCount
+    ? `<div class="ko-today-head">🔴 Spelas idag · ${todayCount} ${todayCount === 1 ? 'match' : 'matcher'}${firstTodayTime ? ` · först ut ${firstTodayTime}` : ''}</div>`
+    : '';
+  return head + `<div class="ko-list-grid">${cards}</div>`;
 }
 
 /* ══════════ RENDER: KORT ══════════ */
