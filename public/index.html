@@ -4628,43 +4628,45 @@ function koActualWinner(actual, round, idx, nodeTeamsFn) {
 }
 
 // Konsensus-projektion: vem flest deltagare har vidare (memoiserad per render via ctx).
-function koProjWinner(ctx, round, idx) {
-  const [a, b] = koNodeTeams(ctx, round, idx);
-  if (a == null || b == null) return a != null ? a : b;
-  let ca = 0, cb = 0;
-  for (const part of ctx.parts) {
-    const c = koClassify(part.data, round, a, b);
-    if (c === 'a') ca++; else if (c === 'b') cb++;
-  }
-  return ca >= cb ? a : b;
-}
-function koWinnerOrProj(ctx, round, idx) {
+// Faktisk vinnare av en match, eller null om ej spelad. INGEN projicering —
+// obestämda lag förblir null (de ronderna renderas ändå aldrig, se koVisibleRounds).
+function koWinnerOrNull(ctx, round, idx) {
   const k = round + idx;
   if (k in ctx.woCache) return ctx.woCache[k];
-  const v = koActualWinner(ctx.actual, round, idx, (r, i) => koNodeTeams(ctx, r, i)) || koProjWinner(ctx, round, idx);
+  const v = koActualWinner(ctx.actual, round, idx, (r, i) => koNodeTeams(ctx, r, i)) || null;
   ctx.woCache[k] = v;
   return v;
 }
 function koNodeTeams(ctx, round, idx) {
   if (round === 'r32') return [KO_R32[idx][3], KO_R32[idx][4]];
   const [x, y] = KO_FEED[round](idx), pr = KO_PREV[round];
-  return [koWinnerOrProj(ctx, pr, x), koWinnerOrProj(ctx, pr, y)];
+  return [koWinnerOrNull(ctx, pr, x), koWinnerOrNull(ctx, pr, y)];
 }
-// Matar-matcher spelade? (avgör projected vs upcoming för djupare ronder)
+// Matar-matcher spelade? (alla lag i denna match är bestämda)
 function koIsDetermined(ctx, round, idx) {
   if (round === 'r32') return true;
   const [x, y] = KO_FEED[round](idx), pr = KO_PREV[round];
   const nt = (r, i) => koNodeTeams(ctx, r, i);
   return koActualWinner(ctx.actual, pr, x, nt) != null && koActualWinner(ctx.actual, pr, y, nt) != null;
 }
-// 'played' | 'today' | 'upcoming' | 'projected'
+// En hel rond är bestämd när ALLA dess matcher har bestämda lag.
+function koRoundDetermined(ctx, roundKey) {
+  const r = KO_ROUNDS.find(x => x.key === roundKey);
+  if (!r) return false;
+  for (let i = 0; i < r.n; i++) if (!koIsDetermined(ctx, roundKey, i)) return false;
+  return true;
+}
+// Ronder som ska visas: bara de vars alla matcher är bestämda (ingen projicering).
+// R32 är bas → alltid med. Resultatet är sammanhängande från r32 och uppåt.
+function koVisibleRounds(ctx) {
+  return KO_ROUNDS.filter(r => koRoundDetermined(ctx, r.key)).map(r => r.key);
+}
+// 'played' | 'today' | 'upcoming'  (visas bara för bestämda ronder → inga projektioner)
 function koStateOf(ctx, round, idx) {
   const win = koActualWinner(ctx.actual, round, idx, (r, i) => koNodeTeams(ctx, r, i));
   if (win != null) return 'played';
-  if (round === 'r32') {
-    return KO_R32[idx][1] === ctx.today ? 'today' : 'upcoming';
-  }
-  return koIsDetermined(ctx, round, idx) ? 'upcoming' : 'projected';
+  const meta = koMeta(round, idx);
+  return (meta.date && meta.date === ctx.today) ? 'today' : 'upcoming';
 }
 // Faktisk vinnare som objekt för UI ({w} eller null)
 function koActualOf(ctx, round, idx) {
@@ -4751,22 +4753,23 @@ function koMiniCons(ctx, round, idx, teams) {
 }
 function koRenderTree(ctx) {
   let html = '';
+  const visible = koVisibleRounds(ctx); // bara bestämda ronder — ingen projicering
   for (const r of KO_ROUNDS) {
+    if (!visible.includes(r.key)) continue;
     html += `<div class="ko-bcol" data-round="${r.key}">`;
     html += `<div class="ko-bcol-head">${r.name}<span class="ko-pts">${r.pts}</span></div>`;
     for (let i = 0; i < r.n; i++) {
       const teams = koNodeTeams(ctx, r.key, i), [a, b] = teams;
       const st = koStateOf(ctx, r.key, i), act = koActualOf(ctx, r.key, i);
-      const proj = (st === 'projected'), determined = koIsDetermined(ctx, r.key, i);
       const myc = ctx.meKnown ? koClassify(ctx.parts.find(p => p.name === ctx.me).data, r.key, a, b) : 'none';
       const mineA = (myc === 'a' || myc === 'both'), mineB = (myc === 'b' || myc === 'both');
       let foot;
       if (act) { foot = `<span class="ko-state-played">✓ ${escHtml(act.w)}</span>${koMiniCons(ctx, r.key, i, teams)}`; }
       else if (st === 'today') { foot = `<span class="ko-state-today">● Spelas idag</span>${koMiniCons(ctx, r.key, i, teams)}`; }
-      else { foot = `<span>${proj ? 'Projicerat' : 'Kommande'}</span>${koMiniCons(ctx, r.key, i, teams)}`; }
-      html += `<div class="ko-match-node ${st === 'today' ? 'ko-today' : ''} ${proj ? 'ko-projected' : ''}" data-round="${r.key}" data-idx="${i}" onclick="koOpenMatch('${r.key}',${i})">
-        ${koTeamRow(ctx, a, { winner: act && act.w === a, loser: act && act.w !== a, proj: proj && !determined, mine: mineA })}
-        ${koTeamRow(ctx, b, { winner: act && act.w === b, loser: act && act.w !== b, proj: proj && !determined, mine: mineB })}
+      else { foot = `<span>Kommande</span>${koMiniCons(ctx, r.key, i, teams)}`; }
+      html += `<div class="ko-match-node ${st === 'today' ? 'ko-today' : ''}" data-round="${r.key}" data-idx="${i}" onclick="koOpenMatch('${r.key}',${i})">
+        ${koTeamRow(ctx, a, { winner: act && act.w === a, loser: act && act.w !== a, mine: mineA })}
+        ${koTeamRow(ctx, b, { winner: act && act.w === b, loser: act && act.w !== b, mine: mineB })}
         <div class="ko-node-foot">${foot}</div>
       </div>`;
     }
@@ -4816,7 +4819,6 @@ function koCompactCard(ctx, m, round, idx) {
   let badge;
   if (m.state === 'played') badge = `<span class="ko-pg-badge ko-played">✓ ${escHtml(win)} vidare</span>`;
   else if (m.state === 'today') badge = `<span class="ko-pg-badge ko-today">● Spelas idag</span>`;
-  else if (m.state === 'projected') badge = `<span class="ko-pg-badge ko-proj">Projicerade lag</span>`;
   else badge = `<span class="ko-pg-badge">Kommande</span>`;
 
   const meBoth = ctx.meKnown && m.guaranteed.some(g => g.name === ctx.me);
@@ -4866,7 +4868,11 @@ function koMineLine(ctx, m) {
   return `<div class="ko-pg-mine">Du tjänar <strong>+${me.pts}p</strong> om ${tn} vinner${me.alive ? ` · ${me.alive}` : ''}</div>`;
 }
 function koRenderPager(ctx) {
-  const pills = KO_ROUNDS.map(r => `<button class="ko-pg-pill ${r.key === koPagerRound ? 'ko-active' : ''}" onclick="koSetPagerRound('${r.key}')">${KO_RCFG[r.key].short}</button>`).join('');
+  const visible = koVisibleRounds(ctx); // bara bestämda ronder
+  // Klampa aktiv rond till en synlig rond (default: djupaste synliga).
+  if (!visible.includes(koPagerRound)) koPagerRound = visible[visible.length - 1] || 'r32';
+  const pills = KO_ROUNDS.filter(r => visible.includes(r.key))
+    .map(r => `<button class="ko-pg-pill ${r.key === koPagerRound ? 'ko-active' : ''}" onclick="koSetPagerRound('${r.key}')">${KO_RCFG[r.key].short}</button>`).join('');
   const r = KO_ROUNDS.find(x => x.key === koPagerRound);
   let cards = '';
   const meData = ctx.meKnown ? ctx.parts.find(p => p.name === ctx.me).data : null;
@@ -5037,13 +5043,16 @@ function renderSlutspel(container, allPredsData) {
     container.innerHTML = intro + `<div class="empty-state">Kunde inte ladda deltagarnas brackets.</div>`;
     return;
   }
+  // Default pager till djupaste bestämda ronden (bara bestämda ronder visas).
+  const visible = koVisibleRounds(koCtx);
+  koPagerRound = visible[visible.length - 1] || 'r32';
   container.innerHTML = intro + `
     <div class="ko-bracket-card ko-tree-wide">
       <div class="ko-bracket" id="koBracket">
         <svg class="ko-bracket-svg" id="koConnectors"></svg>
         <div class="ko-bracket-cols" id="koCols">${koRenderTree(koCtx)}</div>
       </div>
-      <div class="ko-legend">🟡 markering = ditt val · streckad ruta = projicerat lag (matar-matcher inte spelade än) · grön = vidare · klicka på en match för detaljer. Hela trädet inkl. 16-delsfinalen (32 lag) — scrolla i sidled. <strong>På mobil byts trädet mot en rond-lista.</strong></div>
+      <div class="ko-legend">🟡 markering = ditt val · grön = vidare · klicka på en match för detaljer. Endast ronder där alla lag är avgjorda visas — kommande ronder dyker upp när matande matcher spelats. <strong>På mobil byts trädet mot en rond-lista.</strong></div>
     </div>
     <div class="ko-pager-narrow" id="koPager">${koRenderPager(koCtx)}</div>`;
   // Drawer (skapa en gång, återanvänd)
