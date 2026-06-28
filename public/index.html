@@ -1811,6 +1811,11 @@ select.form-input {
 .ko-today-head { font-size: 13px; font-weight: 800; color: var(--accent); letter-spacing: .3px; margin: 2px 0 12px; display: flex; align-items: center; gap: 7px; }
 .ko-pg-card.ko-today-card { box-shadow: 0 0 0 2px var(--accent-light), var(--card-shadow); }
 .ko-next-label { margin-top: 10px; font-size: 11.5px; color: var(--text3); padding: 7px 2px 0; border-top: 1px solid var(--bg3); line-height: 1.45; }
+/* Bracket-överblick: platshållare för framtida (okända) lag */
+.ko-team-row.ko-slot-future { opacity: .8; }
+.ko-slot-placeholder { font-style: italic; color: var(--text3); font-weight: 500; font-size: 12px; }
+.ko-bronze-static { cursor: default; }
+.ko-bronze-static:hover { box-shadow: none; transform: none; }
 
 @media (max-width: 760px) {
   .ko-tree-wide { display: none; }
@@ -2066,6 +2071,15 @@ select.form-input {
       Alla svar
     </div>
     <div id="allaContent"><div class="loading-overlay"><div class="spinner"></div> Laddar...</div></div>
+  </div>
+
+  <!-- SLUTSPELSTRÄD (visuell överblick) -->
+  <div class="view" id="view-trad">
+    <div class="section-title">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h6v4H3z"/><path d="M3 15h6v4H3z"/><path d="M15 10h6v4h-6z"/><path d="M9 7h3v10h3"/></svg>
+      Slutspelsträd
+    </div>
+    <div id="tradContent"><div class="loading-overlay"><div class="spinner"></div> Laddar...</div></div>
   </div>
 
   <!-- PROJEKTION -->
@@ -2491,7 +2505,7 @@ function navigate(view) {
 function handleHash() {
   const defaultView = currentUser ? 'hem' : 'landing';
   const hash = (window.location.hash || '#' + defaultView).slice(1);
-  const authed = ['hem','tippa','resultat','leaderboard','dagensm','alla','projektion','sidebets','admin','profil','info'];
+  const authed = ['hem','tippa','resultat','leaderboard','dagensm','alla','trad','projektion','sidebets','admin','profil','info'];
   if (authed.includes(hash) && !currentUser) {
     navigate('login');
     return;
@@ -2500,7 +2514,7 @@ function handleHash() {
     navigate('tippa');
     return;
   }
-  const requiresApproval = ['resultat','alla','projektion','sidebets'];
+  const requiresApproval = ['resultat','alla','trad','projektion','sidebets'];
   if (requiresApproval.includes(hash) && !userApproved) {
     showToast('Tillgängligt när ditt tips är godkänt av admin.', 'info');
     navigate('tippa');
@@ -2532,6 +2546,7 @@ function showView(view) {
   if (view === 'leaderboard') loadLeaderboard();
   if (view === 'dagensm') loadDagensm();
   if (view === 'alla') loadAlla();
+  if (view === 'trad') loadTrad();
   if (view === 'projektion') loadProjektion();
   if (view === 'sidebets') loadSidebets();
   if (view === 'admin') loadAdmin();
@@ -2561,11 +2576,11 @@ function updateNav() {
   // Desktop nav
   const links = document.getElementById('navLinks');
   if (loggedIn) {
-    const locked = ['resultat','alla','projektion','sidebets'];
+    const locked = ['resultat','alla','trad','projektion','sidebets'];
     const tournLocked = !isTournamentLocked();
     const items = [
       ['hem','Hem'],['tippa','Tippa'],['resultat','Resultat'],['leaderboard','Topplista'],
-      ['dagensm','Dagens matcher'],['alla','Alla svar'],
+      ['dagensm','Dagens matcher'],['alla','Alla svar'],['trad','Slutspelsträd'],
       ['sidebets','Sidebets'],['info','Regler']
     ];
     if (currentUser?.is_admin) items.push(['admin','Admin']);
@@ -2583,7 +2598,7 @@ function updateNav() {
   // Bottom nav
   const bn = document.getElementById('bottomNav');
   if (loggedIn) {
-    const locked = ['resultat','alla','sidebets'];
+    const locked = ['resultat','alla','trad','sidebets'];
     const tournLocked = !isTournamentLocked();
     const items = [
       ['hem','Hem','<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>'],
@@ -2609,11 +2624,12 @@ function updateNav() {
     // Bottom sheet ("Mer")
     const sheet = document.getElementById('moreSheetItems');
     if (sheet) {
-      const sheetLocked = ['resultat','alla','projektion','sidebets'];
+      const sheetLocked = ['resultat','alla','trad','projektion','sidebets'];
       const moreItems = [
         ['tippa','Tippa','<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>'],
         ['resultat','Resultat','<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'],
         ['alla','Alla svar','<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'],
+        ['trad','Slutspelsträd','<path d="M3 5h6v4H3z"/><path d="M3 15h6v4H3z"/><path d="M15 10h6v4h-6z"/><path d="M9 7h3v10h3"/>'],
         ['sidebets','Sidebets','<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>']
       ];
       const chev = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
@@ -4824,6 +4840,108 @@ function koDrawConnectors() {
   }
   svg.innerHTML = paths;
 }
+// Parametriserad variant av koDrawConnectors för en egen bracket-container.
+// Ritar bara mellan kolumner som finns i DOM (saknad föregående kolumn → hoppas).
+function koDrawConnectorsIn(bracketId, svgId) {
+  const svg = document.getElementById(svgId);
+  const bracket = document.getElementById(bracketId);
+  if (!svg || !bracket || !bracket.offsetWidth) return;
+  const br = bracket.getBoundingClientRect();
+  svg.setAttribute('viewBox', `0 0 ${br.width} ${br.height}`);
+  const center = el => { const r = el.getBoundingClientRect(); return { x: r.left - br.left, xr: r.right - br.left, y: r.top - br.top + r.height / 2 }; };
+  let paths = '';
+  for (const round of ['r16', 'qf', 'sf', 'final']) {
+    const col = bracket.querySelector(`.ko-bcol[data-round="${round}"]`);
+    const fcol = bracket.querySelector(`.ko-bcol[data-round="${KO_PREV[round]}"]`);
+    if (!col || !fcol) continue;
+    const nodes = col.querySelectorAll('.ko-match-node');
+    const fnodes = fcol.querySelectorAll('.ko-match-node');
+    nodes.forEach((node, i) => {
+      const nc = center(node);
+      KO_FEED[round](i).forEach(fi => {
+        if (!fnodes[fi]) return;
+        const fc = center(fnodes[fi]);
+        const midx = (fc.xr + nc.x) / 2;
+        paths += `<path d="M ${fc.xr} ${fc.y} H ${midx} V ${nc.y} H ${nc.x}"/>`;
+      });
+    });
+  }
+  svg.innerHTML = paths;
+}
+
+/* ══════════ SLUTSPELSTRÄD (visuell överblicksvy, icke-interaktiv) ══════════ */
+// En rond är "helspelad" när ALLA dess matcher har en faktisk vinnare.
+function koPlayedFully(ctx, roundKey) {
+  const r = KO_ROUNDS.find(x => x.key === roundKey);
+  if (!r) return false;
+  const nt = (rr, ii) => koNodeTeams(ctx, rr, ii);
+  for (let i = 0; i < r.n; i++) {
+    if (koActualWinner(ctx.actual, roundKey, i, nt) == null) return false;
+  }
+  return true;
+}
+// Ronder att visa i bracket-överblicken: från "fronten" (första ej helspelade
+// ronden) t.o.m. final. Helspelade ledande ronder faller bort. Ingen projicering.
+function koBracketRounds(ctx) {
+  const KEYS = ['r32', 'r16', 'qf', 'sf', 'final'];
+  const front = KEYS.findIndex(k => !koPlayedFully(ctx, k));
+  return KEYS.slice(front === -1 ? KEYS.length - 1 : front);
+}
+// Lagrad för bracket-vyn. Känt lag → flagga + namn (grön om vinnare). Okänt lag
+// (framtida nod) → dämpad platshållare "Vinnare av {matar-lag}" — ingen gissning.
+function koBracketSlot(ctx, round, idx, slotPos, team, opts) {
+  const o = opts || {};
+  if (team != null) {
+    let cls = 'ko-team-row';
+    if (o.winner) cls += ' ko-winner';
+    if (o.loser) cls += ' ko-loser';
+    if (o.mine) cls += ' ko-mine';
+    return `<div class="${cls}"><span class="ko-flag">${flag(team)}</span><span class="ko-nm">${escHtml(team)}</span>${o.mine ? '<span class="ko-minetag">DU</span>' : ''}</div>`;
+  }
+  // okänt lag → visa matar-matchens lag som platshållartext
+  let label = 'Vinnare';
+  if (round !== 'r32') {
+    const feederIdx = KO_FEED[round](idx)[slotPos];
+    const [fa, fb] = koNodeTeams(ctx, KO_PREV[round], feederIdx);
+    if (fa != null && fb != null) label = `Vinnare av ${escHtml(fa)}–${escHtml(fb)}`;
+  }
+  return `<div class="ko-team-row ko-slot-future"><span class="ko-flag">⚪</span><span class="ko-nm ko-slot-placeholder">${label}</span></div>`;
+}
+function koRenderBracket(ctx) {
+  let html = '';
+  const rounds = koBracketRounds(ctx);
+  for (const key of rounds) {
+    const r = KO_ROUNDS.find(x => x.key === key);
+    html += `<div class="ko-bcol" data-round="${key}">`;
+    html += `<div class="ko-bcol-head">${r.name}<span class="ko-pts">${r.pts}</span></div>`;
+    for (let i = 0; i < r.n; i++) {
+      const [a, b] = koNodeTeams(ctx, key, i);
+      const act = koActualOf(ctx, key, i);          // {w} eller null
+      const st = koStateOf(ctx, key, i);
+      // DU-markering: bara om båda lagen kända (annars vet vi inte sidan)
+      const myc = (ctx.meKnown && a != null && b != null)
+        ? koClassify(ctx.parts.find(p => p.name === ctx.me).data, key, a, b) : 'none';
+      const mineA = (myc === 'a' || myc === 'both'), mineB = (myc === 'b' || myc === 'both');
+      let foot;
+      if (act) foot = `<span class="ko-state-played">✓ ${escHtml(act.w)}</span>`;
+      else if (st === 'today') foot = `<span class="ko-state-today">● Spelas idag</span>`;
+      else foot = `<span>Kommande</span>`;
+      html += `<div class="ko-match-node${st === 'today' ? ' ko-today' : ''}" data-round="${key}" data-idx="${i}">
+        ${koBracketSlot(ctx, key, i, 0, a, { winner: act && act.w === a, loser: act && act.w !== a, mine: mineA })}
+        ${koBracketSlot(ctx, key, i, 1, b, { winner: act && act.w === b, loser: act && act.w !== b, mine: mineB })}
+        <div class="ko-node-foot">${foot}</div>
+      </div>`;
+    }
+    if (key === 'final') {
+      html += `<div class="ko-bronze-box ko-bronze-static">
+        <div class="ko-bt">🥉 Bronsmatch · 8p</div>
+        <div style="font-size:12px;color:var(--text2)">Förlorarna i semifinalerna · avgör 3:e plats</div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  return html;
+}
 
 /* ══════════ RENDER: MOBIL ROND-PAGER ══════════ */
 let koPagerRound = 'r16', koPagerMine = false;
@@ -5134,6 +5252,7 @@ function koEnsureDrawer() {
 }
 // Rita om connectors vid resize endast om trädet finns i DOM (annan vy → no-op)
 window.addEventListener('resize', () => { if (document.getElementById('koBracket')) koDrawConnectors(); });
+window.addEventListener('resize', () => { if (document.getElementById('tradBracket')) koDrawConnectorsIn('tradBracket', 'tradConnectors'); });
 
 // ══════════════════════════════════════════════════════════════════════
 // ALLA SVAR VIEW
@@ -5150,6 +5269,38 @@ async function loadAlla() {
     allaData = await api('/api/allPredictions');
     allaSelectedIdx = 0;
     renderAlla(c);
+  } catch (err) {
+    c.innerHTML = '<div class="empty-state">' + escHtml(err.message) + '</div>';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// SLUTSPELSTRÄD VIEW (visuell bracket-överblick, icke-interaktiv)
+// ══════════════════════════════════════════════════════════════════════
+async function loadTrad() {
+  const c = document.getElementById('tradContent');
+  c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Laddar...</div>';
+  try {
+    const [, allPredsData, resultsData] = await Promise.all([
+      loadTournament(),
+      api('/api/allPredictions').catch(() => null),
+      api('/api/results').catch(() => ({}))
+    ]);
+    koActualResults = (resultsData && resultsData.actual) || {}; // läses av koBuildContext
+    const ctx = koBuildContext(allPredsData);
+    if (!ctx.parts.length) {
+      c.innerHTML = '<div class="empty-state">Kunde inte ladda allas slutspelstips just nu. Ladda om sidan och försök igen.</div>';
+      return;
+    }
+    c.innerHTML = `
+      <div class="ko-intro">En visuell överblick av slutspelet. Spelade ronder faller bort efter hand — framtida lag visas som "vinnare av" tills matcherna är klara. 🟡 = ditt lag som fortfarande lever. Scrolla i sidled på små skärmar.</div>
+      <div class="ko-bracket-card">
+        <div class="ko-bracket" id="tradBracket">
+          <svg class="ko-bracket-svg" id="tradConnectors"></svg>
+          <div class="ko-bracket-cols" id="tradCols">${koRenderBracket(ctx)}</div>
+        </div>
+      </div>`;
+    requestAnimationFrame(() => koDrawConnectorsIn('tradBracket', 'tradConnectors'));
   } catch (err) {
     c.innerHTML = '<div class="empty-state">' + escHtml(err.message) + '</div>';
   }
