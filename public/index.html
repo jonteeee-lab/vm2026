@@ -1790,8 +1790,18 @@ select.form-input {
 .ko-pg-sides { display: flex; align-items: center; gap: 8px; }
 .ko-pg-side { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 6px; border-radius: 10px; background: var(--bg3); text-align: center; position: relative; }
 .ko-pg-side.ko-win { background: var(--green-bg); }
-.ko-pg-side.ko-lose { opacity: .45; }
+.ko-pg-side.ko-win .ko-pg-team { color: var(--green); font-weight: 800; }
+.ko-pg-side.ko-lose { opacity: .5; }
+.ko-pg-side.ko-lose .ko-pg-team { text-decoration: line-through; }
 .ko-pg-side.ko-mine { box-shadow: inset 0 0 0 2px var(--accent); }
+.ko-pg-card.ko-played-card { opacity: .94; }
+/* Spelade-matcher: hopfällbar sektion i Dagens matcher-listan */
+.ko-played-toggle { width: 100%; margin-top: 16px; border: 1px solid var(--border); background: var(--bg2); font: inherit; font-size: 13px; font-weight: 700; color: var(--text2); padding: 11px 12px; border-radius: 10px; cursor: pointer; text-align: left; }
+.ko-played-toggle:hover { background: var(--bg3); }
+.ko-played-section { display: none; margin-top: 12px; }
+.ko-played-section.ko-open { display: block; }
+/* "✓ vidare"-tagg i slutspelsträdet */
+.ko-advanced { font-size: 8.5px; font-weight: 800; color: var(--green); background: var(--green-bg); border-radius: 5px; padding: 1px 5px; letter-spacing: .3px; white-space: nowrap; }
 .ko-pg-flag { font-size: 23px; line-height: 1; }
 .ko-pg-team { font-size: 12.5px; font-weight: 800; line-height: 1.1; }
 .ko-pg-cnt { font-size: 11px; font-weight: 700; color: var(--green); }
@@ -4896,7 +4906,7 @@ function koBracketSlot(ctx, round, idx, slotPos, team, opts) {
     if (o.winner) cls += ' ko-winner';
     if (o.loser) cls += ' ko-loser';
     if (o.mine) cls += ' ko-mine';
-    return `<div class="${cls}"><span class="ko-flag">${flag(team)}</span><span class="ko-nm">${escHtml(team)}</span>${o.mine ? '<span class="ko-minetag">DU</span>' : ''}</div>`;
+    return `<div class="${cls}"><span class="ko-flag">${flag(team)}</span><span class="ko-nm">${escHtml(team)}</span>${o.winner ? '<span class="ko-advanced">✓ vidare</span>' : ''}${o.mine ? '<span class="ko-minetag">DU</span>' : ''}</div>`;
   }
   // okänt lag → visa matar-matchens lag som platshållartext
   let label = 'Vinnare';
@@ -4923,7 +4933,7 @@ function koRenderBracket(ctx) {
         ? koClassify(ctx.parts.find(p => p.name === ctx.me).data, key, a, b) : 'none';
       const mineA = (myc === 'a' || myc === 'both'), mineB = (myc === 'b' || myc === 'both');
       let foot;
-      if (act) foot = `<span class="ko-state-played">✓ ${escHtml(act.w)}</span>`;
+      if (act) foot = `<span class="ko-state-played">✓ ${escHtml(act.w)}${KO_NEXT_SHORT[key] ? ' → ' + KO_NEXT_SHORT[key] : ' 🏆'}</span>`;
       else if (st === 'today') foot = `<span class="ko-state-today">● Spelas idag</span>`;
       else foot = `<span>Kommande</span>`;
       html += `<div class="ko-match-node${st === 'today' ? ' ko-today' : ''}" data-round="${key}" data-idx="${i}">
@@ -4950,7 +4960,7 @@ function koCompactCard(ctx, m, round, idx) {
   const [a, b] = m.teams, o = m.outcomes;
   const win = m.state === 'played' ? m.actual.w : null;
   let badge;
-  if (m.state === 'played') badge = `<span class="ko-pg-badge ko-played">✓ ${escHtml(win)} vidare</span>`;
+  if (m.state === 'played') badge = `<span class="ko-pg-badge ko-played">✓ ${escHtml(win)} gick vidare</span>`;
   else if (m.state === 'today') badge = `<span class="ko-pg-badge ko-today">● Spelas idag</span>`;
   else badge = `<span class="ko-pg-badge">Kommande</span>`;
 
@@ -4961,7 +4971,7 @@ function koCompactCard(ctx, m, round, idx) {
     const cntTxt = cnt ? `${cnt} st${m.round !== 'final' ? ` · +${persons[0].pts}p` : ''}` : '0 st';
     return `<div class="ko-pg-side ${isWin ? 'ko-win' : ''} ${isLose ? 'ko-lose' : ''} ${mine ? 'ko-mine' : ''}">
       <span class="ko-pg-flag">${team == null ? '⚪' : flag(team)}</span>
-      <span class="ko-pg-team">${team == null ? '?' : escHtml(team)}</span>
+      <span class="ko-pg-team">${isWin ? '✓ ' : ''}${team == null ? '?' : escHtml(team)}</span>
       <span class="ko-pg-cnt ${cnt ? '' : 'ko-zero'}">${cntTxt}</span>
     </div>`;
   }
@@ -4973,7 +4983,7 @@ function koCompactCard(ctx, m, round, idx) {
   if (meta.time) metaBits.push(meta.time);
   if (meta.channel) metaBits.push(meta.channel);
   const metaStr = metaBits.join(' · ');
-  return `<div class="ko-pg-card${m.state === 'today' ? ' ko-today-card' : ''}" onclick="koOpenMatch('${round}',${idx})">
+  return `<div class="ko-pg-card${m.state === 'today' ? ' ko-today-card' : ''}${m.state === 'played' ? ' ko-played-card' : ''}" onclick="koOpenMatch('${round}',${idx})">
     <div class="ko-pg-top"><span class="ko-pg-round">${m.roundName} · ${m.stake} på spel${metaStr ? ' · ' + escHtml(metaStr) : ''}</span>${badge}</div>
     <div class="ko-pg-sides">${side(a, o[0].persons)}<span class="ko-pg-vs">vs</span>${side(b, o[1].persons)}</div>
     ${guarLine}
@@ -4983,16 +4993,25 @@ function koCompactCard(ctx, m, round, idx) {
 }
 // Struktur-etikett: vart vinnaren tar vägen. round==='final' → ingen etikett.
 const KO_NEXT_ROUND_NAME = { r32:'åttondelsfinalen', r16:'kvartsfinalen', qf:'semifinalen', sf:'finalen' };
+const KO_NEXT_SHORT = { r32:'åttondel', r16:'kvart', qf:'semi', sf:'final' };
 function koNextLabel(ctx, round, idx) {
   if (round === 'final') return '';
   const nextName = KO_NEXT_ROUND_NAME[round];
   if (!nextName) return '';
-  const sib = (idx % 2 === 0) ? idx + 1 : idx - 1;     // syskon-matarens index
-  const [sa, sb] = koNodeTeams(ctx, round, sib);
+  const nt = (r, i) => koNodeTeams(ctx, r, i);
+  // Är den här matchen redan avgjord → namnge vinnaren, annars "vinnaren".
+  const myWin = koActualWinner(ctx.actual, round, idx, nt);
+  const subject = myWin != null ? escHtml(myWin) : 'vinnaren';
+  // Motståndaren = syskon-matarens utfall: avgjord → vinnaren, känd → "vinnaren av A/B", annars senare.
+  const sib = (idx % 2 === 0) ? idx + 1 : idx - 1;
+  const sibWin = koActualWinner(ctx.actual, round, sib, nt);
   let opp;
-  if (sa == null || sb == null) opp = 'en match som inte är klar än';
-  else opp = `${escHtml(sa)}/${escHtml(sb)}`;
-  return `<div class="ko-next-label">→ vinnaren möter vinnaren av ${opp} i ${nextName}</div>`;
+  if (sibWin != null) opp = escHtml(sibWin);
+  else {
+    const [sa, sb] = koNodeTeams(ctx, round, sib);
+    opp = (sa == null || sb == null) ? 'ett lag som avgörs senare' : `vinnaren av ${escHtml(sa)}/${escHtml(sb)}`;
+  }
+  return `<div class="ko-next-label">→ ${subject} möter ${opp} i ${nextName}</div>`;
 }
 function koMineLine(ctx, m) {
   if (!ctx.meKnown) return '';
@@ -5066,22 +5085,38 @@ function koRenderList(ctx) {
   }
   items.sort((x, y) => x.sortKey < y.sortKey ? -1 : (x.sortKey > y.sortKey ? 1 : 0));
 
-  let cards = '';
+  // Dela upp: kommande/idag visas direkt, spelade göms i hopfällbar sektion.
+  const passes = it => !(koPagerMine && (!meData || koClassify(meData, it.round, it.m.teams[0], it.m.teams[1]) === 'none'));
+  const upcoming = [], played = [];
   let todayCount = 0, firstTodayTime = null;
   for (const it of items) {
-    if (koPagerMine && (!meData || koClassify(meData, it.round, it.m.teams[0], it.m.teams[1]) === 'none')) continue;
+    if (!passes(it)) continue;
+    if (it.m.state === 'played') { played.push(it); continue; }
     if (it.m.state === 'today') {
       todayCount++;
       const t = it.m.meta && it.m.meta.time;
       if (t && (!firstTodayTime || t < firstTodayTime)) firstTodayTime = t;
     }
-    cards += koCompactCard(ctx, it.m, it.round, it.idx);
+    upcoming.push(it);
   }
-  if (!cards) cards = `<div class="ko-pg-empty">${koPagerMine ? 'Inga matcher med dina lag kvar just nu.' : 'Inga slutspelsmatcher att visa än.'}</div>`;
   const head = todayCount
     ? `<div class="ko-today-head">🔴 Spelas idag · ${todayCount} ${todayCount === 1 ? 'match' : 'matcher'}${firstTodayTime ? ` · först ut ${firstTodayTime}` : ''}</div>`
     : '';
-  return head + `<div class="ko-list-grid">${cards}</div>`;
+  const upCards = upcoming.map(it => koCompactCard(ctx, it.m, it.round, it.idx)).join('')
+    || `<div class="ko-pg-empty">${koPagerMine ? 'Inga kommande matcher med dina lag kvar.' : 'Inga kommande matcher just nu.'}</div>`;
+  let playedBlock = '';
+  if (played.length) {
+    const pCards = played.slice().reverse().map(it => koCompactCard(ctx, it.m, it.round, it.idx)).join(''); // senast spelade överst
+    playedBlock = `<button class="ko-played-toggle" onclick="koTogglePlayed(this)" data-n="${played.length}">▸ Visa spelade matcher (${played.length})</button>
+      <div class="ko-played-section" id="koPlayedSection"><div class="ko-list-grid">${pCards}</div></div>`;
+  }
+  return head + `<div class="ko-list-grid">${upCards}</div>` + playedBlock;
+}
+function koTogglePlayed(btn) {
+  const sec = document.getElementById('koPlayedSection');
+  if (!sec) return;
+  const open = sec.classList.toggle('ko-open');
+  btn.innerHTML = `${open ? '▾ Dölj' : '▸ Visa'} spelade matcher (${btn.dataset.n})`;
 }
 
 /* ══════════ RENDER: KORT ══════════ */
