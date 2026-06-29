@@ -1054,6 +1054,32 @@ select.form-input {
 .hem-section {
   margin-bottom: 14px;
 }
+/* Jakten — poänggap till närmaste rival */
+.hem-chase { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--card-shadow); padding: 13px 16px; margin-bottom: 14px; }
+.hem-chase-title { font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--text3); margin-bottom: 8px; }
+.chase-row { font-size: 14px; font-weight: 600; padding: 4px 0; }
+.chase-row.leader strong { color: var(--accent); }
+.chase-row.up strong { color: var(--accent); }
+.chase-row.down strong { color: var(--text); }
+.chase-row.lead { color: var(--green); font-weight: 800; }
+.chase-row .cr { color: var(--text3); font-size: 12px; font-weight: 700; }
+/* Vinstchans */
+.hem-winpct { background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: #fff; border-radius: var(--radius); box-shadow: var(--card-shadow); padding: 14px 16px; margin-bottom: 14px; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.hem-winpct .wp-label { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--accent-light); }
+.hem-winpct .wp-val { font-size: 34px; font-weight: 800; line-height: 1.1; }
+.hem-winpct .wp-val.wp-calc { font-size: 16px; font-weight: 600; opacity: .7; }
+.hem-winpct .wp-method { font-size: 10.5px; color: rgba(255,255,255,.7); }
+/* Dina lag kvar i slutspelet */
+.hem-mine { display: flex; flex-direction: column; }
+.mine-row { display: flex; align-items: center; gap: 9px; padding: 9px 2px; font-size: 14px; }
+.mine-row:not(:last-child) { border-bottom: 1px solid var(--bg3); }
+.mine-row .mr-ico { font-size: 17px; flex-shrink: 0; }
+.mine-row .mr-lbl { flex: 1; font-weight: 600; }
+.mine-row .mr-status { font-weight: 800; font-size: 13px; white-space: nowrap; }
+.mine-row.alive .mr-status { color: var(--green); }
+.mine-row.out .mr-status { color: var(--red); }
+.mine-row.out .mr-lbl { opacity: .6; text-decoration: line-through; }
+.mine-sub { font-size: 12px; color: var(--text2); padding: 0 2px 8px 28px; }
 .hem-section-title {
   display: flex; align-items: center; justify-content: space-between;
   font-size: 13px; font-weight: 800;
@@ -4097,22 +4123,145 @@ function flag(team) {
   return f ? f + ' ' : '';
 }
 
+/* ══════════ VINSTSANNOLIKHET (Monte Carlo + exakt uträkning) ══════════ */
+// Variabel slutspelspoäng = de delar som ändras när slutspelet spelas (r16/qf/sf + finalplaceringar).
+// Speglar computeScoreLocal exakt för dessa delar. Resten (gruppspel/placeringar/special/r32) är låst.
+function koVarScore(pred, actual) {
+  const s16 = new Set(actual.r16Teams || []), sqf = new Set(actual.qfTeams || []), ssf = new Set(actual.sfTeams || []);
+  const cnt = (arr, set) => { let c = 0; for (const t of (arr || [])) if (t && set.has(t)) c++; return c; };
+  let total = 0;
+  const c16 = cnt(pred.r16Teams, s16); total += c16 * 3 + (c16 === 16 && s16.size === 16 ? 15 : 0);
+  const cqf = cnt(pred.qfTeams, sqf); total += cqf * 6 + (cqf === 8 && sqf.size === 8 ? 15 : 0);
+  const csf = cnt(pred.sfTeams, ssf); total += csf * 12 + (csf === 4 && ssf.size === 4 ? 15 : 0);
+  const pF = pred.finalPlacements || {}, aF = actual.finalPlacements || {};
+  if (aF['1']) {
+    const fin = [aF['1'], aF['2']].filter(Boolean);
+    for (const pos of ['1', '2']) if (pF[pos] && fin.includes(pF[pos])) total += 8;
+    if (pF['1'] && pF['1'] === aF['1']) total += 12;
+    if (pF['2'] && pF['2'] === aF['2']) total += 8;
+  }
+  if (pF['3'] && pF['3'] === aF['3']) total += 8;
+  if (pF['4'] && pF['4'] === aF['4']) total += 8;
+  return total;
+}
+// Snabb variant för scenarier (alltid fulla mängder 16/8/4 → förbyggda Sets).
+function koVarScoreWithSets(pred, sets) {
+  const cnt = (arr, set) => { let c = 0; for (const t of (arr || [])) if (t && set.has(t)) c++; return c; };
+  let total = 0;
+  const c16 = cnt(pred.r16Teams, sets.s16); total += c16 * 3 + (c16 === 16 ? 15 : 0);
+  const cqf = cnt(pred.qfTeams, sets.sqf); total += cqf * 6 + (cqf === 8 ? 15 : 0);
+  const csf = cnt(pred.sfTeams, sets.ssf); total += csf * 12 + (csf === 4 ? 15 : 0);
+  const pF = pred.finalPlacements || {}, aF = sets.aF || {};
+  if (aF['1']) {
+    const fin = [aF['1'], aF['2']].filter(Boolean);
+    for (const pos of ['1', '2']) if (pF[pos] && fin.includes(pF[pos])) total += 8;
+    if (pF['1'] && pF['1'] === aF['1']) total += 12;
+    if (pF['2'] && pF['2'] === aF['2']) total += 8;
+  }
+  if (pF['3'] && pF['3'] === aF['3']) total += 8;
+  if (pF['4'] && pF['4'] === aF['4']) total += 8;
+  return total;
+}
+// Simulera ett komplett slutspelsutfall. Respekterar redan avgjorda matcher, slantsinglar resten.
+// rnd() < 0.5 → första laget vinner. Returnerar { r16Teams, qfTeams, sfTeams, finalPlacements }.
+function koSimulateFinal(actual, rnd) {
+  const ctx = { actual, woCache: {} };
+  const nt = (r, i) => koNodeTeams(ctx, r, i);
+  const W = {};
+  for (const key of ['r32', 'r16', 'qf', 'sf']) {
+    const r = KO_ROUNDS.find(x => x.key === key);
+    W[key] = new Array(r.n);
+    for (let i = 0; i < r.n; i++) {
+      const dec = koActualWinner(ctx.actual, key, i, nt);
+      if (dec != null) { W[key][i] = dec; continue; }
+      let a, b;
+      if (key === 'r32') { a = KO_R32[i][3]; b = KO_R32[i][4]; }
+      else { const f = KO_FEED[key](i); a = W[KO_PREV[key]][f[0]]; b = W[KO_PREV[key]][f[1]]; }
+      W[key][i] = rnd() < 0.5 ? a : b;
+    }
+  }
+  let finalW = koActualWinner(ctx.actual, 'final', 0, nt);
+  const f1 = W.sf[0], f2 = W.sf[1];
+  if (finalW == null) finalW = rnd() < 0.5 ? f1 : f2;
+  const runner = (finalW === f1) ? f2 : f1;
+  const sfLoser = i => { const f = KO_FEED['sf'](i); const a = W.qf[f[0]], b = W.qf[f[1]]; return (W.sf[i] === a) ? b : a; };
+  const bl0 = sfLoser(0), bl1 = sfLoser(1);
+  const aF = ctx.actual.finalPlacements || {};
+  let third, fourth;
+  if (aF['3']) { third = aF['3']; fourth = aF['4'] || (third === bl0 ? bl1 : bl0); }
+  else if (rnd() < 0.5) { third = bl0; fourth = bl1; } else { third = bl1; fourth = bl0; }
+  return { r16Teams: W.r32, qfTeams: W.r16, sfTeams: W.qf, finalPlacements: { '1': finalW, '2': runner, '3': third, '4': fourth } };
+}
+// Antal oavgjorda matcher (= antal slantsinglingar i en simulering). Avgör exakt vs Monte Carlo.
+function koCountFlips(actual) { let k = 0; koSimulateFinal(actual, () => { k++; return 0.25; }); return k; }
+// Vinstsannolikhet per deltagare. ≤13 oavgjorda matcher → exakt (alla utfall), annars Monte Carlo.
+function koWinProbabilities(parts, actual) {
+  const players = parts.map(p => ({ name: p.name, pred: p.data || {} }));
+  for (const pl of players) pl.base = computeScoreLocal(pl.pred, actual, null).total - koVarScore(pl.pred, actual);
+  const k = koCountFlips(actual);
+  const MAX_ENUM = 13;
+  let scenarios, method;
+  if (k <= MAX_ENUM) {
+    method = { type: 'exact' };
+    const N = 1 << k; scenarios = [];
+    for (let n = 0; n < N; n++) { let j = 0; scenarios.push(koSimulateFinal(actual, () => { const bit = (n >> j) & 1; j++; return bit ? 0.75 : 0.25; })); }
+  } else {
+    const N = 4000; method = { type: 'sim', n: N };
+    let seed = 123456789 >>> 0;
+    const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    scenarios = []; for (let n = 0; n < N; n++) scenarios.push(koSimulateFinal(actual, rnd));
+  }
+  const win = {}; for (const pl of players) win[pl.name] = 0;
+  for (const scen of scenarios) {
+    const sets = { s16: new Set(scen.r16Teams), sqf: new Set(scen.qfTeams), ssf: new Set(scen.sfTeams), aF: scen.finalPlacements };
+    let best = -Infinity, bestNames = [];
+    for (const pl of players) {
+      const tot = pl.base + koVarScoreWithSets(pl.pred, sets);
+      if (tot > best) { best = tot; bestNames = [pl.name]; }
+      else if (tot === best) bestNames.push(pl.name);
+    }
+    const share = 1 / bestNames.length;
+    for (const nm of bestNames) win[nm] += share;
+  }
+  const denom = scenarios.length || 1;
+  const prob = {}; for (const pl of players) prob[pl.name] = win[pl.name] / denom;
+  return { prob, method };
+}
+
+// Lag som fortfarande lever i slutspelet = de 32 kvalade minus förlorarna i alla avgjorda slutspelsmatcher.
+function koAliveTeams(actual) {
+  const ctx = { actual: actual || {}, woCache: {} };
+  const nt = (r, i) => koNodeTeams(ctx, r, i);
+  const alive = new Set((actual && actual.r32Teams) || []);
+  for (const r of KO_ROUNDS) {
+    for (let i = 0; i < r.n; i++) {
+      const w = koActualWinner(ctx.actual, r.key, i, nt);
+      if (w == null) continue;
+      const [a, b] = koNodeTeams(ctx, r.key, i);
+      const loser = (a === w) ? b : (b === w ? a : null);
+      if (loser != null) alive.delete(loser);
+    }
+  }
+  return alive;
+}
+
 async function loadHem() {
   const c = document.getElementById('hemContent');
   c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Laddar...</div>';
   try {
-    const [tournData, lbData, resultsData] = await Promise.all([
+    const [tournData, lbData, resultsData, allPredsData] = await Promise.all([
       loadTournament(),
       api('/api/leaderboard').catch(() => ({ board: [], prevSnapshot: null })),
-      api('/api/results').catch(() => ({}))
+      api('/api/results').catch(() => ({})),
+      api('/api/allPredictions').catch(() => null)
     ]);
-    renderHem(c, tournData, lbData, resultsData);
+    renderHem(c, tournData, lbData, resultsData, allPredsData);
   } catch (err) {
     c.innerHTML = '<div class="empty-state">Kunde inte ladda: ' + escHtml(err.message) + '</div>';
   }
 }
 
-function renderHem(container, tournData, lbData, resultsData) {
+function renderHem(container, tournData, lbData, resultsData, allPredsData) {
   const { groupMatches } = tournData;
   const board = (lbData && lbData.board) || [];
   const prevSnapshot = lbData && lbData.prevSnapshot;
@@ -4217,65 +4366,79 @@ function renderHem(container, tournData, lbData, resultsData) {
     ${myPrize > 0 ? `<div class="prize-line">Om turneringen slutade nu skulle du vinna <span class="amt">${fmtKr(myPrize)}</span></div>` : (prizeTotal > 0 ? `<div class="prize-line">Klättra till topp 4 för att vinna del av <span class="amt">${fmtKr(prizeTotal)}</span></div>` : '')}
   </div>`;
 
-  // Context tiles
+  // Vinstchans (beräknas async efter render — kan ta en stund)
+  const showWinPct = allPredsData && allPredsData.participants && allPredsData.participants.length && myRank;
+  if (showWinPct) {
+    html += `<div class="hem-winpct" id="hemWinPct"><span class="wp-label">Din vinstchans</span><span class="wp-val wp-calc">beräknar…</span></div>`;
+  }
+
+  // Jakten — poänggap till närmaste rival ovanför/under
   if (myRank) {
-    const behind = total - myRank;
-    const ahead = myRank - 1;
-    html += `<div class="hem-context">
-      <div class="hem-stat"><span class="big">${ahead}</span><span class="lbl">framför dig</span></div>
-      <div class="hem-stat"><span class="big">${behind}</span><span class="lbl">bakom dig</span></div>
+    const myPts = (myIdx >= 0 && board[myIdx]) ? board[myIdx].points : (myScore.total || 0);
+    const leader = board[0] || null;
+    const above = myIdx > 0 ? board[myIdx - 1] : null;
+    const below = (myIdx >= 0 && myIdx < total - 1) ? board[myIdx + 1] : null;
+    let chase = '<div class="hem-chase"><div class="hem-chase-title">Jakten</div>';
+    if (myRank === 1) {
+      chase += `<div class="chase-row lead">🏆 Du leder hela ligan!</div>`;
+      if (below) chase += `<div class="chase-row down">▼ <strong>${myPts - below.points}p</strong> ner till ${escHtml(below.name)} <span class="cr">#2</span></div>`;
+    } else {
+      if (leader) chase += `<div class="chase-row leader">🥇 <strong>${leader.points - myPts}p</strong> upp till ledaren ${escHtml(leader.name)}</div>`;
+      if (above && myRank > 2) chase += `<div class="chase-row up">▲ <strong>${above.points - myPts}p</strong> upp till ${escHtml(above.name)} <span class="cr">#${myRank - 1}</span></div>`;
+      if (below) chase += `<div class="chase-row down">▼ <strong>${myPts - below.points}p</strong> ner till ${escHtml(below.name)} <span class="cr">#${myRank + 1}</span></div>`;
+      else if (total > 1) chase += `<div class="chase-row last">Du är sist — bara att klättra 💪</div>`;
+    }
+    chase += '</div>';
+    html += chase;
+  }
+
+  // Dina lag kvar i slutspelet
+  const aliveSet = koAliveTeams(actual);
+  const koStarted = ((actual.r32Teams) || []).length > 0;
+  const fp = prediction.finalPlacements || {};
+  const champ = fp['1'] || null;
+  const sfPicks = (prediction.sfTeams || []).filter(Boolean);
+  const qfPicks = (prediction.qfTeams || []).filter(Boolean);
+  const hasBracket = champ || sfPicks.length || qfPicks.length;
+
+  if (koStarted && hasBracket) {
+    const champAlive = champ && aliveSet.has(champ);
+    const sfAlive = sfPicks.filter(t => aliveSet.has(t));
+    const qfAlive = qfPicks.filter(t => aliveSet.has(t));
+    html += `<div class="hem-section">
+      <div class="hem-section-title"><span>Dina lag kvar i slutspelet</span><a href="#trad">Se trädet →</a></div>
+      <div class="hem-mine">`;
+    if (champ) html += `<div class="mine-row ${champAlive ? 'alive' : 'out'}"><span class="mr-ico">🏆</span><span class="mr-lbl">Världsmästartips: ${flag(champ)} ${escHtml(champ)}</span><span class="mr-status">${champAlive ? '✅ lever' : '❌ ute'}</span></div>`;
+    if (sfPicks.length) {
+      html += `<div class="mine-row"><span class="mr-ico">🥇</span><span class="mr-lbl">Dina semifinalist-tips</span><span class="mr-status">${sfAlive.length}/${sfPicks.length} kvar</span></div>`;
+      if (sfAlive.length) html += `<div class="mine-sub">${sfAlive.map(t => flag(t) + ' ' + escHtml(t)).join(' · ')}</div>`;
+    }
+    if (qfPicks.length) html += `<div class="mine-row"><span class="mr-ico">⚽</span><span class="mr-lbl">Dina kvartsfinal-tips</span><span class="mr-status">${qfAlive.length}/${qfPicks.length} kvar</span></div>`;
+    html += `</div></div>`;
+  } else if (!koStarted) {
+    html += `<div class="hem-section">
+      <div class="hem-section-title"><span>Slutspelet</span><a href="#dagensm">Dagens matcher →</a></div>
+      <p class="text-muted" style="padding:4px 2px">Slutspelet drar igång — följ dina lag och se vem som gynnas under Dagens matcher.</p>
     </div>`;
   }
 
-  // Recently played
-  if (recentlyPlayed.length > 0) {
-    html += `<div class="hem-section">
-      <div class="hem-section-title"><span>Senaste matcher</span><a href="#resultat">Se all rättning →</a></div>`;
-    for (const m of recentlyPlayed) {
-      const badge = badgeForMatch(m);
-      const pts = pointsForMatch(m);
-      html += `<div class="hem-match">
-        <span class="team home">${flag(m.home)}${escHtml(m.home)}</span>
-        <div class="center">
-          <span class="score">${fmtScore(m.actual)}</span>
-          <span class="time">Slutresultat</span>
-        </div>
-        <span class="team away">${flag(m.away)}${escHtml(m.away)}</span>
-        <div class="meta-line">
-          <span class="you">Du tippade ${fmtScore(m.my)} ${badge ? `<span class="badge ${badge.cls}">${badge.txt}</span>` : ''}</span>
-          <span>${pts > 0 ? '+' + pts + 'p' : ''}</span>
-        </div>
-      </div>`;
-    }
-    html += `</div>`;
-  }
-
-  // Upcoming
-  if (upcoming.length > 0) {
-    html += `<div class="hem-section">
-      <div class="hem-section-title"><span>Kommande matcher</span><a href="#dagensm">Alla matcher →</a></div>`;
-    for (const m of upcoming) {
-      html += `<div class="hem-match">
-        <span class="team home">${flag(m.home)}${escHtml(m.home)}</span>
-        <div class="center">
-          <span class="score tipped">${fmtScore(m.my)}</span>
-          <span class="time">${fmtDateTime(m.dt)}</span>
-        </div>
-        <span class="team away">${flag(m.away)}${escHtml(m.away)}</span>
-        <div class="meta-line">
-          <span class="you">${m.my && m.my[0] !== '' && m.my[0] != null ? 'Du har tippat ' + fmtScore(m.my) : '<span class="badge pending">EJ TIPPAT</span>'}</span>
-          <span>Grupp ${m.group}${m.channel ? ' · ' + m.channel : ''}</span>
-        </div>
-      </div>`;
-    }
-    html += `</div>`;
-  }
-
-  if (recentlyPlayed.length === 0 && upcoming.length === 0) {
-    html += `<div class="empty-state">Inga matcher att visa.</div>`;
-  }
-
   container.innerHTML = html;
+
+  // Vinstchans — beräkna async så första paint inte blockeras.
+  if (showWinPct) {
+    setTimeout(() => {
+      const el = document.getElementById('hemWinPct');
+      if (!el) return;
+      try {
+        const { prob, method } = koWinProbabilities(allPredsData.participants, actual);
+        const p = prob[myName];
+        if (p == null) { el.style.display = 'none'; return; }
+        const pct = p >= 0.005 ? Math.round(p * 100) + '%' : '<1%';
+        const ml = method.type === 'exact' ? 'exakt uträkning' : ('uppskattning · ' + method.n + ' simuleringar');
+        el.innerHTML = `<span class="wp-label">Din vinstchans</span><span class="wp-val">${pct}</span><span class="wp-method">${ml} · vid jämna odds</span>`;
+      } catch (e) { el.style.display = 'none'; }
+    }, 30);
+  }
 }
 
 async function loadDagensm() {
