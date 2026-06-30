@@ -1276,6 +1276,7 @@ select.form-input {
     font-size: 10px; font-weight: 700;
     margin-top: 2px; line-height: 1;
   }
+  .recent-mobile { display: block; font-size: 10px; font-weight: 700; color: var(--green); margin-top: 3px; line-height: 1; }
   .leaderboard-table .rank { vertical-align: top; padding-top: 8px; }
   .leaderboard-table th, .leaderboard-table td { padding: 9px 6px; }
   .leaderboard-table .name-cell > div { min-width: 0; max-width: 100%; }
@@ -1304,6 +1305,7 @@ select.form-input {
   letter-spacing: 0.3px;
 }
 .boost-cell { font-size: 13px; }
+.recent-mobile { display: none; }
 
 /* ══════ CONSENSUS BARS (Dagens matcher) ══════ */
 .dagensm-date-header {
@@ -3796,9 +3798,10 @@ function renderLeaderboard(container, data, extras = {}) {
 
   // Build prev rank map
   const prevRanks = {};
+  const prevPoints = {};
   if (prevSnapshot) {
     const snap = Array.isArray(prevSnapshot) ? prevSnapshot : (prevSnapshot.board || []);
-    snap.forEach((p, i) => { prevRanks[p.name] = i + 1; });
+    snap.forEach((p, i) => { prevRanks[p.name] = i + 1; prevPoints[p.name] = p.points; });
   }
 
   // Compute Raketen (biggest climb) and Sänket (biggest drop). Skip NY entries.
@@ -3897,7 +3900,7 @@ function renderLeaderboard(container, data, extras = {}) {
 
   const colCount = prevSnapshot ? 5 : 4;
   html += '<div class="card lb-card"><table class="leaderboard-table"><thead><tr>';
-  html += '<th>#</th><th>Namn</th><th>Poäng</th><th class="col-boost" title="Extra poäng från konsensus-multiplikator">Boost</th>';
+  html += '<th>#</th><th>Namn</th><th>Poäng</th><th class="col-boost" title="Poäng sedan förra snapshoten (senaste rättade omgången)">Senaste</th>';
   if (prevSnapshot) html += '<th class="col-change">Förändring</th>';
   html += '</tr></thead><tbody>';
 
@@ -3915,10 +3918,13 @@ function renderLeaderboard(container, data, extras = {}) {
       changeHtml = '<span class="change-up">NY</span>';
     }
 
-    const boost = p.breakdown?.consensusBoost || 0;
-    const boostHtml = boost > 0
-      ? `<span class="boost-badge">+${boost}p</span>`
-      : '<span style="color:var(--text3)">-</span>';
+    // Senaste omgången = poäng sedan förra snapshoten.
+    let gained = (prevSnapshot && prevPoints[p.name] != null) ? (p.points - prevPoints[p.name]) : null;
+    const recentBadge = gained == null
+      ? '<span style="color:var(--text3)">-</span>'
+      : (gained > 0 ? `<span class="boost-badge">+${gained}p</span>`
+        : `<span style="color:var(--text3)">${gained === 0 ? '0' : gained + 'p'}</span>`);
+    const recentMobile = (gained != null && gained > 0) ? `<span class="recent-mobile">+${gained}p senaste</span>` : '';
 
     const lbRowClasses = [];
     if (rank <= 3) lbRowClasses.push('lb-rank-' + rank);
@@ -3934,8 +3940,8 @@ function renderLeaderboard(container, data, extras = {}) {
         <div style="display:flex;align-items:center;gap:8px">${avatarHtml(p.avatar, p.name, 'sm')}<span>${escHtml(p.name)}</span>${badgesByName[p.name] ? '<span class="row-badges">' + badgesByName[p.name].join('') + '</span>' : ''}${meBadge}</div>
         ${prizeInline}
       </td>
-      <td class="points-cell">${p.points}</td>
-      <td class="boost-cell col-boost">${boostHtml}</td>`;
+      <td class="points-cell">${p.points}${recentMobile}</td>
+      <td class="boost-cell col-boost">${recentBadge}</td>`;
     if (prevSnapshot) html += `<td class="col-change">${changeHtml}</td>`;
     html += '</tr>';
 
