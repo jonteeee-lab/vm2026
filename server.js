@@ -182,6 +182,20 @@ const SCORING = {
   question: 4,         // per correct answer (10 questions total)
 };
 
+// ══════════════════════════════════════════════════════════════════════════════
+// IN-MEMORY CACHE — minskar Supabase-egress kraftigt för tunga, delade endpoints.
+// Tippningarna är låsta (ändras aldrig) → lång TTL. Leaderboard töms vid rättning.
+// ══════════════════════════════════════════════════════════════════════════════
+const _cache = {};
+async function cacheWrap(key, ttlMs, producer) {
+  const e = _cache[key];
+  if (e && (Date.now() - e.t) < ttlMs) return e.v;
+  const v = await producer();
+  _cache[key] = { v, t: Date.now() };
+  return v;
+}
+function cacheClear(key) { if (key) delete _cache[key]; else for (const k in _cache) delete _cache[k]; }
+
 function calcSign(h, a) {
   if (h > a) return '1';
   if (h === a) return 'X';
@@ -565,10 +579,13 @@ async function calcLeaderboard() {
 
 app.get('/api/leaderboard', async (req, res) => {
   try {
-    const board = await calcLeaderboard();
-    const snap = await get('SELECT data FROM leaderboard_snapshots ORDER BY created_at DESC LIMIT 1');
-    const prevSnapshot = snap ? (typeof snap.data === 'string' ? JSON.parse(snap.data) : snap.data) : null;
-    res.json({ board, prevSnapshot });
+    const payload = await cacheWrap('leaderboard', 60000, async () => {
+      const board = await calcLeaderboard();
+      const snap = await get('SELECT data FROM leaderboard_snapshots ORDER BY created_at DESC LIMIT 1');
+      const prevSnapshot = snap ? (typeof snap.data === 'string' ? JSON.parse(snap.data) : snap.data) : null;
+      return { board, prevSnapshot };
+    });
+    res.json(payload);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -600,12 +617,14 @@ app.get('/api/allPredictions', auth, async (req, res) => {
     const deadline = await get("SELECT value FROM settings WHERE key='deadline'");
     const isLocked = locked?.value === '1' || new Date(deadline?.value) < new Date();
     if (!isLocked) return res.status(403).json({ error: 'Inte låst ännu' });
-    const users = await all('SELECT id, name, avatar FROM users ORDER BY name');
-    const preds = await all('SELECT user_id, data FROM predictions');
-    const predMap = {};
-    preds.forEach(p => { predMap[p.user_id] = p.data; });
-    const participants = users.map(u => ({ name: u.name, avatar: u.avatar, data: predMap[u.id] || {} }));
-    res.json({ participants });
+    const payload = await cacheWrap('allPredictions', 600000, async () => {
+      const users = await all('SELECT id, name, avatar FROM users ORDER BY name');
+      const preds = await all('SELECT user_id, data FROM predictions');
+      const predMap = {};
+      preds.forEach(p => { predMap[p.user_id] = p.data; });
+      return { participants: users.map(u => ({ name: u.name, avatar: u.avatar, data: predMap[u.id] || {} })) };
+    });
+    res.json(payload);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -722,6 +741,7 @@ app.put('/api/admin/results', adminAuth, async (req, res) => {
     }
     await run('UPDATE results SET data = ?, updated_at = NOW() WHERE id = (SELECT id FROM results ORDER BY id LIMIT 1)',
       [JSON.stringify(data)]);
+    cacheClear('leaderboard'); // ny rättning → topplistan ska räknas om direkt
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -799,6 +819,7 @@ app.post('/api/admin/leaderboard/snapshot', adminAuth, async (req, res) => {
     const board = await calcLeaderboard();
     const { label } = req.body;
     await run('INSERT INTO leaderboard_snapshots (data, label) VALUES (?, ?)', [JSON.stringify(board), label || null]);
+    cacheClear('leaderboard'); // ny snapshot → prevSnapshot ändras
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -806,6 +827,7 @@ app.post('/api/admin/leaderboard/snapshot', adminAuth, async (req, res) => {
 app.delete('/api/admin/leaderboard/snapshot', adminAuth, async (req, res) => {
   try {
     await run('DELETE FROM leaderboard_snapshots');
+    cacheClear('leaderboard');
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -883,10 +905,11 @@ app.get('/api/consensus', auth, async (req, res) => {
     const deadline = await get("SELECT value FROM settings WHERE key='deadline'");
     const isLocked = locked?.value === '1' || new Date(deadline?.value) < new Date();
     if (!isLocked) return res.status(403).json({ error: 'Inte låst ännu' });
-    const preds = await all('SELECT data FROM predictions');
-    const total = preds.length;
-    const consensusMap = buildConsensusMap(preds.map(p => p.data));
-    res.json({ consensusMap, total });
+    const payload = await cacheWrap('consensus', 600000, async () => {
+      const preds = await all('SELECT data FROM predictions');
+      return { consensusMap: buildConsensusMap(preds.map(p => p.data)), total: preds.length };
+    });
+    res.json(payload);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
