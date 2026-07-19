@@ -316,17 +316,21 @@ function computeScore(pred, actual, consensusMap = {}) {
   const pQ = pred.questions || {};
   const aQ = actual.questions || {};
 
-  // Q1-Q3: skytteliga topp 3 — pool-based, order irrelevant
-  const actualPool = ['q1','q2','q3']
-    .map(k => String(aQ[k] || '').toLowerCase().trim())
-    .filter(Boolean);
-  const usedActual = new Set();
+  // Q1-Q3: skytteliga topp 3 — pool-based, order irrelevant.
+  // Each admin field = one real player; comma-separate accepted spelling
+  // variants within a field. A field can only be claimed once, so two
+  // variants of the same player never score twice.
+  const poolGroups = ['q1','q2','q3']
+    .map(k => new Set(String(aQ[k] || '').split(',').map(s => s.toLowerCase().trim()).filter(Boolean)))
+    .filter(set => set.size > 0);
+  const usedGroups = new Set();
+  const usedPicks = new Set();
   for (const key of ['q1','q2','q3']) {
     const pVal = String(pQ[key] || '').toLowerCase().trim();
-    if (pVal && actualPool.includes(pVal) && !usedActual.has(pVal)) {
-      usedActual.add(pVal);
-      questionPts += SCORING.question;
-    }
+    if (!pVal || usedPicks.has(pVal)) continue;
+    usedPicks.add(pVal);
+    const gi = poolGroups.findIndex((set, i) => !usedGroups.has(i) && set.has(pVal));
+    if (gi >= 0) { usedGroups.add(gi); questionPts += SCORING.question; }
   }
 
   // Q4-Q6: comma-separated multi-correct answers

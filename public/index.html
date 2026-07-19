@@ -5789,16 +5789,19 @@ function computeScoreLocal(predRaw, actual, scoring) {
   const aQ = actual.questions || {};
   const qPts = S.question || 4;
 
-  // Q1-Q3: skytteliga topp 3 — pool-based, order irrelevant
-  const actualPool = ['q1','q2','q3']
-    .map(k => String(aQ[k] || '').toLowerCase().trim()).filter(Boolean);
-  const usedActual = new Set();
+  // Q1-Q3: skytteliga topp 3 — pool-based, order irrelevant.
+  // Mirrors server: each field = one player, comma-separated spelling variants.
+  const poolGroups = ['q1','q2','q3']
+    .map(k => new Set(String(aQ[k] || '').split(',').map(s => s.toLowerCase().trim()).filter(Boolean)))
+    .filter(set => set.size > 0);
+  const usedGroups = new Set();
+  const usedPicks = new Set();
   for (const key of ['q1','q2','q3']) {
     const pVal = String(pQ[key] || '').toLowerCase().trim();
-    if (pVal && actualPool.includes(pVal) && !usedActual.has(pVal)) {
-      usedActual.add(pVal);
-      questionPts += qPts;
-    }
+    if (!pVal || usedPicks.has(pVal)) continue;
+    usedPicks.add(pVal);
+    const gi = poolGroups.findIndex((set, i) => !usedGroups.has(i) && set.has(pVal));
+    if (gi >= 0) { usedGroups.add(gi); questionPts += qPts; }
   }
   // Q4-Q6: comma-separated multi-correct
   for (const key of ['q4','q5','q6']) {
@@ -6159,7 +6162,7 @@ function renderAdminSpecialResults(container) {
   let html = '<div class="card"><h3>Faktiska resultat - Specialtips</h3>';
 
   // Q1-Q3: skytteliga topp 3 (pool — ordning spelar ingen roll)
-  html += `<p class="text-muted" style="font-size:12px;margin-bottom:8px">Q1-Q3: Skytteliga topp 3 (ordning spelar ingen roll för rättning)</p>`;
+  html += `<p class="text-muted" style="font-size:12px;margin-bottom:8px">Q1-Q3: Skytteliga topp 3 (ordning spelar ingen roll för rättning). Ett fält = en spelare &mdash; kommaseparera godkända stavningsvarianter, t.ex. "Mbappé,Mbappe,Kylian Mbappe".</p>`;
   for (let i = 1; i <= 3; i++) {
     html += `<div class="form-group">
       <label>Topp 3 skyttekung #${i}</label>
